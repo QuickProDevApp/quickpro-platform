@@ -66,6 +66,8 @@ record, fee structure, worker pay flows).
 ## Known follow-ups
 
 - Next.js Cache Components are off for now (see decisions.md, D-006).
-- Re-review rules when an approved contractor changes material details.
+- Act automatically when an approved contractor's insurance lapses (with Phase 2 assignments).
+- Schedule `pnpm storage:reconcile`.
+- Password reset and email change.
 - Document expiry reminders (needs a scheduler and email provider).
 - Staff roles finer than "admin" (reviewer, support, finance).

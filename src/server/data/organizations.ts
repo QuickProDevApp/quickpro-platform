@@ -1,6 +1,6 @@
 import "server-only";
 import { withUser, type Tx } from "@/server/db/client";
-import type { OrganizationKind, ReviewStatus } from "@/lib/labels";
+import type { InsuranceStatus, OrganizationKind, ReviewStatus } from "@/lib/labels";
 import { diffIds } from "./sets";
 
 export type MemberRole = "owner" | "admin" | "dispatcher" | "member";
@@ -33,6 +33,8 @@ export type Organization = {
   submitted_at: Date | null;
   reviewed_at: Date | null;
   review_notes: string | null;
+  /** Why an approved organization went back to review; cleared by the next staff decision. */
+  rereview_reason: string | null;
   created_at: Date;
 };
 
@@ -147,6 +149,13 @@ export function setContractorCapabilities(userId: string, orgId: string, input: 
     await replaceSet(tx, "contractor_services", "category_id", orgId, input.categoryIds);
     await replaceSet(tx, "contractor_service_areas", "service_area_id", orgId, input.areaIds);
   });
+}
+
+export async function getInsuranceStatus(userId: string, orgId: string): Promise<InsuranceStatus | null> {
+  const [row] = await withUser(userId, (tx) => tx<{ status: InsuranceStatus | null }[]>`
+    select public.organization_insurance_status(${orgId}) as status
+  `);
+  return row?.status ?? null;
 }
 
 export async function submitOrganizationForReview(userId: string, orgId: string) {

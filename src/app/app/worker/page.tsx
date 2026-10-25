@@ -24,7 +24,13 @@ export default async function WorkerOverview() {
 
   return (
     <div className="space-y-6">
-      <StatusBanner status={profile.status} notes={profile.review_notes} submittedAt={profile.submitted_at} subject="worker profile" />
+      <StatusBanner
+        status={profile.status}
+        notes={profile.review_notes}
+        submittedAt={profile.submitted_at}
+        subject="worker profile"
+        rereviewReason={profile.rereview_reason}
+      />
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <div className="space-y-6">
           {canSubmit ? (

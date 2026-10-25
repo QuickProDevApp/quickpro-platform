@@ -11,7 +11,18 @@ export default async function OrganizationProfilePage({ params }: { params: Prom
   const { orgId } = await params;
   const { org } = await requireMembership(orgId);
   const editable = canManage(org.my_role);
-  const identityLocked = org.status !== "draft" && org.status !== "rejected";
+  // Mirrors app.guard_reviewed_org_identity: names are frozen while staff review
+  // them or while suspended. Changing them once approved sends the
+  // organization back to review.
+  const identityLocked = org.status === "pending_review" || org.status === "suspended";
+  const identityHint =
+    org.status === "pending_review"
+      ? "Locked while QuickPro staff review your registration."
+      : org.status === "suspended"
+        ? "Locked while your organization is suspended. Contact QuickPro staff to change it."
+        : org.status === "approved"
+          ? "Changing this sends your registration back to QuickPro staff for review."
+          : undefined;
   const isContractor = org.kind === "contractor";
 
   return (
@@ -32,7 +43,7 @@ export default async function OrganizationProfilePage({ params }: { params: Prom
               <Field
                 name="name"
                 label={isContractor ? "Business name (as customers know you)" : "Organization name"}
-                hint={identityLocked ? "Locked after submission. Contact QuickPro staff to change it." : undefined}
+                hint={identityHint}
               >
                 {identityLocked ? (
                   <>
@@ -43,7 +54,11 @@ export default async function OrganizationProfilePage({ params }: { params: Prom
                   <Input name="name" defaultValue={org.name} required />
                 )}
               </Field>
-              <Field name="legalName" label="Legal name" hint={isContractor ? "As it appears on your insurance certificate." : undefined}>
+              <Field
+                name="legalName"
+                label="Legal name"
+                hint={identityHint ?? (isContractor ? "As it appears on your insurance certificate." : undefined)}
+              >
                 {identityLocked ? (
                   <>
                     <Input name="legalName-display" value={org.legal_name ?? ""} disabled readOnly />

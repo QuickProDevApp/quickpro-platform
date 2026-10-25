@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from "vitest";
 import {
+  approveInsurance,
   areaId,
   asAnon,
   asUser,
@@ -122,10 +123,10 @@ describe("organizations", () => {
       asUser(owner, (tx) => tx`select public.submit_organization_for_review(${orgId})`),
     ).rejects.toThrow(/already been submitted/);
 
-    // Identity fields freeze once submitted; contact details stay editable.
+    // Identity fields freeze while staff review them; contact details stay editable.
     await expect(
       asUser(owner, (tx) => tx`update public.organizations set name = 'Renamed' where id = ${orgId}`),
-    ).rejects.toThrow(/only be changed by QuickPro staff/);
+    ).rejects.toThrow(/cannot be changed while QuickPro staff are reviewing them/);
     await asUser(owner, (tx) => tx`update public.organizations set phone = '631-555-0111' where id = ${orgId}`);
 
     await expect(
@@ -138,6 +139,7 @@ describe("organizations", () => {
       asUser(admin, (tx) => tx`select public.review_organization(${orgId}, 'suspended', 'no')`),
     ).rejects.toThrow(/Cannot change status from pending_review to suspended/);
 
+    await approveInsurance(admin, orgId);
     await asUser(admin, (tx) => tx`select public.review_organization(${orgId}, 'approved', 'COI looks complete')`);
     const [org] = await sql`select status, reviewed_by, review_notes from public.organizations where id = ${orgId}`;
     expect(org).toEqual({ status: "approved", reviewed_by: admin, review_notes: "COI looks complete" });

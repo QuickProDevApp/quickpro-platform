@@ -7,12 +7,22 @@ export function StatusBanner({
   notes,
   submittedAt,
   subject,
+  rereviewReason = null,
 }: {
   status: ReviewStatus;
   notes: string | null;
   submittedAt: Date | null;
   subject: string;
+  rereviewReason?: string | null;
 }) {
+  if (status === "pending_review" && rereviewReason) {
+    return (
+      <FormMessage tone="info">
+        Your {subject} went back to QuickPro staff for review on {formatDateTime(submittedAt)} because of changes to
+        details they had approved ({rereviewReason}). It is not approved again until staff finish that review.
+      </FormMessage>
+    );
+  }
   switch (status) {
     case "draft":
       return <FormMessage tone="info">Complete the checklist below, then submit your {subject} for review.</FormMessage>;

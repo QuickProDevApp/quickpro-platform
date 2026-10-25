@@ -84,7 +84,14 @@ export default async function WorkerProfilePage() {
       </Card>
 
       <Card>
-        <CardHeader title="Skills" description="Choose the work you can do without close supervision." />
+        <CardHeader
+          title="Skills"
+          description={
+            profile.status === "approved"
+              ? "Choose the work you can do without close supervision. Adding a skill sends your profile back to QuickPro staff for review; removing one does not."
+              : "Choose the work you can do without close supervision."
+          }
+        />
         <CardBody className="space-y-5">
           {[...groups.entries()].map(([group, list]) => (
             <div key={group}>

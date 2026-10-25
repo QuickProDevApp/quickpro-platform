@@ -90,3 +90,17 @@ export function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+/** Insurance certificates need an expiration date before staff can mark them reviewed. */
+export const INSURANCE_DOCUMENT_TYPES: DocumentType[] = ["general_liability_coi", "workers_comp_coi", "auto_liability_coi"];
+
+/** Mirrors public.organization_insurance_status. */
+export type InsuranceStatus = "current" | "pending_review" | "expired" | "rejected" | "missing";
+
+export const INSURANCE_STATUS_LABEL: Record<InsuranceStatus, string> = {
+  current: "Reviewed by staff, not expired",
+  pending_review: "Waiting for staff review",
+  expired: "Expired",
+  rejected: "Not accepted",
+  missing: "Not uploaded",
+};

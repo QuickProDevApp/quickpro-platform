@@ -96,6 +96,11 @@ export default async function AdminWorkerPage({ params }: { params: Promise<{ id
         <Card className="self-start">
           <CardHeader title="Decision" />
           <CardBody className="space-y-3">
+            {p.rereview_reason ? (
+              <p className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">
+                Back in review after changes to approved details: {p.rereview_reason}
+              </p>
+            ) : null}
             {p.review_notes ? <p className="text-sm text-ink-soft">Last note: {p.review_notes}</p> : null}
             <ReviewDecisionForm status={p.status} action={reviewWorkerAction.bind(null, p.user_id)} />
           </CardBody>

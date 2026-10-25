@@ -65,6 +65,10 @@ test("a contractor registers, submits, and is approved by staff", async ({ page,
   await staff.getByRole("link", { name: new RegExp(business) }).click();
   await expect(staff.getByRole("heading", { name: business })).toBeVisible();
 
+  // Approval is refused until staff have reviewed a current insurance certificate.
+  await staff.getByRole("button", { name: "Approve" }).click();
+  await expect(staff.locator("form [role=alert]")).toContainText("Approve a current general liability certificate");
+
   await staff.getByLabel("Note").fill("Named insured matches");
   await staff.getByRole("button", { name: "Mark reviewed" }).click();
   await expect(staff.getByText("Reviewed by QuickPro staff")).toBeVisible();
@@ -81,6 +85,22 @@ test("a contractor registers, submits, and is approved by staff", async ({ page,
   // The contractor sees the decision.
   await page.goto(orgUrl);
   await expect(page.getByText("Your business registration is approved by QuickPro staff.")).toBeVisible();
+  await expect(page.getByText("Reviewed by staff, not expired")).toBeVisible();
   await page.goto(`${orgUrl}/documents`);
   await expect(page.getByText("Reviewed by QuickPro staff")).toBeVisible();
+
+  // The stored file downloads through the authorized route.
+  const href = await page.getByRole("link", { name: "View", exact: true }).first().getAttribute("href");
+  const download = await page.request.get(href!);
+  expect(download.status()).toBe(200);
+  expect((await download.body()).subarray(0, 5).toString()).toBe("%PDF-");
+
+  // Renaming an approved business sends it back to staff review.
+  await page.goto(`${orgUrl}/profile`);
+  await expect(page.getByText("Changing this sends your registration back to QuickPro staff for review.").first()).toBeVisible();
+  await page.getByLabel(/Business name/).fill(`${business} Group`);
+  await page.getByRole("button", { name: "Save profile" }).click();
+  await expect(page.getByText("Business profile saved.")).toBeVisible();
+  await page.goto(orgUrl);
+  await expect(page.getByText("went back to QuickPro staff for review")).toContainText("Business name or legal name changed");
 });

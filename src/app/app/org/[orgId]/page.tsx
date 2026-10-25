@@ -4,10 +4,11 @@ import { DocumentStatusBadge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
 import { ActionForm, SubmitButton } from "@/components/ui/form";
-import { DOCUMENT_TYPE_LABEL, formatDate } from "@/lib/labels";
+import { Badge } from "@/components/ui/badge";
+import { DOCUMENT_TYPE_LABEL, INSURANCE_STATUS_LABEL, formatDate, type InsuranceStatus } from "@/lib/labels";
 import { requireMembership } from "@/server/actions/guards";
 import { listDocuments } from "@/server/data/documents";
-import { canManage, getContractorCapabilities, getOrganizationReadiness } from "@/server/data/organizations";
+import { canManage, getContractorCapabilities, getInsuranceStatus, getOrganizationReadiness } from "@/server/data/organizations";
 import { listCategories, listServiceAreas } from "@/server/data/reference";
 import { submitOrganizationAction } from "./actions";
 
@@ -17,12 +18,13 @@ export default async function OrganizationOverview({ params }: { params: Promise
   const manager = canManage(org.my_role);
   const isContractor = org.kind === "contractor";
 
-  const [readiness, documents, caps, categories, areas] = await Promise.all([
+  const [readiness, documents, caps, categories, areas, insurance] = await Promise.all([
     getOrganizationReadiness(user.id, org),
     listDocuments(user.id, { kind: "org", orgId: org.id }),
     isContractor ? getContractorCapabilities(user.id, org.id) : null,
     isContractor ? listCategories(user.id) : [],
     isContractor ? listServiceAreas(user.id, org.market_id) : [],
+    isContractor ? getInsuranceStatus(user.id, org.id) : null,
   ]);
   const canSubmit = manager && (org.status === "draft" || org.status === "rejected");
   const ready = readiness.every((i) => i.done);
@@ -30,7 +32,13 @@ export default async function OrganizationOverview({ params }: { params: Promise
 
   return (
     <div className="space-y-6">
-      <StatusBanner status={org.status} notes={org.review_notes} submittedAt={org.submitted_at} subject={subject} />
+      <StatusBanner
+        status={org.status}
+        notes={org.review_notes}
+        submittedAt={org.submitted_at}
+        subject={subject}
+        rereviewReason={org.rereview_reason}
+      />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <div className="space-y-6">
@@ -116,6 +124,8 @@ export default async function OrganizationOverview({ params }: { params: Promise
             </Card>
           ) : null}
 
+          {insurance ? <InsuranceCard status={insurance} documentsHref={`/app/org/${org.id}/documents`} /> : null}
+
           <Card>
             <CardHeader
               title="Documents"
@@ -146,6 +156,34 @@ export default async function OrganizationOverview({ params }: { params: Promise
         </div>
       </div>
     </div>
+  );
+}
+
+const INSURANCE_TONE: Record<InsuranceStatus, "ok" | "info" | "bad" | "neutral"> = {
+  current: "ok",
+  pending_review: "info",
+  expired: "bad",
+  rejected: "bad",
+  missing: "neutral",
+};
+
+function InsuranceCard({ status, documentsHref }: { status: InsuranceStatus; documentsHref: string }) {
+  return (
+    <Card>
+      <CardHeader title="General liability insurance" action={<Badge tone={INSURANCE_TONE[status]}>{INSURANCE_STATUS_LABEL[status]}</Badge>} />
+      <CardBody className="space-y-2 text-sm text-ink-soft">
+        <p>
+          QuickPro staff must review a current certificate before approving your business. Upload the renewal before
+          this one expires; staff track expiring certificates. A staff review means a person checked the certificate
+          you uploaded. QuickPro does not confirm coverage with your insurer.
+        </p>
+        {status !== "current" && status !== "pending_review" ? (
+          <a href={documentsHref} className="font-medium text-brand hover:underline">
+            Upload a current certificate
+          </a>
+        ) : null}
+      </CardBody>
+    </Card>
   );
 }
 

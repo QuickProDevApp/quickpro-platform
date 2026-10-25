@@ -7,9 +7,8 @@ import {
   addAvailability,
   getWorkerProfile,
   removeAvailability,
-  setWorkerSkillsAndAreas,
+  saveWorkerProfileAndSelections,
   submitWorkerProfileForReview,
-  updateWorkerProfile,
 } from "@/server/data/workers";
 import { toUserMessage, UserFacingError } from "@/server/errors";
 import {
@@ -40,8 +39,7 @@ export async function updateWorkerProfileAction(_: FormState, formData: FormData
     const parsed = workerProfileSchema.safeParse(formObject(formData, ["hasVehicle", "hasDriversLicense"]));
     if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
     const ids = (name: string) => formData.getAll(name).map((v) => uuid.parse(v));
-    await updateWorkerProfile(user.id, parsed.data);
-    await setWorkerSkillsAndAreas(user.id, ids("skillId"), ids("areaId"));
+    await saveWorkerProfileAndSelections(user.id, parsed.data, ids("skillId"), ids("areaId"));
     return done("Profile saved.");
   } catch (error) {
     return { ok: false, message: toUserMessage(error) };

@@ -13,7 +13,9 @@
     "test:e2e": "playwright test",
     "db:test:reset": "tsx scripts/db-test-reset.ts",
     "admin:grant": "tsx --env-file-if-exists=.env.local scripts/grant-admin.ts",
-    "check": "pnpm lint && pnpm typecheck && pnpm test"
+    "check": "pnpm lint && pnpm typecheck && pnpm test",
+    "storage:reconcile": "tsx --env-file-if-exists=.env.local scripts/storage-reconcile.ts",
+    "test:storage": "vitest run --project storage"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

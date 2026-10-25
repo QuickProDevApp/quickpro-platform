@@ -42,6 +42,8 @@ src/
     actions/guards.ts         membership and manager checks for org pages and actions
     files/validate.ts         size and file-signature checks
     storage/                  FileStorage interface: Supabase or local disk
+    documents/store.ts        upload, delete and reconciliation (row + object consistency)
+    queries/                  multi-statement writes shared with tests (worker profile save)
     errors.ts                 maps database errors to user-facing messages
   lib/                        shared, client-safe: zod schemas, labels, formatting
   components/                 ui/ primitives and app/ composites
@@ -49,6 +51,7 @@ supabase/
   migrations/                 the schema, row level security, workflow functions, audit triggers
   tests/                      plain-Postgres shim used by integration tests and CI
 tests/db/                     database integration tests
+tests/storage/                Supabase Storage integration tests
 e2e/                          Playwright tests
 ```
 
@@ -108,7 +111,9 @@ Three layers, each sufficient to stop the common mistakes of the others:
    through `SECURITY DEFINER` functions that enforce the state machine:
    `create_organization`, `submit_organization_for_review`,
    `review_organization`, `submit_worker_profile_for_review`,
-   `review_worker_profile`, `review_document`. Supabase's default "grant
+   `review_worker_profile`, `review_document`. Triggers enforce market
+   boundaries for service areas and send approved profiles back to review
+   after material changes (decisions.md, D-013 and D-015). Supabase's default "grant
    everything to anon/authenticated" privileges are revoked for new objects.
 
 Staff access (`platform_role = 'admin'`) can only be granted with a direct
@@ -126,16 +131,24 @@ audit entry.
 
 ## Files
 
-- Upload: the server action reads the file, checks size (≤ 10 MB) and file
-  signature (PDF, JPEG or PNG by magic bytes; the browser's type and file
-  name are ignored), sanitizes the display name, generates the storage path
-  (`org/<id>/<uuid>.pdf`), inserts the metadata row under RLS, then writes the
-  object, all in one transaction. A refused row never reaches storage and a
-  failed write rolls the row back.
+- Upload (`src/server/documents/store.ts`): the server action reads the file,
+  checks size (≤ 10 MB) and file signature (PDF, JPEG or PNG by magic bytes;
+  the browser's type and file name are ignored), sanitizes the display name,
+  generates the storage path (`org/<id>/<uuid>.pdf`), inserts the metadata
+  row under RLS, then writes the object, inside one database transaction. A
+  refused row never reaches storage and a failed write rolls the row back.
+  Postgres and Storage cannot commit together, so if the transaction fails
+  after the write, the object is removed; if that fails too, it is logged as
+  an orphan (decisions.md, D-014).
+- Delete: row first, then object. A failed object delete leaves an orphan,
+  never a row without a file.
+- Reconciliation: `pnpm storage:reconcile [--dry-run]` removes objects with
+  no row (older than an hour) and reports rows whose object is missing.
 - Storage: a private Supabase bucket with no policies for `anon` or
   `authenticated`; only the server's service role key can reach it.
 - Download: `/api/documents/[id]` looks the row up under RLS and streams the
   file with `Cache-Control: private, no-store`, `nosniff` and a sandboxing CSP.
+  A missing object returns 404 with an explanation.
 - Development: `FILE_STORAGE_DRIVER=local` writes under `.data/uploads`
   (gitignored) and is refused when `NODE_ENV=production`.
 
@@ -158,12 +171,24 @@ audit entry.
 | --- | --- | --- |
 | Unit | `pnpm test` | nothing |
 | Database integration | `pnpm db:test:reset && pnpm test:db` | any Postgres 15+; `TEST_DATABASE_URL` with "test" in the db name |
+| Storage integration | `pnpm test:storage` | a Supabase stack; `STORAGE_TEST_*` variables (skips with a message when unset) |
 | End to end | `pnpm test:e2e` | the app running against Supabase (local or hosted test project) |
 
 Database tests run the real migrations on plain Postgres with a small shim
 (`supabase/tests/plain-postgres-bootstrap.sql`) that provides the Supabase
 roles and an `auth.uid()` identical in behavior to Supabase's. They exercise
 RLS, grants, workflow functions and audit triggers as different users.
+
+The database suite also drives the document store with an in-memory storage
+double that can fail on write, delete or cleanup, to prove the row and the
+object stay consistent. The storage suite runs the same code against the real
+Supabase Storage API: upload, download, delete, no overwrite, bucket type and
+size limits, no direct access with the anon key or a user's token, and
+reconciliation.
+
+CI runs lint, typecheck, unit, database and build on plain Postgres, and a
+second job starts the Supabase CLI stack to run the storage and end-to-end
+suites.
 
 End-to-end tests sign up through the UI, confirm the email through the auth
 admin API when confirmation is on, and drive the contractor → staff approval

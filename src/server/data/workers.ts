@@ -2,7 +2,7 @@ import "server-only";
 import { withUser } from "@/server/db/client";
 import { UserFacingError } from "@/server/errors";
 import type { ReviewStatus } from "@/lib/labels";
-import { diffIds } from "./sets";
+import { saveWorkerProfile, type WorkerProfileInput } from "@/server/queries/workers";
 
 export type WorkerProfile = {
   user_id: string;
@@ -19,6 +19,7 @@ export type WorkerProfile = {
   submitted_at: Date | null;
   reviewed_at: Date | null;
   review_notes: string | null;
+  rereview_reason: string | null;
   created_at: Date;
 };
 
@@ -40,31 +41,7 @@ export async function createWorkerProfile(userId: string) {
   `);
 }
 
-export type WorkerProfileInput = {
-  headline: string;
-  bio: string;
-  homeServiceAreaId: string | null;
-  maxTravelMiles: number;
-  hasVehicle: boolean;
-  hasDriversLicense: boolean;
-  yearsExperience: number | null;
-  desiredHourlyRate: number | null;
-};
-
-export async function updateWorkerProfile(userId: string, input: WorkerProfileInput) {
-  await withUser(userId, (tx) => tx`
-    update public.worker_profiles set
-      headline = ${input.headline},
-      bio = ${input.bio},
-      home_service_area_id = ${input.homeServiceAreaId},
-      max_travel_miles = ${input.maxTravelMiles},
-      has_vehicle = ${input.hasVehicle},
-      has_drivers_license = ${input.hasDriversLicense},
-      years_experience = ${input.yearsExperience},
-      desired_hourly_rate_cents = ${input.desiredHourlyRate}
-    where user_id = ${userId}
-  `);
-}
+export type { WorkerProfileInput } from "@/server/queries/workers";
 
 export function getWorkerSelections(userId: string) {
   return withUser(userId, async (tx) => {
@@ -85,32 +62,14 @@ export function getWorkerSelections(userId: string) {
   });
 }
 
-export function setWorkerSkillsAndAreas(userId: string, skillIds: string[], areaIds: string[]) {
-  return withUser(userId, async (tx) => {
-    const currentSkills = await tx<{ id: string }[]>`select skill_id as id from public.worker_skills where user_id = ${userId}`;
-    const skills = diffIds(
-      currentSkills.map((r) => r.id),
-      skillIds,
-    );
-    if (skills.remove.length) {
-      await tx`delete from public.worker_skills where user_id = ${userId} and skill_id in ${tx(skills.remove)}`;
-    }
-    for (const id of skills.add) await tx`insert into public.worker_skills (user_id, skill_id) values (${userId}, ${id})`;
-
-    const currentAreas = await tx<{ id: string }[]>`
-      select service_area_id as id from public.worker_service_areas where user_id = ${userId}
-    `;
-    const areas = diffIds(
-      currentAreas.map((r) => r.id),
-      areaIds,
-    );
-    if (areas.remove.length) {
-      await tx`delete from public.worker_service_areas where user_id = ${userId} and service_area_id in ${tx(areas.remove)}`;
-    }
-    for (const id of areas.add) {
-      await tx`insert into public.worker_service_areas (user_id, service_area_id) values (${userId}, ${id})`;
-    }
-  });
+/** Profile fields, skills and preferred towns in one transaction. */
+export async function saveWorkerProfileAndSelections(
+  userId: string,
+  input: WorkerProfileInput,
+  skillIds: string[],
+  areaIds: string[],
+) {
+  await withUser(userId, (tx) => saveWorkerProfile(tx, userId, input, skillIds, areaIds));
 }
 
 export async function addAvailability(userId: string, weekday: number, startTime: string, endTime: string) {

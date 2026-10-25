@@ -5,7 +5,7 @@ import { AdminDocumentRow, ReviewDecisionForm } from "@/components/app/admin-rev
 import { ReviewStatusBadge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { ORGANIZATION_KIND_LABEL, formatDateTime } from "@/lib/labels";
+import { INSURANCE_STATUS_LABEL, ORGANIZATION_KIND_LABEL, formatDateTime } from "@/lib/labels";
 import { uuid } from "@/lib/schemas";
 import { requireAdmin } from "@/server/auth/session";
 import { getOrganizationDetailForAdmin } from "@/server/data/admin";
@@ -28,6 +28,9 @@ export default async function AdminOrganizationPage({ params }: { params: Promis
     ["Website", o.website ? <a href={o.website} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">{o.website}</a> : null],
     ["Address", [o.address_line1, o.city, o.postal_code].filter(Boolean).join(", ") || null],
     ["Market", o.market_name],
+    ...(o.insurance_status
+      ? ([["General liability insurance", INSURANCE_STATUS_LABEL[o.insurance_status]]] as [string, React.ReactNode][])
+      : []),
     ["Years in business", o.years_in_business],
     ["Crew size", o.crew_size],
     ["Submitted", o.submitted_at ? formatDateTime(o.submitted_at) : null],
@@ -94,6 +97,16 @@ export default async function AdminOrganizationPage({ params }: { params: Promis
           <Card>
             <CardHeader title="Decision" />
             <CardBody className="space-y-3">
+              {o.rereview_reason ? (
+                <p className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">
+                  Back in review after changes to approved details: {o.rereview_reason}
+                </p>
+              ) : null}
+              {o.kind === "contractor" && o.status === "pending_review" && o.insurance_status !== "current" ? (
+                <p className="text-sm text-ink-soft">
+                  Mark a current general liability certificate as reviewed (with its expiration date) before approving.
+                </p>
+              ) : null}
               {o.review_notes ? <p className="text-sm text-ink-soft">Last note: {o.review_notes}</p> : null}
               <ReviewDecisionForm status={o.status} action={reviewOrganizationAction.bind(null, o.id)} />
             </CardBody>

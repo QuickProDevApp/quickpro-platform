@@ -101,3 +101,59 @@ export async function createSubmittableContractor(ownerId: string, name = "Baysh
     return id;
   });
 }
+
+export async function glDocumentId(orgId: string) {
+  const [row] = await sql<{ id: string }[]>`
+    select id from public.qualification_documents
+    where organization_id = ${orgId} and doc_type = 'general_liability_coi'
+    order by created_at desc limit 1
+  `;
+  return row.id;
+}
+
+/** Staff approve the org's latest GL certificate (it must have an expiry date). */
+export async function approveInsurance(adminId: string, orgId: string) {
+  const docId = await glDocumentId(orgId);
+  await asUser(adminId, (tx) => tx`select public.review_document(${docId}, 'approved', 'Looks right', null)`);
+  return docId;
+}
+
+/** A submitted contractor with reviewed insurance, approved by staff. */
+export async function createApprovedContractor(ownerId: string, adminId: string, name?: string) {
+  const orgId = await createSubmittableContractor(ownerId, name);
+  await asUser(ownerId, (tx) => tx`select public.submit_organization_for_review(${orgId})`);
+  await approveInsurance(adminId, orgId);
+  await asUser(adminId, (tx) => tx`select public.review_organization(${orgId}, 'approved', null)`);
+  return orgId;
+}
+
+export async function orgStatus(orgId: string) {
+  const [row] = await sql<{ status: string; rereview_reason: string | null }[]>`
+    select status, rereview_reason from public.organizations where id = ${orgId}
+  `;
+  return row;
+}
+
+export async function workerStatus(userId: string) {
+  const [row] = await sql<{ status: string; rereview_reason: string | null }[]>`
+    select status, rereview_reason from public.worker_profiles where user_id = ${userId}
+  `;
+  return row;
+}
+
+/** A worker profile that has been submitted and approved by staff. */
+export async function createApprovedWorker(userId: string, adminId: string) {
+  const home = await areaId("brookhaven");
+  const skill = await skillId("floor-care");
+  await asUser(userId, async (tx) => {
+    await tx`update public.profiles set phone = '631-555-0142' where id = ${userId}`;
+    await tx`
+      insert into public.worker_profiles (user_id, headline, home_service_area_id)
+      values (${userId}, 'Floor care tech', ${home})
+    `;
+    await tx`insert into public.worker_skills (user_id, skill_id) values (${userId}, ${skill})`;
+    await tx`insert into public.worker_availability (user_id, weekday, start_time, end_time) values (${userId}, 6, '07:00', '15:00')`;
+    await tx`select public.submit_worker_profile_for_review()`;
+  });
+  await asUser(adminId, (tx) => tx`select public.review_worker_profile(${userId}, 'approved', null)`);
+}

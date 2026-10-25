@@ -21,6 +21,16 @@ export default defineConfig({
           testTimeout: 20_000,
         },
       },
+      {
+        extends: true,
+        test: {
+          name: "storage",
+          include: ["tests/storage/**/*.test.ts"],
+          environment: "node",
+          fileParallelism: false,
+          testTimeout: 30_000,
+        },
+      },
     ],
   },
 });

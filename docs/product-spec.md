@@ -84,14 +84,18 @@ matching by hand.
 
 **Contractor**
 - [x] An owner can edit the business profile (legal name, contact details, address, years in business, crew size, description).
-- [x] An owner can choose service categories and Suffolk service areas.
+- [x] An owner can choose service categories and Suffolk service areas. The database refuses areas outside the organization's market.
 - [x] An owner can upload qualification documents (PDF, JPEG or PNG, up to 10 MB) with a type and optional expiry date, see their review status, download them, and delete ones that are not approved.
 - [x] The dashboard shows a readiness checklist and can submit for review only when the database's requirements are met: phone, email, legal name, at least one category, one area, and an unexpired general liability certificate. Missing items are listed.
-- [x] After submission, name, legal name and market are locked; contact details stay editable. Status and staff notes are visible.
+- [x] While in review or suspended, name and legal name are locked; after submission only staff can change the market. Contact details stay editable. Status and staff notes are visible.
+- [x] Once approved, changing the name or legal name, or adding a service category, sends the business back to staff review with the reason shown. Other edits do not (see decisions.md, D-013).
+- [x] The dashboard shows the general liability insurance status: reviewed and current, waiting for review, expired, not accepted, or not uploaded.
 
 **Worker**
 - [x] A user can create a worker profile: headline, bio, home area, preferred areas, travel radius, vehicle and license, years of experience, desired hourly rate, skills, weekly availability.
 - [x] A worker can upload certifications and submit the profile for review once it has a name, phone, headline, home area, a skill and an availability window.
+- [x] Profile fields, skills and preferred areas save together or not at all.
+- [x] Once approved, adding a skill or changing the full name sends the profile back to staff review.
 
 **Customer**
 - [x] A customer organization can be registered, completed (contact details and address) and submitted for review. Job requests are not part of Phase 1, and the dashboard says so.
@@ -99,18 +103,24 @@ matching by hand.
 **Admin**
 - [x] The admin overview shows live counts from the database: pending organizations, pending workers, documents awaiting review, and documents expiring within 30 days.
 - [x] Staff can open any organization or worker, see their details and documents, approve or reject (note required to reject), suspend and reinstate (note required to suspend).
-- [x] Staff can approve or reject each document and set its expiry date.
+- [x] Staff can approve or reject each document and set its expiry date. An insurance certificate cannot be marked reviewed without an expiry date or after it has expired.
+- [x] A contractor cannot be approved or reinstated until staff have reviewed a current general liability certificate.
+- [x] The overview lists approved contractors without current reviewed insurance.
 - [x] Staff can browse the audit log, filtered by entity.
 
 **Security**
 - [x] Every table has row level security; writes are limited by column grants; status changes only happen in database workflow functions.
 - [x] Every create, update and delete of business data is recorded in an append-only audit log with the acting user.
 - [x] Uploaded files are checked by size and file signature (not just the extension), stored privately under generated names, and downloaded only through an authorized route.
+- [x] A failed upload or delete never leaves a document row without its file; stray files are removed by `pnpm storage:reconcile`.
 - [x] No secrets in the repository. `.env.example` lists every variable.
 
 **Quality**
 - [x] Lint, typecheck, unit tests, database integration tests and production build pass locally and are wired into CI (GitHub Actions).
-- [x] An end-to-end test covers sign-up → contractor registration → submission → staff approval against a real Supabase Auth server.
+- [x] An end-to-end test covers sign-up → contractor registration → submission → staff approval against a real Supabase Auth server and Supabase Storage API.
+- [x] Storage integration tests cover upload, download, deletion and access refusal against the real Storage API.
+
+What is and is not covered by tests is tracked in [phase-1-status.md](phase-1-status.md).
 
 ### Out of scope for Phase 1
 

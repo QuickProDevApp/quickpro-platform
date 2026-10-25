@@ -27,7 +27,8 @@ pnpm dev                       # http://localhost:3000
    towns, upload a PDF as the general liability certificate, and submit.
 3. Make a second account your staff account:
    `pnpm admin:grant staff@example.com`, then sign in as that account and open
-   **Staff** to review the document and approve the business.
+   **Staff** to mark the certificate reviewed (with its expiration date) and
+   approve the business. Approval is refused until the certificate is reviewed.
 
 ## Checks
 
@@ -37,7 +38,12 @@ TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/quickpro_test \
   pnpm db:test:reset && pnpm test:db   # needs any local Postgres
 pnpm build
 set -a; . ./.env.local; set +a; pnpm test:e2e   # with `pnpm dev` and Supabase running
+STORAGE_TEST_SUPABASE_URL=... STORAGE_TEST_SERVICE_ROLE_KEY=... STORAGE_TEST_ANON_KEY=... \
+  STORAGE_TEST_DATABASE_URL=... pnpm test:storage   # real Supabase Storage
+pnpm storage:reconcile --dry-run   # list stray files and rows missing their file
 ```
+
+Deploying a preview: [docs/deployment.md](docs/deployment.md). What is tested: [docs/phase-1-status.md](docs/phase-1-status.md).
 
 Architecture, security model and testing details:
 [docs/architecture.md](docs/architecture.md). Decision log:

@@ -24,7 +24,14 @@ export default async function ServicesPage({ params }: { params: Promise<{ orgId
     <ActionForm action={saveCapabilitiesAction.bind(null, org.id)} className="space-y-6">
       <fieldset disabled={!editable} className="space-y-6">
         <Card>
-          <CardHeader title="Service categories" description="The commercial work your business performs." />
+          <CardHeader
+            title="Service categories"
+            description={
+              org.status === "approved"
+                ? "The commercial work your business performs. Adding a category sends your registration back to QuickPro staff for review; removing one does not."
+                : "The commercial work your business performs."
+            }
+          />
           <CardBody className="grid gap-2 sm:grid-cols-2">
             {categories.map((c) => (
               <Checkbox

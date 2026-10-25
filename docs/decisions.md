@@ -126,3 +126,69 @@ is rejected in production.
   standalone auth server where Supabase Storage is not available.
 - **Cost:** a second code path; it shares the same validation, authorization
   and transaction handling, and only differs in where bytes are written.
+
+## D-012 Contractor approval requires reviewed, unexpired insurance (PR #1 review)
+
+`review_organization` refuses to approve or reinstate a contractor unless a
+general liability certificate has been marked reviewed by staff, has an
+expiration date, and has not expired. Staff cannot mark an insurance
+certificate reviewed without an expiration date, or once it has expired.
+Submission still only needs a pending or reviewed certificate, so a
+contractor can submit before staff look at it.
+
+- **Why:** approval must mean a person checked the certificate, not that one
+  was uploaded. It is still a staff review, not verification with the
+  insurer (D-008).
+- **Cost:** a certificate that lapses after approval does not demote the
+  contractor automatically yet (see phase-1-status.md); it is surfaced to
+  staff instead.
+
+## D-013 Material changes to approved profiles go back to review
+
+Database triggers return an approved contractor or worker to
+`pending_review`, recording why in `rereview_reason`, when the owner:
+
+| Change | Contractor | Worker |
+| --- | --- | --- |
+| Business name or legal name | yes | n/a |
+| Adds a service category / skill | yes | yes |
+| Full name on the account | n/a | yes |
+| Moves market | blocked: staff only once submitted | n/a |
+
+Not re-reviewed: contact details, address, description, crew size, years in
+business, removing categories or skills, service areas inside the market,
+travel, rate and availability. Insurance changes are reviewed per document.
+While in review or suspended, names cannot change at all. Staff edits never
+trigger re-review. The next staff decision clears the reason.
+
+- **Why:** approval covered what staff saw. Adding work types or changing who
+  the business is changes that; routine edits do not, and re-reviewing them
+  would bury staff.
+- **Cost:** an approved business loses approved status until staff act; the
+  page explains why. Revisit with Phase 2, when status affects live shifts.
+
+## D-014 Uploads: row and object kept consistent without a shared transaction
+
+Postgres and Storage cannot commit together. The upload inserts the row
+(under RLS) and writes the object inside the same database transaction, so a
+refused row never reaches storage and a failed write rolls the row back. If
+the transaction fails after the object was written, the object is removed. If
+that cleanup also fails, the object is logged as an orphan.
+Deletes remove the row first, then the object; a failed object delete leaves
+an orphan, never a row pointing at nothing. `pnpm storage:reconcile` lists
+objects with no row (older than a grace period) and removes them, and reports
+rows whose object is missing (it never deletes rows). The download route
+returns a clear 404 for a missing object.
+
+- **Why:** the worst case is a private, unreferenced file, which is cleaned up
+  later, instead of a document that appears uploaded but cannot be opened.
+- **Cost:** reconciliation has to be run (manually for now).
+
+## D-015 Service areas must belong to the market, enforced in the database
+
+Triggers reject a contractor service area outside the organization's market,
+a market move that would leave areas behind or target a closed market, and
+worker home or preferred areas outside an open market.
+
+- **Why:** the UI only offers the right towns, but the rule protects data
+  from any code path, including future ones and direct SQL by the app role.

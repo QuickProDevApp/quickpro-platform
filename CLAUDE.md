@@ -17,6 +17,8 @@ pnpm dev                 # app on http://localhost:3000 (needs .env.local)
 pnpm lint && pnpm typecheck && pnpm test   # = pnpm check
 pnpm db:test:reset && pnpm test:db         # database integration tests (TEST_DATABASE_URL)
 pnpm test:e2e            # Playwright against a running app + Supabase
+pnpm test:storage        # real Supabase Storage (STORAGE_TEST_* env)
+pnpm storage:reconcile   # remove stray storage objects (--dry-run to list)
 pnpm build
 pnpm supabase start | stop | db reset      # local Supabase (Docker)
 pnpm admin:grant you@example.com           # make an account QuickPro staff

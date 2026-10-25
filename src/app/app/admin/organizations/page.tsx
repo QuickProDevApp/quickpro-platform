@@ -4,7 +4,7 @@ import { FilterLinks } from "@/components/app/filter-links";
 import { Badge, ReviewStatusBadge } from "@/components/ui/badge";
 import { Card, EmptyState } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { ORGANIZATION_KIND_LABEL, formatDateTime, type OrganizationKind, type ReviewStatus } from "@/lib/labels";
+import { INSURANCE_STATUS_LABEL, ORGANIZATION_KIND_LABEL, formatDateTime, type OrganizationKind, type ReviewStatus } from "@/lib/labels";
 import { requireAdmin } from "@/server/auth/session";
 import { listOrganizationsForAdmin } from "@/server/data/admin";
 
@@ -16,17 +16,30 @@ const KINDS: OrganizationKind[] = ["contractor", "customer"];
 export default async function AdminOrganizationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; kind?: string }>;
+  searchParams: Promise<{ status?: string; kind?: string; insurance?: string }>;
 }) {
   const admin = await requireAdmin();
   const params = await searchParams;
   const status = STATUSES.find((s) => s === params.status);
   const kind = KINDS.find((k) => k === params.kind);
-  const rows = await listOrganizationsForAdmin(admin.id, { status, kind });
+  const insuranceAttention = params.insurance === "attention";
+  const rows = await listOrganizationsForAdmin(admin.id, { status, kind, insuranceAttention });
 
   return (
     <>
-      <PageHeader title="Organizations" />
+      <PageHeader
+        title="Organizations"
+        description={
+          insuranceAttention ? "Approved contractors whose general liability certificate is not reviewed and current." : undefined
+        }
+        actions={
+          insuranceAttention ? (
+            <Link href="/app/admin/organizations" className="text-sm font-medium text-brand hover:underline">
+              Clear insurance filter
+            </Link>
+          ) : null
+        }
+      />
       <FilterLinks
         basePath="/app/admin/organizations"
         param="status"
@@ -70,6 +83,10 @@ export default async function AdminOrganizationsPage({
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    {r.rereview_reason ? <Badge tone="warn">Changed after approval</Badge> : null}
+                    {r.insurance_status && r.insurance_status !== "current" && r.status === "approved" ? (
+                      <Badge tone="bad">Insurance: {INSURANCE_STATUS_LABEL[r.insurance_status].toLowerCase()}</Badge>
+                    ) : null}
                     {r.pending_documents > 0 ? <Badge tone="info">{r.pending_documents} doc{r.pending_documents === 1 ? "" : "s"} to review</Badge> : null}
                     <ReviewStatusBadge status={r.status} />
                   </div>

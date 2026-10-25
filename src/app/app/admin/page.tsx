@@ -15,6 +15,11 @@ export default async function AdminOverviewPage() {
     { label: "Workers awaiting review", value: o.pending_workers, href: "/app/admin/workers?status=pending_review" },
     { label: "Documents awaiting review", value: o.pending_documents, href: "/app/admin/documents?status=pending" },
     { label: "Reviewed documents expiring in 30 days", value: o.expiring_documents, href: "/app/admin/documents?expiring=1" },
+    {
+      label: "Approved contractors without current reviewed insurance",
+      value: o.contractors_without_current_insurance,
+      href: "/app/admin/organizations?insurance=attention",
+    },
   ];
   return (
     <>

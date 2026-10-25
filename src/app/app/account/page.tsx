@@ -3,12 +3,14 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { ActionForm, Field, Input, SubmitButton } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui/page-header";
 import { requireUser } from "@/server/auth/session";
+import { getWorkerProfile } from "@/server/data/workers";
 import { updateAccountAction } from "./actions";
 
 export const metadata: Metadata = { title: "Account" };
 
 export default async function AccountPage() {
   const user = await requireUser();
+  const worker = await getWorkerProfile(user.id);
   return (
     <>
       <PageHeader title="Your account" />
@@ -19,7 +21,11 @@ export default async function AccountPage() {
             <Field name="email" label="Email">
               <Input name="email" value={user.email} disabled readOnly />
             </Field>
-            <Field name="fullName" label="Full name">
+            <Field
+              name="fullName"
+              label="Full name"
+              hint={worker?.status === "approved" ? "Changing your name sends your worker profile back to QuickPro staff for review." : undefined}
+            >
               <Input name="fullName" defaultValue={user.fullName} autoComplete="name" />
             </Field>
             <Field name="phone" label="Mobile phone">

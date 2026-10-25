@@ -1,10 +1,11 @@
 import "server-only";
-import { createHash, randomUUID } from "node:crypto";
 import { withUser } from "@/server/db/client";
+import { DocumentRejected, deleteStoredDocument, storeDocument, type DocumentDeps, type DocumentOwner, type UploadInput } from "@/server/documents/store";
 import { UserFacingError } from "@/server/errors";
-import { validateDocument } from "@/server/files/validate";
 import { fileStorage } from "@/server/storage";
 import type { DocumentStatus, DocumentType } from "@/lib/labels";
+
+export type { DocumentOwner } from "@/server/documents/store";
 
 export type QualificationDocument = {
   id: string;
@@ -21,8 +22,6 @@ export type QualificationDocument = {
   reviewed_at: Date | null;
   created_at: Date;
 };
-
-export type DocumentOwner = { kind: "org"; orgId: string } | { kind: "worker"; userId: string };
 
 const columns = (tx: Parameters<Parameters<typeof withUser>[1]>[0]) => tx`
   id, organization_id, worker_user_id, doc_type, title, file_name, mime_type, size_bytes,
@@ -41,59 +40,24 @@ export function listDocuments(userId: string, owner: DocumentOwner) {
   );
 }
 
-export type UploadInput = {
-  docType: DocumentType;
-  title: string;
-  expiresOn: string | null;
-  fileName: string;
-  bytes: Uint8Array;
-};
+function depsFor(userId: string): DocumentDeps {
+  return { run: (fn) => withUser(userId, fn), storage: fileStorage() };
+}
 
-/**
- * Validates the file by content, records it under row level security, then
- * writes it to private storage inside the same transaction, so a failed upload
- * leaves no row behind and a refused row never reaches storage.
- */
 export async function uploadDocument(userId: string, owner: DocumentOwner, input: UploadInput) {
-  const checked = validateDocument(input.fileName, input.bytes);
-  if (!checked.ok) throw new UserFacingError(checked.error);
-  const { file } = checked;
-
-  const id = randomUUID();
-  const ownerId = owner.kind === "org" ? owner.orgId : owner.userId;
-  const storagePath = `${owner.kind}/${ownerId}/${id}.${file.extension}`;
-  const sha256 = createHash("sha256").update(input.bytes).digest("hex");
-
-  await withUser(userId, async (tx) => {
-    await tx`
-      insert into public.qualification_documents (
-        id, organization_id, worker_user_id, doc_type, title, file_name, mime_type,
-        size_bytes, sha256, storage_path, expires_on, uploaded_by
-      ) values (
-        ${id},
-        ${owner.kind === "org" ? owner.orgId : null},
-        ${owner.kind === "worker" ? owner.userId : null},
-        ${input.docType}, ${input.title}, ${file.fileName}, ${file.mime},
-        ${file.size}, ${sha256}, ${storagePath}, ${input.expiresOn}, ${userId}
-      )
-    `;
-    await fileStorage().put(storagePath, input.bytes, file.mime);
-  });
-  return id;
+  try {
+    const { id } = await storeDocument(depsFor(userId), userId, owner, input);
+    return id;
+  } catch (error) {
+    if (error instanceof DocumentRejected) throw new UserFacingError(error.message);
+    throw error;
+  }
 }
 
 export async function deleteDocument(userId: string, documentId: string) {
-  const rows = await withUser(userId, (tx) => tx<{ storage_path: string }[]>`
-    delete from public.qualification_documents where id = ${documentId} returning storage_path
-  `);
-  if (rows.length === 0) {
+  const result = await deleteStoredDocument(depsFor(userId), documentId);
+  if (!result.deleted) {
     throw new UserFacingError("That document can't be deleted. Approved documents stay on file.");
-  }
-  try {
-    await fileStorage().remove(rows[0].storage_path);
-  } catch (error) {
-    // The record is gone, so the file is unreachable; log it for cleanup.
-    console.error("Orphaned document file", rows[0].storage_path, error);
   }
 }
 

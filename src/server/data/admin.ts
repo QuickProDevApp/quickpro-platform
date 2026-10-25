@@ -1,6 +1,6 @@
 import "server-only";
 import { withUser } from "@/server/db/client";
-import type { DocumentStatus, DocumentType, OrganizationKind, ReviewStatus } from "@/lib/labels";
+import type { DocumentStatus, DocumentType, InsuranceStatus, OrganizationKind, ReviewStatus } from "@/lib/labels";
 import type { Organization } from "./organizations";
 import type { AvailabilityWindow, WorkerProfile } from "./workers";
 import type { QualificationDocument } from "./documents";
@@ -16,6 +16,7 @@ export type AdminOverview = {
   expiring_documents: number;
   approved_contractors: number;
   approved_workers: number;
+  contractors_without_current_insurance: number;
 };
 
 export async function getAdminOverview(adminId: string): Promise<AdminOverview> {
@@ -27,7 +28,10 @@ export async function getAdminOverview(adminId: string): Promise<AdminOverview> 
       (select count(*) from public.qualification_documents
          where status = 'approved' and expires_on between current_date and current_date + 30)::int as expiring_documents,
       (select count(*) from public.organizations where kind = 'contractor' and status = 'approved')::int as approved_contractors,
-      (select count(*) from public.worker_profiles where status = 'approved')::int as approved_workers
+      (select count(*) from public.worker_profiles where status = 'approved')::int as approved_workers,
+      (select count(*) from public.organizations
+         where kind = 'contractor' and status = 'approved'
+           and public.organization_insurance_status(id) <> 'current')::int as contractors_without_current_insurance
   `);
   return row;
 }
@@ -42,14 +46,17 @@ export type AdminOrganizationRow = {
   created_at: Date;
   owner_email: string | null;
   pending_documents: number;
+  rereview_reason: string | null;
+  insurance_status: InsuranceStatus | null;
 };
 
 export function listOrganizationsForAdmin(
   adminId: string,
-  filter: { status?: ReviewStatus; kind?: OrganizationKind },
+  filter: { status?: ReviewStatus; kind?: OrganizationKind; insuranceAttention?: boolean },
 ) {
   return withUser(adminId, (tx) => tx<AdminOrganizationRow[]>`
-    select o.id, o.kind, o.name, o.status, mk.name as market_name, o.submitted_at, o.created_at,
+    select o.id, o.kind, o.name, o.status, mk.name as market_name, o.submitted_at, o.created_at, o.rereview_reason,
+           case when o.kind = 'contractor' then public.organization_insurance_status(o.id) end as insurance_status,
            (select p.email from public.organization_members m join public.profiles p on p.id = m.user_id
              where m.organization_id = o.id and m.role = 'owner' order by m.created_at limit 1) as owner_email,
            (select count(*) from public.qualification_documents d
@@ -58,13 +65,15 @@ export function listOrganizationsForAdmin(
     join public.markets mk on mk.id = o.market_id
     where (${filter.status ?? null}::public.review_status is null or o.status = ${filter.status ?? null}::public.review_status)
       and (${filter.kind ?? null}::public.organization_kind is null or o.kind = ${filter.kind ?? null}::public.organization_kind)
+      and (not ${filter.insuranceAttention ?? false}
+           or (o.kind = 'contractor' and o.status = 'approved' and public.organization_insurance_status(o.id) <> 'current'))
     order by (o.status = 'pending_review') desc, o.submitted_at asc nulls last, o.created_at desc
     limit 200
   `);
 }
 
 export type OrganizationDetail = {
-  organization: Organization & { reviewer_email: string | null };
+  organization: Organization & { reviewer_email: string | null; insurance_status: InsuranceStatus | null };
   members: { user_id: string; role: string; full_name: string; email: string; phone: string | null }[];
   categories: string[];
   areas: string[];
@@ -73,8 +82,9 @@ export type OrganizationDetail = {
 
 export async function getOrganizationDetailForAdmin(adminId: string, orgId: string): Promise<OrganizationDetail | null> {
   return withUser(adminId, async (tx) => {
-    const [organization] = await tx<(Organization & { reviewer_email: string | null })[]>`
-      select o.*, mk.name as market_name, r.email as reviewer_email
+    const [organization] = await tx<OrganizationDetail["organization"][]>`
+      select o.*, mk.name as market_name, r.email as reviewer_email,
+             case when o.kind = 'contractor' then public.organization_insurance_status(o.id) end as insurance_status
       from public.organizations o
       join public.markets mk on mk.id = o.market_id
       left join public.profiles r on r.id = o.reviewed_by

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/server/auth/session";
 import { getDocumentForDownload } from "@/server/data/documents";
-import { fileStorage } from "@/server/storage";
+import { fileStorage, StorageObjectNotFound } from "@/server/storage";
 import { uuid } from "@/lib/schemas";
 
 /**
@@ -18,7 +18,16 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const doc = await getDocumentForDownload(user.id, id);
   if (!doc) return new NextResponse("Not found", { status: 404 });
 
-  const bytes = await fileStorage().get(doc.storage_path);
+  let bytes: Uint8Array;
+  try {
+    bytes = await fileStorage().get(doc.storage_path);
+  } catch (error) {
+    if (error instanceof StorageObjectNotFound) {
+      console.error("Document row has no stored file", id, doc.storage_path);
+      return new NextResponse("The file for this document is missing. QuickPro staff have been notified.", { status: 404 });
+    }
+    throw error;
+  }
   const fileName = doc.file_name.replace(/[^\w.\- ()]/g, "_");
   return new NextResponse(Buffer.from(bytes), {
     headers: {

@@ -1,5 +1,5 @@
 import { ActionForm, Field, Input, SubmitButton, Textarea } from "@/components/ui/form";
-import { DOCUMENT_TYPE_LABEL, formatDate, formatDateTime, type ReviewStatus } from "@/lib/labels";
+import { DOCUMENT_TYPE_LABEL, INSURANCE_DOCUMENT_TYPES, formatDate, formatDateTime, type ReviewStatus } from "@/lib/labels";
 import type { FormState } from "@/lib/schemas";
 import type { QualificationDocument } from "@/server/data/documents";
 import { DocumentStatusBadge } from "@/components/ui/badge";
@@ -72,7 +72,11 @@ export function AdminDocumentRow({ doc, action }: { doc: QualificationDocument; 
             <Field name="notes" label="Note">
               <Input name="notes" maxLength={2000} placeholder="e.g. Named insured matches; limits $1M/$2M" />
             </Field>
-            <Field name="expiresOn" label="Expiration date">
+            <Field
+              name="expiresOn"
+              label="Expiration date"
+              hint={INSURANCE_DOCUMENT_TYPES.includes(doc.doc_type) ? "Required to mark a certificate reviewed." : undefined}
+            >
               <Input name="expiresOn" type="date" defaultValue={doc.expires_on ?? ""} />
             </Field>
             <div className="flex flex-wrap gap-2 sm:col-span-2">
