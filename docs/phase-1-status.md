@@ -22,8 +22,8 @@ purpose:
 | Lint, typecheck | pass | local, CI |
 | Unit (`pnpm test`) | 14 passed | local, CI |
 | Database integration (`pnpm test:db`) | 61 passed | local, CI (plain Postgres 16 with the shim) |
-| Storage integration (`pnpm test:storage`) | 6 passed | local, against Supabase Storage API v1.81.5 + GoTrue built from source; CI job added (Supabase CLI stack), first run on this push |
-| End to end (`pnpm test:e2e`) | 6 passed (3 specs × mobile, desktop) | local, against GoTrue + Storage API with `FILE_STORAGE_DRIVER=supabase`; CI job added, first run on this push |
+| Storage integration (`pnpm test:storage`) | 6 passed | local, against Supabase Storage API v1.81.5 + GoTrue built from source; CI (Supabase CLI stack) |
+| End to end (`pnpm test:e2e`) | 6 passed (3 specs × mobile, desktop) | local, against GoTrue + Storage API with `FILE_STORAGE_DRIVER=supabase`; CI against the Supabase CLI stack |
 | Production build | pass | local, CI |
 
 The local stack is not the Supabase CLI's Docker stack (Docker is not
@@ -61,7 +61,7 @@ Kong/PostgREST (the app does not use PostgREST).
 | Signed-out callers cannot run workflow functions | yes | db | | |
 | Audit log | yes | db, e2e (one entry) | yes | |
 | Security headers | yes | | partly (curl) | No CSP for app pages yet |
-| CI | yes | lint, typecheck, unit, db, build on every push; integration job new | | Integration job runs for the first time on this push |
+| CI | yes | lint, typecheck, unit, db, build; integration job runs storage and e2e on the Supabase CLI stack (green on c0e5a3d) | | |
 | Deployment (Vercel + hosted Supabase) | docs only | | | **Never deployed** |
 
 ## Known gaps carried into the PR
