@@ -1,0 +1,79 @@
+name: Supabase preview migrations
+
+# Two stages against the QuickPro Preview project only:
+#   1. plan: link, list migrations, and `db push --dry-run`. Changes nothing.
+#   2. apply: after a person reads the plan and approves the "supabase-preview"
+#      environment a second time, apply the migrations and run read-only checks.
+# Runs when the deploy/supabase-preview branch is pushed. Never resets the
+# database, never runs seed.sql, never pushes auth or storage config.
+on:
+  push:
+    branches: [deploy/supabase-preview]
+  workflow_dispatch:
+
+concurrency:
+  group: supabase-preview
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  PROJECT_REF: lwqlhifdxefboanvoooh # QuickPro Preview. Do not change without review.
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: supabase-preview
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Check secrets are present
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo "SUPABASE_ACCESS_TOKEN is not set on the supabase-preview environment"; exit 1; }
+          test -n "$SUPABASE_DB_PASSWORD" || { echo "SUPABASE_DB_PASSWORD is not set on the supabase-preview environment"; exit 1; }
+      - name: Link QuickPro Preview
+        run: pnpm exec supabase link --project-ref "$PROJECT_REF"
+      - name: Migrations already applied
+        run: pnpm exec supabase migration list --linked
+      - name: Dry run (what apply would do)
+        run: pnpm exec supabase db push --linked --dry-run
+
+  apply:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: supabase-preview
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Link QuickPro Preview
+        run: pnpm exec supabase link --project-ref "$PROJECT_REF"
+      - name: Apply migrations
+        run: pnpm exec supabase db push --linked
+      - name: Migrations after
+        run: pnpm exec supabase migration list --linked
+      - name: Verify tables, row level security and storage bucket (read only)
+        run: |
+          pooler=$(cat supabase/.temp/pooler-url 2>/dev/null || true)
+          test -n "$pooler" || { echo "No pooler URL from supabase link"; exit 1; }
+          # Session mode (5432) for psql; the pooler URL from link carries no password.
+          export PGPASSWORD="$SUPABASE_DB_PASSWORD" PGSSLMODE=require
+          psql "${pooler/:6543/:5432}" -X -f supabase/checks/verify-deployment.sql
