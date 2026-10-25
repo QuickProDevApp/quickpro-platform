@@ -1,3 +1,6 @@
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+# The Supabase CLI downloads its binary in a postinstall step.
+onlyBuiltDependencies:
+  - supabase
