@@ -1,6 +1,10 @@
 name: Supabase preview migrations
 
 # Manually applies supabase/migrations to the QuickPro Preview project only.
+# Run it from the Actions tab with "Use workflow from: main". It checks out
+# the application branch named in app_branch (phase-1-foundation by default)
+# and takes the migrations and lockfile from there, so Phase 1 does not need
+# to be merged first.
 #
 #   mode = plan   links the project and shows `db push --dry-run`. Changes nothing.
 #   mode = apply  same checks, then applies the migrations and runs read-only
@@ -12,6 +16,11 @@ name: Supabase preview migrations
 on:
   workflow_dispatch:
     inputs:
+      app_branch:
+        description: "Branch with the application and migrations"
+        type: string
+        default: phase-1-foundation
+        required: true
       mode:
         description: "plan (dry run, changes nothing) or apply"
         type: choice
@@ -37,19 +46,29 @@ jobs:
       PROJECT_REF: lwqlhifdxefboanvoooh # QuickPro Preview. Do not change without review.
       PROJECT_NAME: QuickPro Preview
       MODE: ${{ inputs.mode }}
+      APP_BRANCH: ${{ inputs.app_branch }}
       CONFIRM: ${{ inputs.confirm_project_ref }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
     steps:
       - name: Check inputs and secrets
         run: |
-          echo "Mode: $MODE. Branch: $GITHUB_REF_NAME. Target: $PROJECT_NAME ($PROJECT_REF)."
+          echo "Mode: $MODE. Application branch: $APP_BRANCH. Target: $PROJECT_NAME ($PROJECT_REF)."
           if [ "$MODE" = "apply" ] && [ "$CONFIRM" != "$PROJECT_REF" ]; then
             echo "::error::To apply, type $PROJECT_REF in the confirmation box."; exit 1
           fi
           test -n "$SUPABASE_ACCESS_TOKEN" || { echo "::error::SUPABASE_ACCESS_TOKEN secret is not set"; exit 1; }
           test -n "$SUPABASE_DB_PASSWORD" || { echo "::error::SUPABASE_DB_PASSWORD secret is not set"; exit 1; }
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.app_branch }}
+      - name: Check the application branch
+        run: |
+          echo "Checked out $APP_BRANCH at $(git rev-parse --short HEAD)"
+          test -f pnpm-lock.yaml || { echo "::error::$APP_BRANCH has no pnpm-lock.yaml. Is it the application branch?"; exit 1; }
+          ls supabase/migrations/*.sql >/dev/null 2>&1 || { echo "::error::$APP_BRANCH has no supabase/migrations."; exit 1; }
+          test -f supabase/checks/verify-deployment.sql || { echo "::error::$APP_BRANCH has no supabase/checks/verify-deployment.sql."; exit 1; }
+          ls -1 supabase/migrations
       - name: Refuse destructive statements in migrations
         run: |
           if grep -niE '\b(drop[[:space:]]+(table|schema|database|column)|truncate|delete[[:space:]]+from)\b' supabase/migrations/*.sql; then
