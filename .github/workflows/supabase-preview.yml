@@ -1,0 +1,110 @@
+name: Supabase preview migrations
+
+# Manually applies supabase/migrations to the QuickPro Preview project only.
+# Run it from the Actions tab with "Use workflow from: main". It checks out
+# the application branch named in app_branch (phase-1-foundation by default)
+# and takes the migrations and lockfile from there, so Phase 1 does not need
+# to be merged first.
+#
+#   mode = plan   links the project and shows `db push --dry-run`. Changes nothing.
+#   mode = apply  same checks, then applies the migrations and runs read-only
+#                 verification. Requires typing the project ref to confirm.
+#
+# It never resets the database, never runs seed.sql, and never pushes auth or
+# storage settings. Secrets come from the repository's Actions secrets and are
+# masked in logs by GitHub.
+on:
+  workflow_dispatch:
+    inputs:
+      app_branch:
+        description: "Branch with the application and migrations"
+        type: string
+        default: phase-1-foundation
+        required: true
+      mode:
+        description: "plan (dry run, changes nothing) or apply"
+        type: choice
+        options: [plan, apply]
+        default: plan
+      confirm_project_ref:
+        description: "For apply: type lwqlhifdxefboanvoooh to confirm"
+        type: string
+        required: false
+
+concurrency:
+  group: supabase-preview
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PROJECT_REF: lwqlhifdxefboanvoooh # QuickPro Preview. Do not change without review.
+      PROJECT_NAME: QuickPro Preview
+      MODE: ${{ inputs.mode }}
+      APP_BRANCH: ${{ inputs.app_branch }}
+      CONFIRM: ${{ inputs.confirm_project_ref }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - name: Check inputs and secrets
+        run: |
+          echo "Mode: $MODE. Application branch: $APP_BRANCH. Target: $PROJECT_NAME ($PROJECT_REF)."
+          if [ "$MODE" = "apply" ] && [ "$CONFIRM" != "$PROJECT_REF" ]; then
+            echo "::error::To apply, type $PROJECT_REF in the confirmation box."; exit 1
+          fi
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo "::error::SUPABASE_ACCESS_TOKEN secret is not set"; exit 1; }
+          test -n "$SUPABASE_DB_PASSWORD" || { echo "::error::SUPABASE_DB_PASSWORD secret is not set"; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.app_branch }}
+      - name: Check the application branch
+        run: |
+          echo "Checked out $APP_BRANCH at $(git rev-parse --short HEAD)"
+          test -f pnpm-lock.yaml || { echo "::error::$APP_BRANCH has no pnpm-lock.yaml. Is it the application branch?"; exit 1; }
+          ls supabase/migrations/*.sql >/dev/null 2>&1 || { echo "::error::$APP_BRANCH has no supabase/migrations."; exit 1; }
+          test -f supabase/checks/verify-deployment.sql || { echo "::error::$APP_BRANCH has no supabase/checks/verify-deployment.sql."; exit 1; }
+          ls -1 supabase/migrations
+      - name: Refuse destructive statements in migrations
+        run: |
+          if grep -niE '\b(drop[[:space:]]+(table|schema|database|column)|truncate|delete[[:space:]]+from)\b' supabase/migrations/*.sql; then
+            echo "::error::A migration contains a destructive statement. Review it before deploying."; exit 1
+          fi
+          echo "No drop table/schema/column, truncate or delete statements found."
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify the target project
+        run: |
+          name=$(pnpm exec supabase projects list -o json | jq -r --arg ref "$PROJECT_REF" '.[] | select(.id == $ref or .ref == $ref) | .name')
+          if [ "$name" != "$PROJECT_NAME" ]; then
+            echo "::error::Project $PROJECT_REF is not '$PROJECT_NAME' (found '${name:-nothing}'). Stopping."; exit 1
+          fi
+          echo "Target confirmed: $name ($PROJECT_REF)"
+      - name: Link QuickPro Preview
+        run: pnpm exec supabase link --project-ref "$PROJECT_REF"
+      - name: Migrations already applied
+        run: pnpm exec supabase migration list --linked
+      - name: Dry run (what apply would do)
+        run: pnpm exec supabase db push --linked --dry-run
+      - name: Apply migrations
+        if: inputs.mode == 'apply'
+        run: pnpm exec supabase db push --linked
+      - name: Migrations after
+        if: inputs.mode == 'apply'
+        run: pnpm exec supabase migration list --linked
+      - name: Verify tables, row level security and storage bucket (read only)
+        if: inputs.mode == 'apply'
+        run: |
+          pooler=$(cat supabase/.temp/pooler-url 2>/dev/null || true)
+          test -n "$pooler" || { echo "::error::No pooler URL from supabase link"; exit 1; }
+          # Session mode (5432) for psql; the pooler URL from link carries no password.
+          export PGPASSWORD="$SUPABASE_DB_PASSWORD" PGSSLMODE=require
+          psql "${pooler/:6543/:5432}" -X -f supabase/checks/verify-deployment.sql
