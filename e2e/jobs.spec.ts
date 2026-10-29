@@ -56,21 +56,22 @@ test("a contractor posts a job, a local worker applies, gets the offer and is bo
   await expect(crew.getByText("100 Carleton Ave")).toHaveCount(0);
   await crew.getByLabel("Note to the business (optional)").fill("I run a ride-on scrubber at my current job.");
   await crew.getByRole("button", { name: "Apply for this job" }).click();
-  await expect(crew.getByText(/^Applied\./)).toBeVisible();
+  await expect(crew.getByText("You applied", { exact: true })).toBeVisible();
+  await expect(crew.getByRole("button", { name: "Apply for this job" })).toHaveCount(0);
 
   // The contractor sees the applicant and offers the job.
   await contractor.goto(jobUrl);
   await expect(contractor.getByText("Wendy Worker")).toBeVisible();
   await expect(contractor.getByText("I run a ride-on scrubber")).toBeVisible();
   await contractor.getByRole("button", { name: "Offer the job" }).click();
-  await expect(contractor.getByText(/^Offer sent\./)).toBeVisible();
+  await expect(contractor.getByText("Offered (1)", { exact: true })).toBeVisible();
 
   // The worker accepts and now sees where to go.
   await crew.goto("/app/worker/my-jobs");
   await expect(crew.getByText("You have 1 offer waiting for an answer.")).toBeVisible();
   await crew.getByRole("link", { name: new RegExp(title) }).click();
   await crew.getByRole("button", { name: "Accept job" }).click();
-  await expect(crew.getByText(/^You're booked\./)).toBeVisible();
+  await expect(crew.getByText("On the day", { exact: true })).toBeVisible();
   await expect(crew.getByText("100 Carleton Ave, Central Islip, NY 11722")).toBeVisible();
   await expect(crew.getByText("Check-in opens an hour before the start time.")).toBeVisible();
 
@@ -78,7 +79,7 @@ test("a contractor posts a job, a local worker applies, gets the offer and is bo
   await contractor.goto(jobUrl);
   await expect(contractor.getByText("Booked (1)")).toBeVisible();
   await expect(contractor.getByRole("link", { name: "631-555-0142" })).toBeVisible();
-  await expect(contractor.getByText("Filled", { exact: true })).toBeVisible();
+  await expect(contractor.getByText("Filled", { exact: true }).first()).toBeVisible();
 
   // The job is no longer listed for other workers.
   await crew.goto("/app/worker/jobs?scope=all");
