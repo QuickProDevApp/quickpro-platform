@@ -6,7 +6,8 @@ name: Supabase preview migrations
 # and takes the migrations and lockfile from there, so Phase 1 does not need
 # to be merged first.
 #
-#   mode = plan   links the project and shows `db push --dry-run`. Changes nothing.
+#   mode = plan   connects through the IPv4 session pooler and shows
+#                 `db push --dry-run`. Changes nothing.
 #   mode = apply  same checks, then applies the migrations and runs read-only
 #                 verification. Requires typing the project ref to confirm.
 #
@@ -88,23 +89,87 @@ jobs:
             echo "::error::Project $PROJECT_REF is not '$PROJECT_NAME' (found '${name:-nothing}'). Stopping."; exit 1
           fi
           echo "Target confirmed: $name ($PROJECT_REF)"
-      - name: Link QuickPro Preview
-        run: pnpm exec supabase link --project-ref "$PROJECT_REF"
+      - name: Connect through the IPv4 session pooler
+        # GitHub-hosted runners have no IPv6, and db.<ref>.supabase.co is IPv6
+        # only. `supabase link` only finds the IPv4 pooler when the access
+        # token has database_pooling_config_read, and silently skips it
+        # otherwise, so every database command below gets an explicit
+        # session pooler URL (port 5432) instead of relying on --linked.
+        # Source: the SUPABASE_DB_URL secret if set, otherwise the pooler
+        # host (from the Management API, or derived from the project's
+        # region and confirmed by logging in) plus SUPABASE_DB_PASSWORD.
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -n "$SUPABASE_DB_URL" ]; then
+            db_url="$SUPABASE_DB_URL"
+            echo "Using the SUPABASE_DB_URL secret."
+          else
+            password=$(jq -rn --arg p "$SUPABASE_DB_PASSWORD" '$p | @uri')
+            echo "::add-mask::$password"
+            user="postgres.$PROJECT_REF"
+            # Preferred: the pooler address from the Management API (needs
+            # database_pooling_config_read on a scoped token).
+            if pooler_json=$(curl -sS --fail \
+                -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+                "https://api.supabase.com/v1/projects/$PROJECT_REF/config/database/pooler" 2>/dev/null); then
+              host=$(echo "$pooler_json" | jq -r 'map(select(.database_type == "PRIMARY")) | first | .db_host // empty')
+              candidates="$host"
+              echo "Pooler address from the Management API: $host"
+            else
+              # Fallback: the shared pooler is aws-N-<region>.pooler.supabase.com.
+              # The region comes from the project list (already readable);
+              # only the host that accepts postgres.<ref> with the database
+              # password is used, so a wrong guess can never reach another
+              # project.
+              region=$(pnpm exec supabase projects list -o json 2>/dev/null | jq -r --arg ref "$PROJECT_REF" '.[] | select(.id == $ref or .ref == $ref) | .region')
+              test -n "$region" || { echo "::error::Could not read the region of $PROJECT_REF."; exit 1; }
+              candidates="aws-0-$region.pooler.supabase.com aws-1-$region.pooler.supabase.com aws-2-$region.pooler.supabase.com"
+              echo "The access token cannot read the pooler config; trying the shared pooler hosts for $region."
+            fi
+            db_url=""
+            for host in $candidates; do
+              url="postgresql://$user:$password@$host:5432/postgres?sslmode=require"
+              if err=$(PGCONNECT_TIMEOUT=10 psql "$url" -XAtqc 'select 1' 2>&1 >/dev/null); then
+                db_url="$url"; echo "Connected through $host."; break
+              fi
+              echo "No login for $user at $host: ${err##*FATAL:  }"
+            done
+            test -n "$db_url" || { echo "::error::Could not log in to the session pooler. Check SUPABASE_DB_PASSWORD, or add a SUPABASE_DB_URL secret (Supabase dashboard, Connect, Session pooler URI with the password filled in)."; exit 1; }
+          fi
+          echo "::add-mask::$db_url"
+
+          # Refuse anything that is not the QuickPro Preview session pooler.
+          rest=${db_url#*://}
+          creds=${rest%@*}
+          hostport=${rest##*@}; hostport=${hostport%%[/?]*}
+          db_host=${hostport%%:*}
+          db_port=${hostport##*:}; [ "$db_port" = "$hostport" ] && db_port=5432
+          db_user=${creds%%:*}
+          case "$db_host" in
+            *.pooler.supabase.com) ;;
+            *) echo "::error::The database URL must use the Supabase pooler (*.pooler.supabase.com), not $db_host."; exit 1 ;;
+          esac
+          if [ "$db_user" != "postgres.$PROJECT_REF" ]; then
+            echo "::error::The database URL is for user '$db_user', not postgres.$PROJECT_REF ($PROJECT_NAME). Stopping."; exit 1
+          fi
+          if [ "$db_port" != "5432" ]; then
+            echo "::error::Use the session pooler (port 5432), not port $db_port. Migrations need session mode."; exit 1
+          fi
+          getent ahostsv4 "$db_host" >/dev/null || { echo "::error::$db_host has no IPv4 address."; exit 1; }
+
+          echo "SUPABASE_DB_URL=$db_url" >> "$GITHUB_ENV"
+          echo "Database: $db_host:$db_port as $db_user (IPv4)."
       - name: Migrations already applied
-        `run: pnpm exec supabase migration list --linked
+        run: pnpm exec supabase migration list --db-url "$SUPABASE_DB_URL"
       - name: Dry run (what apply would do)
-        run: pnpm exec supabase db push --linked --dry-run
+        run: pnpm exec supabase db push --db-url "$SUPABASE_DB_URL" --dry-run
       - name: Apply migrations
         if: inputs.mode == 'apply'
-        run: pnpm exec supabase db push --linked
+        run: pnpm exec supabase db push --db-url "$SUPABASE_DB_URL"
       - name: Migrations after
         if: inputs.mode == 'apply'
-        run: pnpm exec supabase migration list --linked
+        run: pnpm exec supabase migration list --db-url "$SUPABASE_DB_URL"
       - name: Verify tables, row level security and storage bucket (read only)
         if: inputs.mode == 'apply'
-        run: |
-          pooler=$(cat supabase/.temp/pooler-url 2>/dev/null || true)
-          test -n "$pooler" || { echo "::error::No pooler URL from supabase link"; exit 1; }
-          # Session mode (5432) for psql; the pooler URL from link carries no password.
-          export PGPASSWORD="$SUPABASE_DB_PASSWORD" PGSSLMODE=require
-          psql "${pooler/:6543/:5432}" -X -f supabase/checks/verify-deployment.sql
+        run: psql "$SUPABASE_DB_URL" -X -f supabase/checks/verify-deployment.sql
