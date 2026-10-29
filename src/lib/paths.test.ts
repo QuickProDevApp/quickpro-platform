@@ -9,4 +9,12 @@ describe("safeNextPath", () => {
     expect(safeNextPath("/\\evil.example")).toBe("/app");
     expect(safeNextPath(null)).toBe("/app");
   });
+
+  it("rejects paths that browsers turn into another origin", () => {
+    expect(safeNextPath("/\t/evil.example")).toBe("/app");
+    expect(safeNextPath("/\n/evil.example")).toBe("/app");
+    expect(safeNextPath("/\r/evil.example")).toBe("/app");
+    expect(safeNextPath(" //evil.example")).toBe("/app");
+    expect(safeNextPath("/app/worker?tab=skills")).toBe("/app/worker?tab=skills");
+  });
 });
