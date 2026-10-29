@@ -192,3 +192,51 @@ worker home or preferred areas outside an open market.
 
 - **Why:** the UI only offers the right towns, but the rule protects data
   from any code path, including future ones and direct SQL by the app role.
+
+## D-016 Engagement basis is chosen per job from a staff-managed list (needs counsel review)
+
+Every job names an engagement type from `public.engagement_types`, a
+reference table that only staff can change (by migration or direct SQL). Two
+are seeded, both describing the contractor as the party that engages the
+worker: "Employee of the contractor" and "Subcontractor of the contractor".
+QuickPro is never the employer in these options. The wording is a placeholder
+written for development and **must be reviewed by employment counsel before
+any real job is posted**. Retiring an option (`is_active = false`) keeps old
+jobs readable and blocks new posts with it.
+
+Each market also has a minimum hourly pay (`markets.min_hourly_pay_cents`,
+$17.00 for Suffolk and Nassau, the 2026 Long Island minimum wage as we
+understand it). The database refuses a job below it. It is a floor, not
+advice on what to pay, and it has to be updated each January.
+
+- **Why:** D-009 keeps classification off the worker. The basis belongs to
+  each engagement, and the platform should not invent legal categories in
+  code.
+- **Cost:** a staff step before launch; the pay floor needs a yearly update.
+
+## D-017 Lapsed insurance blocks new staffing, not existing bookings
+
+Posting a job and sending an offer both require the contractor
+to be approved *and* to hold a reviewed general liability certificate that
+has not expired (`app.assert_contractor_can_staff`). Editing or cancelling
+an existing job is still allowed, so a business can wind work down. A worker can only accept
+an offer while the contractor is approved. Bookings already accepted are not
+cancelled automatically when a certificate lapses: staff see the job and
+decide, because cancelling a worker's shift on the morning of the job is the
+worse outcome.
+
+- **Why:** closes the D-012 follow-up ("act when insurance lapses") for the
+  part that matters most, new work, without silently breaking existing work.
+- **Cost:** staff must watch upcoming jobs of contractors whose insurance is
+  about to lapse (no automated reminders yet).
+
+## D-018 Workers see the business, town and pay before applying; the address after booking
+
+Open jobs show the business name, town, time, pay, skills and engagement
+basis to approved workers. The street address, on-site contact and arrival
+notes (`job_sites`) are readable only by the business, staff and workers who
+accepted. The worker's phone number is shown to the business only once the
+worker accepts.
+
+- **Why:** workers need enough to decide; addresses and phone numbers are
+  shared only when both sides have committed.

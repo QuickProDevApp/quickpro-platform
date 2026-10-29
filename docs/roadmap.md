@@ -16,20 +16,31 @@ Nassau.
 ## Phase 2: Staffing requests and concierge matching (modules C, D)
 
 The first thing contractors will pay attention to: "I have a job Saturday and
-need three more people."
+need three more people." Built in the Phase 2 PR; see phase-2-status.md.
 
-- Team: invite members to a contractor org (owner, admin, dispatcher, member).
-- Staffing request: a contractor posts shifts (date, time, site town, skills,
-  headcount, pay rate, and the **engagement basis**: who engages the worker and
-  how, chosen from options configured after legal review).
-- Matching: workers see shifts that fit their skills, areas, travel and
-  availability and apply; contractors and staff shortlist; staff can match by
-  hand from the admin dashboard and see unfilled shifts at risk.
-- Assignment: the contractor confirms, the worker accepts; both see the
-  roster. Worker work history begins here.
-- Notifications: transactional email (and SMS later) for applications,
-  confirmations and changes, through a real provider.
-- Admin metrics: fill rate, time to fill, open shifts by town and category.
+Built:
+
+- Jobs: a contractor posts a job (date, local start and end time, town,
+  category, skills, headcount, hourly pay, engagement basis, and a private
+  site address and contact). Editable until it starts, with fields locked
+  once someone is booked; cancel and complete.
+- Discovery: approved workers see open jobs in their towns (or the whole
+  market), with matching skills marked, and apply with a note.
+- Offers and booking: the business offers the job to applicants, the worker
+  accepts or declines, the job fills at headcount and reopens if someone
+  cancels. Overlapping bookings are refused.
+- Day of: check-in from an hour before the start, check-out after.
+- Staff: jobs queue with "unfilled within 48 hours", hand matching of any
+  approved worker ranked by town and skills.
+
+Not built yet:
+
+- Team invites (owner, admin, dispatcher, member). The roles exist and are
+  enforced; there is no invite flow.
+- Notifications: email (and SMS later) for applications, offers and changes,
+  through a real provider. Until then the screens say that nothing is sent.
+- Admin metrics beyond counts: fill rate, time to fill.
+- Travel distance and availability matching (towns and skills only for now).
 
 ## Phase 3: Job management and crew coordination (modules D, E)
 
@@ -66,7 +77,9 @@ record, fee structure, worker pay flows).
 ## Known follow-ups
 
 - Next.js Cache Components are off for now (see decisions.md, D-006).
-- Act automatically when an approved contractor's insurance lapses (with Phase 2 assignments).
+- Reminders before a contractor's insurance lapses (new staffing is already blocked, D-017).
+- Engagement type wording reviewed by employment counsel before launch (D-016).
+- Update the market pay floor each January (D-016).
 - Schedule `pnpm storage:reconcile`.
 - Password reset and email change.
 - Document expiry reminders (needs a scheduler and email provider).
