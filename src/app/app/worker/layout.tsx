@@ -19,6 +19,8 @@ export default async function WorkerLayout({ children }: { children: React.React
       <SubNav
         items={[
           { href: "/app/worker", label: "Overview", exact: true },
+          { href: "/app/worker/jobs", label: "Find work" },
+          { href: "/app/worker/my-jobs", label: "My jobs" },
           { href: "/app/worker/profile", label: "Profile & skills" },
           { href: "/app/worker/availability", label: "Availability" },
           { href: "/app/worker/documents", label: "Certifications" },

@@ -8,7 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { DOCUMENT_TYPE_LABEL, INSURANCE_STATUS_LABEL, formatDate, type InsuranceStatus } from "@/lib/labels";
 import { requireMembership } from "@/server/actions/guards";
 import { listDocuments } from "@/server/data/documents";
-import { canManage, getContractorCapabilities, getInsuranceStatus, getOrganizationReadiness } from "@/server/data/organizations";
+import {
+  canDispatch,
+  canManage,
+  getContractorCapabilities,
+  getInsuranceStatus,
+  getOrganizationReadiness,
+} from "@/server/data/organizations";
 import { listCategories, listServiceAreas } from "@/server/data/reference";
 import { submitOrganizationAction } from "./actions";
 
@@ -67,19 +73,23 @@ export default async function OrganizationOverview({ params }: { params: Promise
                 {org.status === "approved" ? (
                   <>
                     <p>
-                      QuickPro is onboarding contractors and workers in Suffolk County first. Our team matches approved
-                      businesses with commercial opportunities and available workers by hand while the marketplace
-                      grows, and will contact you at {org.email ?? "your business email"}.
+                      Post a job when you need extra hands: approved local workers can find it and apply, and you choose
+                      who to offer it to. QuickPro staff can also match workers to your jobs by hand.
                     </p>
+                    {canDispatch(org.my_role) ? (
+                      <LinkButton href={`/app/org/${org.id}/jobs/new`} size="sm">
+                        Post a job
+                      </LinkButton>
+                    ) : null}
                     <p>
-                      Posting staffing requests for your own jobs is the next feature to ship. Keep your services,
-                      areas and insurance up to date so you are ready.
+                      Posting and offering jobs needs a current general liability certificate reviewed by staff, so keep
+                      your insurance up to date.
                     </p>
                   </>
                 ) : (
                   <p>
-                    Once approved, QuickPro staff can match you with commercial opportunities and available local
-                    workers. Self-serve staffing requests are the next feature to ship.
+                    Once approved, your business can post jobs for approved local workers to apply to, and QuickPro staff
+                    can match workers to them by hand.
                   </p>
                 )}
               </CardBody>

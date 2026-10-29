@@ -90,6 +90,32 @@ audit_log (append-only, written by triggers)
   agency) is not stored on the worker. It belongs to each future engagement,
   configured after legal review (see decisions.md, D-009).
 
+### Jobs (Phase 2)
+
+```
+organizations ── jobs (status: open | filled | completed | cancelled)
+                   ├── job_skills ── skills
+                   ├── job_sites (address, on-site contact; private, D-018)
+                   ├── engagement_types (staff-managed, D-016)
+                   ├── job_applications (applied | offered | declined | withdrawn)
+                   └── job_assignments (offered | accepted | declined | cancelled | completed,
+                                         checked_in_at, checked_out_at)
+```
+
+- Times are stored as `timestamptz`; the form takes a local date and times
+  and converts with `at time zone 'America/New_York'`. An end time at or
+  before the start means the shift ends the next day.
+- `app.check_job` enforces the rules on every write: town in the
+  organization's market, start in the future and within 120 days, market
+  open, pay at or above `markets.min_hourly_pay_cents`, active engagement
+  type; after someone is booked, time, town and engagement are locked and
+  pay can only go up; headcount cannot drop below the bookings.
+- Every status change is a `SECURITY DEFINER` function: `cancel_job`,
+  `complete_job`, `apply_to_job`, `withdraw_application`,
+  `decline_application`, `offer_job`, `respond_to_offer`,
+  `cancel_assignment`, `check_in`, `check_out`. `job_people(job_id)` returns
+  the people on a job, with the phone number only for booked workers.
+
 ## Authorization
 
 Three layers, each sufficient to stop the common mistakes of the others:

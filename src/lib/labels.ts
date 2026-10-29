@@ -104,3 +104,57 @@ export const INSURANCE_STATUS_LABEL: Record<InsuranceStatus, string> = {
   rejected: "Not accepted",
   missing: "Not uploaded",
 };
+
+export type JobStatus = "open" | "filled" | "completed" | "cancelled";
+export type ApplicationStatus = "applied" | "offered" | "declined" | "withdrawn";
+export type AssignmentStatus = "offered" | "accepted" | "declined" | "cancelled" | "completed";
+
+export const JOB_STATUS_LABEL: Record<JobStatus, string> = {
+  open: "Open",
+  filled: "Filled",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
+
+export const APPLICATION_STATUS_LABEL: Record<ApplicationStatus, string> = {
+  applied: "Applied",
+  offered: "Offered",
+  declined: "Not selected",
+  withdrawn: "Withdrawn",
+};
+
+export const ASSIGNMENT_STATUS_LABEL: Record<AssignmentStatus, string> = {
+  offered: "Offer waiting for an answer",
+  accepted: "Accepted",
+  declined: "Offer declined",
+  cancelled: "Cancelled",
+  completed: "Completed",
+};
+
+/** Where an open or filled job is in time. Completed and cancelled jobs use their status. */
+export function jobPhase(job: { status: JobStatus; starts_at: Date; ends_at: Date }, now = new Date()) {
+  if (job.status === "completed" || job.status === "cancelled") return JOB_STATUS_LABEL[job.status];
+  if (now < job.starts_at) return JOB_STATUS_LABEL[job.status];
+  if (now < job.ends_at) return "In progress";
+  return "Finished, not marked complete";
+}
+
+const timeFormat = new Intl.DateTimeFormat("en-US", { timeStyle: "short", timeZone: "America/New_York" });
+const dayFormat = new Intl.DateTimeFormat("en-US", {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+  timeZone: "America/New_York",
+});
+
+/** "Sat, Nov 7 · 7:00 AM – 3:00 PM" in the market's time zone. */
+export function formatShift(startsAt: Date, endsAt: Date): string {
+  const sameDay = dayFormat.format(startsAt) === dayFormat.format(endsAt);
+  return sameDay
+    ? `${dayFormat.format(startsAt)} · ${timeFormat.format(startsAt)} – ${timeFormat.format(endsAt)}`
+    : `${dayFormat.format(startsAt)} ${timeFormat.format(startsAt)} – ${dayFormat.format(endsAt)} ${timeFormat.format(endsAt)}`;
+}
+
+export function shiftHours(startsAt: Date, endsAt: Date): number {
+  return Math.round(((endsAt.getTime() - startsAt.getTime()) / 3_600_000) * 100) / 100;
+}

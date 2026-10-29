@@ -65,7 +65,7 @@ See [roadmap.md](roadmap.md) for sequencing.
    available, and what is at risk, not vanity numbers.
 5. **Mobile first.** Contractors and workers run their day from a phone.
 
-## Phase 1: foundation (this phase)
+## Phase 1: foundation (built)
 
 Goal: real accounts, real organizations, and a real staff review workflow, so
 QuickPro can start onboarding Suffolk contractors and workers and do concierge

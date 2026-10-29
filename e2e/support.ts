@@ -78,3 +78,68 @@ export const samplePdf = {
     "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[]/Count 0>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n",
   ),
 };
+
+/** A confirmed account created through the auth admin API (for flows that do not test sign-up). */
+export async function createConfirmedAccount(name: string, prefix: string) {
+  const email = uniqueEmail(prefix);
+  const { data, error } = await admin().auth.admin.createUser({
+    email,
+    password: PASSWORD,
+    email_confirm: true,
+    user_metadata: { full_name: name },
+  });
+  if (error) throw error;
+  return { id: data.user.id, email };
+}
+
+function platformSql() {
+  return postgres(required("DATABASE_URL"), { prepare: false, onnotice: () => {} });
+}
+
+/**
+ * An approved Suffolk contractor with a reviewed, current general liability
+ * certificate, set up directly in the database as staff review would leave it.
+ */
+export async function seedApprovedContractor(ownerId: string, name: string) {
+  const sql = platformSql();
+  try {
+    const [org] = await sql<{ id: string }[]>`
+      insert into public.organizations (kind, name, legal_name, phone, email, market_id, status, created_by, submitted_at, reviewed_at)
+      select 'contractor', ${name}, ${name + " LLC"}, '631-555-0100', 'ops@e2e.quickpro.test', m.id, 'approved', ${ownerId}, now(), now()
+      from public.markets m where m.slug = 'suffolk-county-ny'
+      returning id
+    `;
+    await sql`insert into public.organization_members (organization_id, user_id, role) values (${org.id}, ${ownerId}, 'owner')`;
+    const docId = randomUUID();
+    await sql`
+      insert into public.qualification_documents
+        (id, organization_id, doc_type, title, file_name, mime_type, size_bytes, sha256, storage_path, expires_on, status, uploaded_by, reviewed_at)
+      values (${docId}, ${org.id}, 'general_liability_coi', 'GL certificate', 'gl.pdf', 'application/pdf', 1024,
+              ${"b".repeat(64)}, ${`org/${org.id}/${docId}.pdf`}, current_date + 300, 'approved', ${ownerId}, now())
+    `;
+    return org.id;
+  } finally {
+    await sql.end();
+  }
+}
+
+/** An approved worker living in `homeTown` with the given skill and a phone number. */
+export async function seedApprovedWorker(userId: string, homeTown: string, skillSlug: string) {
+  const sql = platformSql();
+  try {
+    await sql`update public.profiles set phone = '631-555-0142' where id = ${userId}`;
+    await sql`
+      insert into public.worker_profiles (user_id, headline, home_service_area_id, status, submitted_at, reviewed_at)
+      select ${userId}, 'Floor care tech', a.id, 'approved', now(), now() from public.service_areas a where a.slug = ${homeTown}
+    `;
+    await sql`insert into public.worker_skills (user_id, skill_id) select ${userId}, id from public.skills where slug = ${skillSlug}`;
+    await sql`insert into public.worker_availability (user_id, weekday, start_time, end_time) values (${userId}, 6, '07:00', '15:00')`;
+  } finally {
+    await sql.end();
+  }
+}
+
+/** A calendar date `days` from today in New York, as YYYY-MM-DD. */
+export function newYorkDate(days: number) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(Date.now() + days * 86_400_000));
+}

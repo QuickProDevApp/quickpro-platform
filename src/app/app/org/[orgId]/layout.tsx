@@ -17,7 +17,12 @@ export default async function OrganizationLayout({
   const items = [
     { href: base, label: "Overview", exact: true },
     { href: `${base}/profile`, label: "Business profile" },
-    ...(org.kind === "contractor" ? [{ href: `${base}/services`, label: "Services & areas" }] : []),
+    ...(org.kind === "contractor"
+      ? [
+          { href: `${base}/jobs`, label: "Jobs" },
+          { href: `${base}/services`, label: "Services & areas" },
+        ]
+      : []),
     { href: `${base}/documents`, label: "Documents" },
   ];
   return (

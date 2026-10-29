@@ -1,7 +1,13 @@
 import {
+  APPLICATION_STATUS_LABEL,
+  ASSIGNMENT_STATUS_LABEL,
   DOCUMENT_STATUS_LABEL,
   REVIEW_STATUS_LABEL,
+  jobPhase,
+  type ApplicationStatus,
+  type AssignmentStatus,
   type DocumentStatus,
+  type JobStatus,
   type ReviewStatus,
 } from "@/lib/labels";
 
@@ -41,4 +47,35 @@ export function DocumentStatusBadge({ status, expiresOn }: { status: DocumentSta
   const today = new Date().toISOString().slice(0, 10);
   if (expiresOn && expiresOn < today) return <Badge tone="bad">Expired</Badge>;
   return <Badge tone={documentTone[status]}>{DOCUMENT_STATUS_LABEL[status]}</Badge>;
+}
+
+const jobTone: Record<JobStatus, Tone> = { open: "info", filled: "ok", completed: "neutral", cancelled: "bad" };
+
+export function JobStatusBadge({ job }: { job: { status: JobStatus; starts_at: Date; ends_at: Date } }) {
+  const label = jobPhase(job);
+  const tone = label === "In progress" ? "warn" : jobTone[job.status];
+  return <Badge tone={tone}>{label}</Badge>;
+}
+
+const assignmentTone: Record<AssignmentStatus, Tone> = {
+  offered: "info",
+  accepted: "ok",
+  declined: "neutral",
+  cancelled: "bad",
+  completed: "neutral",
+};
+
+export function AssignmentStatusBadge({ status }: { status: AssignmentStatus }) {
+  return <Badge tone={assignmentTone[status]}>{ASSIGNMENT_STATUS_LABEL[status]}</Badge>;
+}
+
+const applicationTone: Record<ApplicationStatus, Tone> = {
+  applied: "info",
+  offered: "ok",
+  declined: "neutral",
+  withdrawn: "neutral",
+};
+
+export function ApplicationStatusBadge({ status }: { status: ApplicationStatus }) {
+  return <Badge tone={applicationTone[status]}>{APPLICATION_STATUS_LABEL[status]}</Badge>;
 }

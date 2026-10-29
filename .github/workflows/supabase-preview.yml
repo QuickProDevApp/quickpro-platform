@@ -2,7 +2,7 @@ name: Supabase preview migrations
 
 # Manually applies supabase/migrations to the QuickPro Preview project only.
 # Run it from the Actions tab with "Use workflow from: main". It checks out
-# the application branch named in app_branch (phase-1-foundation by default)
+# the application branch named in app_branch (main by default)
 # and takes the migrations and lockfile from there, so Phase 1 does not need
 # to be merged first.
 #
@@ -20,7 +20,7 @@ on:
       app_branch:
         description: "Branch with the application and migrations"
         type: string
-        default: phase-1-foundation
+        default: main
         required: true
       mode:
         description: "plan (dry run, changes nothing) or apply"

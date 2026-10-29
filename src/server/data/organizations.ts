@@ -65,6 +65,11 @@ export function canManage(role: MemberRole) {
   return role === "owner" || role === "admin";
 }
 
+/** Owners, admins and dispatchers post jobs and manage crews. */
+export function canDispatch(role: MemberRole) {
+  return canManage(role) || role === "dispatcher";
+}
+
 export async function createOrganization(userId: string, kind: OrganizationKind, name: string, marketId: string) {
   const [row] = await withUser(userId, (tx) => tx<{ id: string }[]>`
     select public.create_organization(${kind}, ${name}, ${marketId}) as id

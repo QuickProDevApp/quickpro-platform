@@ -157,3 +157,76 @@ export async function createApprovedWorker(userId: string, adminId: string) {
   });
   await asUser(adminId, (tx) => tx`select public.review_worker_profile(${userId}, 'approved', null)`);
 }
+
+export async function addMember(orgId: string, userId: string, role: "admin" | "dispatcher" | "member") {
+  // There is no invite flow yet; tests add members directly.
+  await sql`insert into public.organization_members (organization_id, user_id, role) values (${orgId}, ${userId}, ${role})`;
+}
+
+export async function engagementTypeId(slug = "contractor-employee") {
+  const [row] = await sql<{ id: string }[]>`select id from public.engagement_types where slug = ${slug}`;
+  return row.id;
+}
+
+export type JobOverrides = {
+  area?: string;
+  headcount?: number;
+  payCents?: number;
+  startsInHours?: number;
+  hours?: number;
+  skills?: string[];
+};
+
+/** Posts a job (with its site) as `userId`, the way the app does. */
+export async function postJob(userId: string, orgId: string, o: JobOverrides = {}) {
+  const category = await categoryId("commercial-cleaning");
+  const area = await areaId(o.area ?? "islip");
+  const engagement = await engagementTypeId();
+  const skills = await Promise.all((o.skills ?? ["floor-care"]).map(skillId));
+  const startsIn = o.startsInHours ?? 48;
+  const hours = o.hours ?? 8;
+  return asUser(userId, async (tx) => {
+    const [{ id }] = await tx<{ id: string }[]>`
+      insert into public.jobs (organization_id, title, description, category_id, service_area_id, starts_at, ends_at,
+                               headcount, pay_rate_cents, engagement_type_id, created_by)
+      values (${orgId}, 'Office floor refinish', 'Strip and wax 4,000 sq ft.', ${category}, ${area},
+              now() + make_interval(hours => ${startsIn}), now() + make_interval(hours => ${startsIn + hours}),
+              ${o.headcount ?? 2}, ${o.payCents ?? 2400}, ${engagement}, ${userId})
+      returning id
+    `;
+    for (const skill of skills) await tx`insert into public.job_skills (job_id, skill_id) values (${id}, ${skill})`;
+    await tx`
+      insert into public.job_sites (job_id, address_line1, city, postal_code, contact_name, contact_phone)
+      values (${id}, '100 Carleton Ave', 'Central Islip', '11722', 'Dana Site', '631-555-0177')
+    `;
+    return id;
+  });
+}
+
+/** Moves a job in time as the platform would see it on the day (bypasses the posting rules). */
+export async function moveJob(jobId: string, startsInMinutes: number, durationMinutes = 480) {
+  await sql.begin(async (tx) => {
+    await tx`set local session_replication_role = replica`;
+    await tx`
+      update public.jobs
+         set starts_at = now() + make_interval(mins => ${startsInMinutes}),
+             ends_at = now() + make_interval(mins => ${startsInMinutes + durationMinutes})
+       where id = ${jobId}
+    `;
+  });
+}
+
+export async function jobStatus(jobId: string) {
+  const [row] = await sql<{ status: string }[]>`select status from public.jobs where id = ${jobId}`;
+  return row.status;
+}
+
+/** Owner, staff, an approved contractor with current insurance, and an approved worker. */
+export async function marketplace() {
+  const owner = await createUser("Pat Owner");
+  const admin = await createAdmin();
+  const orgId = await createApprovedContractor(owner, admin);
+  const worker = await createUser("Wes Worker");
+  await createApprovedWorker(worker, admin);
+  return { owner, admin, orgId, worker };
+}
