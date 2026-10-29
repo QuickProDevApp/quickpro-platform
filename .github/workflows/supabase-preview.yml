@@ -91,7 +91,7 @@ jobs:
       - name: Link QuickPro Preview
         run: pnpm exec supabase link --project-ref "$PROJECT_REF"
       - name: Migrations already applied
-        run: pnpm exec supabase migration list --linked
+        `run: pnpm exec supabase migration list --linked
       - name: Dry run (what apply would do)
         run: pnpm exec supabase db push --linked --dry-run
       - name: Apply migrations
