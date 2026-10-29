@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# QuickPro
 
-## Getting Started
+QuickPro helps local commercial service companies on Long Island (cleaning,
+pressure washing, landscaping, facility services) staff and coordinate the work
+they win. It launches in Suffolk County, NY.
 
-First, run the development server:
+This repository holds the web platform. Phase 1 is the foundation: accounts,
+contractor and customer registration, worker profiles, qualification documents,
+and the staff review dashboard. See [docs/product-spec.md](docs/product-spec.md)
+and [docs/roadmap.md](docs/roadmap.md).
+
+## Run it locally
+
+Requirements: Node 22+, pnpm 10, Docker (for local Supabase).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+pnpm supabase start            # Postgres, Auth, Storage, email inbox; applies migrations
+pnpm supabase status           # copy API URL, publishable/anon key, service role key, DB URL
+cp .env.example .env.local     # paste those values in
+pnpm dev                       # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Sign up at http://localhost:3000/sign-up. Open the confirmation email in
+   the local inbox at http://127.0.0.1:54324 and click the link.
+2. Register a contractor business, fill in the profile, choose services and
+   towns, upload a PDF as the general liability certificate, and submit.
+3. Make a second account your staff account:
+   `pnpm admin:grant staff@example.com`, then sign in as that account and open
+   **Staff** to mark the certificate reviewed (with its expiration date) and
+   approve the business. Approval is refused until the certificate is reviewed.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Checks
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm check                     # lint, typecheck, unit tests
+TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/quickpro_test \
+  pnpm db:test:reset && pnpm test:db   # needs any local Postgres
+pnpm build
+set -a; . ./.env.local; set +a; pnpm test:e2e   # with `pnpm dev` and Supabase running
+STORAGE_TEST_SUPABASE_URL=... STORAGE_TEST_SERVICE_ROLE_KEY=... STORAGE_TEST_ANON_KEY=... \
+  STORAGE_TEST_DATABASE_URL=... pnpm test:storage   # real Supabase Storage
+pnpm storage:reconcile --dry-run   # list stray files and rows missing their file
+```
 
-## Learn More
+Deploying a preview: [docs/deployment.md](docs/deployment.md). What is tested: [docs/phase-1-status.md](docs/phase-1-status.md).
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Architecture, security model and testing details:
+[docs/architecture.md](docs/architecture.md). Decision log:
+[docs/decisions.md](docs/decisions.md).

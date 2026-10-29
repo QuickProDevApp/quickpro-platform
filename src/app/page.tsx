@@ -1,69 +1,109 @@
-import Image from "next/image";
+import { Logo } from "@/components/brand/logo";
+import { LinkButton } from "@/components/ui/button";
 
-export default function Home() {
+const steps = [
+  {
+    title: "Register your business",
+    body: "List your services and the Suffolk County towns you cover, and upload your certificate of insurance.",
+  },
+  {
+    title: "Get reviewed by our team",
+    body: "QuickPro staff review every business and worker profile before they can take part.",
+  },
+  {
+    title: "Fill the work you win",
+    body: "When a job needs more hands than you have, we help you find qualified local people to staff it.",
+  },
+];
+
+const categories = ["Commercial cleaning", "Pressure washing", "Landscaping", "Facility services"];
+
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="flex min-h-full flex-col bg-surface">
+      <header className="border-b border-line">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+          <Logo />
+          <nav className="flex items-center gap-2">
+            <LinkButton href="/sign-in" variant="ghost">
+              Sign in
+            </LinkButton>
+            <LinkButton href="/sign-up">Get started</LinkButton>
+          </nav>
+        </div>
+      </header>
+
+      <main className="flex-1">
+        <section className="bg-navy text-white">
+          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-[1.2fr_1fr] md:py-24">
+            <div>
+              <p className="text-sm font-medium tracking-wide text-blue-200 uppercase">Now onboarding in Suffolk County, NY</p>
+              <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
+                Take on more commercial work without turning jobs away.
+              </h1>
+              <p className="mt-5 max-w-xl text-lg text-blue-100">
+                QuickPro connects local service companies with flexible, qualified labor and the tools to coordinate
+                every job, so smaller crews can say yes to bigger opportunities.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <LinkButton href="/sign-up?as=contractor" className="bg-white !text-navy hover:bg-blue-50">
+                  Register your business
+                </LinkButton>
+                <LinkButton
+                  href="/sign-up?as=worker"
+                  variant="secondary"
+                  className="border-white/30 bg-transparent !text-white hover:bg-white/10"
+                >
+                  Find local work
+                </LinkButton>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+              <p className="text-sm font-medium text-blue-100">Launch categories</p>
+              <ul className="mt-4 space-y-3">
+                {categories.map((c) => (
+                  <li key={c} className="flex items-center gap-3 rounded-lg bg-white/5 px-4 py-3 text-sm">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden="true" />
+                    {c}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-5 text-xs text-blue-200">
+                Nassau County and more categories will follow once Suffolk is running well.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+          <h2 className="text-2xl font-semibold tracking-tight">How it works for contractors</h2>
+          <ol className="mt-8 grid gap-6 md:grid-cols-3">
+            {steps.map((step, i) => (
+              <li key={step.title} className="rounded-xl border border-line p-6">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand">
+                  {i + 1}
+                </span>
+                <h3 className="mt-4 font-semibold">{step.title}</h3>
+                <p className="mt-2 text-sm text-muted">{step.body}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-10 max-w-3xl text-sm text-muted">
+            QuickPro is in early access. Staffing requests and job coordination tools are rolling out to approved
+            businesses first. Property managers and facilities teams can register now; our team will reach out as
+            service requests open in your area.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+        </section>
       </main>
+
+      <footer className="border-t border-line">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm text-muted sm:px-6">
+          <span>© {new Date().getFullYear()} QuickPro</span>
+          <LinkButton href="/sign-up?as=customer" variant="ghost" size="sm">
+            Register a property or facility
+          </LinkButton>
+        </div>
+      </footer>
     </div>
   );
 }
