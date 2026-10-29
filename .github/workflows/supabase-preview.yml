@@ -96,7 +96,8 @@ jobs:
         # otherwise, so every database command below gets an explicit
         # session pooler URL (port 5432) instead of relying on --linked.
         # Source: the SUPABASE_DB_URL secret if set, otherwise the pooler
-        # address from the Management API plus SUPABASE_DB_PASSWORD.
+        # host (from the Management API, or derived from the project's
+        # region and confirmed by logging in) plus SUPABASE_DB_PASSWORD.
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
@@ -104,19 +105,37 @@ jobs:
             db_url="$SUPABASE_DB_URL"
             echo "Using the SUPABASE_DB_URL secret."
           else
-            pooler_json=$(curl -sS --fail-with-body \
-              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-              "https://api.supabase.com/v1/projects/$PROJECT_REF/config/database/pooler") || {
-              echo "::error::Could not read the pooler address for $PROJECT_REF. Either add the SUPABASE_DB_URL secret (Supabase dashboard, Connect, Session pooler URI with the password filled in), or give SUPABASE_ACCESS_TOKEN the database_pooling_config_read permission."
-              exit 1
-            }
-            read -r host user name < <(echo "$pooler_json" | jq -r \
-              'map(select(.database_type == "PRIMARY")) | first // empty | "\(.db_host) \(.db_user) \(.db_name)"')
-            test -n "$host" || { echo "::error::The Management API returned no primary pooler for $PROJECT_REF."; exit 1; }
             password=$(jq -rn --arg p "$SUPABASE_DB_PASSWORD" '$p | @uri')
             echo "::add-mask::$password"
-            db_url="postgresql://$user:$password@$host:5432/$name?sslmode=require"
-            echo "Using the session pooler from the Management API."
+            user="postgres.$PROJECT_REF"
+            # Preferred: the pooler address from the Management API (needs
+            # database_pooling_config_read on a scoped token).
+            if pooler_json=$(curl -sS --fail \
+                -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+                "https://api.supabase.com/v1/projects/$PROJECT_REF/config/database/pooler" 2>/dev/null); then
+              host=$(echo "$pooler_json" | jq -r 'map(select(.database_type == "PRIMARY")) | first | .db_host // empty')
+              candidates="$host"
+              echo "Pooler address from the Management API: $host"
+            else
+              # Fallback: the shared pooler is aws-N-<region>.pooler.supabase.com.
+              # The region comes from the project list (already readable);
+              # only the host that accepts postgres.<ref> with the database
+              # password is used, so a wrong guess can never reach another
+              # project.
+              region=$(pnpm exec supabase projects list -o json 2>/dev/null | jq -r --arg ref "$PROJECT_REF" '.[] | select(.id == $ref or .ref == $ref) | .region')
+              test -n "$region" || { echo "::error::Could not read the region of $PROJECT_REF."; exit 1; }
+              candidates="aws-0-$region.pooler.supabase.com aws-1-$region.pooler.supabase.com aws-2-$region.pooler.supabase.com"
+              echo "The access token cannot read the pooler config; trying the shared pooler hosts for $region."
+            fi
+            db_url=""
+            for host in $candidates; do
+              url="postgresql://$user:$password@$host:5432/postgres?sslmode=require"
+              if err=$(PGCONNECT_TIMEOUT=10 psql "$url" -XAtqc 'select 1' 2>&1 >/dev/null); then
+                db_url="$url"; echo "Connected through $host."; break
+              fi
+              echo "No login for $user at $host: ${err##*FATAL:  }"
+            done
+            test -n "$db_url" || { echo "::error::Could not log in to the session pooler. Check SUPABASE_DB_PASSWORD, or add a SUPABASE_DB_URL secret (Supabase dashboard, Connect, Session pooler URI with the password filled in)."; exit 1; }
           fi
           echo "::add-mask::$db_url"
 
