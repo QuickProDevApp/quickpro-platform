@@ -24,7 +24,8 @@ select policyname, roles, cmd from pg_policies where schemaname = 'storage' and 
 select (select count(*) from public.markets where is_active) as active_markets,
        (select count(*) from public.service_areas) as service_areas,
        (select count(*) from public.service_categories) as categories,
-       (select count(*) from public.skills) as skills;
+       (select count(*) from public.skills) as skills,
+       (select count(*) from public.engagement_types where is_active) as engagement_types;
 
 do $$
 declare
@@ -41,7 +42,8 @@ begin
   from unnest(array['profiles', 'organizations', 'organization_members', 'contractor_services',
                     'contractor_service_areas', 'worker_profiles', 'worker_skills', 'worker_service_areas',
                     'worker_availability', 'qualification_documents', 'audit_log', 'markets',
-                    'service_areas', 'service_categories', 'skills']) t
+                    'service_areas', 'service_categories', 'skills', 'engagement_types', 'jobs',
+                    'job_skills', 'job_sites', 'job_applications', 'job_assignments']) t
   where to_regclass('public.' || t) is null;
   if v_missing is not null then
     raise exception 'Missing tables: %', v_missing;
@@ -64,7 +66,7 @@ begin
   select string_agg(table_name, ', ') into v_missing
   from information_schema.role_table_grants
   where table_schema = 'public' and grantee = 'anon' and privilege_type = 'SELECT'
-    and table_name not in ('markets', 'service_areas', 'service_categories', 'skills');
+    and table_name not in ('markets', 'service_areas', 'service_categories', 'skills', 'engagement_types');
   if v_missing is not null then
     raise exception 'anon can read non-reference tables: %', v_missing;
   end if;
