@@ -1,7 +1,7 @@
 import "server-only";
 import { notFound } from "next/navigation";
 import { requireUser, type CurrentUser } from "@/server/auth/session";
-import { canManage, getMyOrganization, type OrganizationWithRole } from "@/server/data/organizations";
+import { canDispatch, canManage, getMyOrganization, type OrganizationWithRole } from "@/server/data/organizations";
 import { UserFacingError } from "@/server/errors";
 import { uuid } from "@/lib/schemas";
 
@@ -21,6 +21,17 @@ export async function requireOrgManager(orgId: unknown): Promise<{ user: Current
   const org = parsed.success ? await getMyOrganization(user.id, parsed.data) : null;
   if (!org || !canManage(org.my_role)) {
     throw new UserFacingError("You don't have permission to change this organization.");
+  }
+  return { user, org };
+}
+
+/** For job actions: the contractor org if the user is an owner, admin or dispatcher of it. */
+export async function requireDispatcher(orgId: unknown): Promise<{ user: CurrentUser; org: OrganizationWithRole }> {
+  const user = await requireUser();
+  const parsed = uuid.safeParse(orgId);
+  const org = parsed.success ? await getMyOrganization(user.id, parsed.data) : null;
+  if (!org || org.kind !== "contractor" || !canDispatch(org.my_role)) {
+    throw new UserFacingError("You don't have permission to manage jobs for this business.");
   }
   return { user, org };
 }

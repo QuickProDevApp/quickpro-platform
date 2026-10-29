@@ -197,3 +197,60 @@ export function formObject(formData: FormData, checkboxes: string[] = []): Recor
   for (const name of checkboxes) out[name] = formData.get(name) === "on";
   return out;
 }
+
+const dollars = (message: string) =>
+  z
+    .string()
+    .trim()
+    .transform((v, ctx) => {
+      const n = Number(v.replace(/^\$/, ""));
+      if (v === "" || !Number.isFinite(n) || n < 1 || n > 1000) {
+        ctx.addIssue({ code: "custom", message });
+        return z.NEVER;
+      }
+      return Math.round(n * 100);
+    });
+
+/**
+ * A job as entered on the form: a calendar date and wall-clock times in the
+ * market's time zone (America/New_York). An end time at or before the start
+ * means the shift runs past midnight.
+ */
+export const jobSchema = z.object({
+  title: z.string().trim().min(3, "Give the job a short title.").max(120),
+  description: z.string().trim().max(4000).default(""),
+  categoryId: uuid,
+  serviceAreaId: uuid,
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date."),
+  startTime: time,
+  endTime: time,
+  headcount: z.coerce
+    .number({ message: "Enter how many people you need." })
+    .int("Enter a whole number.")
+    .min(1, "At least 1 person.")
+    .max(50, "At most 50 people per job."),
+  payRate: dollars("Enter the hourly pay in dollars, e.g. 24.00."),
+  engagementTypeId: uuid,
+  addressLine1: z.string().trim().min(3, "Enter the street address.").max(200),
+  city: z.string().trim().min(2, "Enter the city or hamlet.").max(80),
+  postalCode: z
+    .string()
+    .trim()
+    .regex(/^[0-9]{5}(-[0-9]{4})?$/, "Enter a 5-digit ZIP code."),
+  siteNotes: z.string().trim().max(1000).default(""),
+  contactName: z.string().trim().min(2, "Who should workers ask for on site?").max(120),
+  contactPhone: z
+    .string()
+    .trim()
+    .regex(/^\+?[0-9 ().-]{7,20}$/, "Enter a valid phone number."),
+});
+
+export type JobInput = z.infer<typeof jobSchema>;
+
+export const reasonSchema = z.object({
+  reason: z.string().trim().min(1, "Add a short reason.").max(1000),
+});
+
+export const applicationSchema = z.object({
+  note: z.string().trim().max(1000).default(""),
+});

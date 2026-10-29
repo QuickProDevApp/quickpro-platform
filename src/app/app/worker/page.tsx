@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ReadinessList } from "@/components/app/readiness";
 import { StatusBanner } from "@/components/app/status-banner";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -47,13 +48,27 @@ export default async function WorkerOverview() {
           <Card>
             <CardHeader title="What's next" />
             <CardBody className="space-y-2 text-sm text-ink-soft">
+              {profile.status === "approved" ? (
+                <p>
+                  Local businesses post jobs on QuickPro.{" "}
+                  <Link href="/app/worker/jobs" className="font-medium text-brand hover:underline">
+                    Find work in your towns
+                  </Link>{" "}
+                  and apply; offers and bookings show up under{" "}
+                  <Link href="/app/worker/my-jobs" className="font-medium text-brand hover:underline">
+                    My jobs
+                  </Link>
+                  . QuickPro staff may also offer you jobs that fit your skills.
+                </p>
+              ) : (
+                <p>
+                  Once QuickPro staff approve your profile, you can find jobs from local businesses and apply. Staff may also
+                  offer you jobs that fit your skills.
+                </p>
+              )}
               <p>
-                QuickPro staff match approved workers with local service businesses that need extra hands. Browsing and
-                applying for shifts yourself is the next feature to ship.
-              </p>
-              <p>
-                Each business you work with will tell you how you are engaged (for example as their employee) and
-                handle the paperwork that requires.
+                Each job says how the business engages you (for example as its employee). The business handles the paperwork
+                that requires.
               </p>
             </CardBody>
           </Card>
