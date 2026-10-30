@@ -15,7 +15,8 @@
     "admin:grant": "tsx --env-file-if-exists=.env.local scripts/grant-admin.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
     "storage:reconcile": "tsx --env-file-if-exists=.env.local scripts/storage-reconcile.ts",
-    "test:storage": "vitest run --project storage"
+    "test:storage": "vitest run --project storage",
+    "e2e:cleanup": "tsx --env-file-if-exists=.env.local scripts/e2e-cleanup.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

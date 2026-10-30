@@ -1,0 +1,280 @@
+name: Vercel preview deploy
+
+# Manually deploys QuickPro as a protected Vercel *preview* deployment wired
+# to the QuickPro Preview Supabase project. Run it from the Actions tab.
+#
+# - Reuses the Vercel project linked to this repository (or named quickpro*)
+#   and creates one only if none exists.
+# - Sets environment variables for the Preview target only, as sensitive
+#   values. It stops if a variable it manages is shared with Production or
+#   Development, and never deploys to Production.
+# - Requires Vercel Authentication on preview deployments, and checks that
+#   the URL refuses visitors who are not signed in to the Vercel team.
+# - Points Supabase Auth (site URL, redirect URLs) of QuickPro Preview at the
+#   preview URL.
+# - Optionally runs the job-flow end-to-end test against the live URL, then
+#   deletes the test accounts and their data (only @e2e.quickpro.test).
+#
+# Secrets: VERCEL_TOKEN (new), SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD.
+# Optional: VERCEL_TEAM_ID when the token can see more than one team.
+on:
+  workflow_dispatch:
+    inputs:
+      app_branch:
+        description: "Branch to deploy"
+        type: string
+        default: main
+        required: true
+      run_e2e:
+        description: "Run the job-flow test against the deployed site"
+        type: boolean
+        default: true
+
+concurrency:
+  group: vercel-preview
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PROJECT_REF: lwqlhifdxefboanvoooh # QuickPro Preview. Do not change without review.
+      PROJECT_NAME: QuickPro Preview
+      VERCEL_CLI: vercel@63.1.2
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - name: Check secrets
+        run: |
+          test -n "$VERCEL_TOKEN" || { echo "::error::Add a VERCEL_TOKEN repository secret (vercel.com/account/settings/tokens)."; exit 1; }
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo "::error::SUPABASE_ACCESS_TOKEN secret is not set"; exit 1; }
+          test -n "$SUPABASE_DB_PASSWORD" || { echo "::error::SUPABASE_DB_PASSWORD secret is not set"; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.app_branch }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Verify the Supabase project
+        run: |
+          name=$(pnpm exec supabase projects list -o json | jq -r --arg ref "$PROJECT_REF" '.[] | select(.id == $ref or .ref == $ref) | .name')
+          if [ "$name" != "$PROJECT_NAME" ]; then
+            echo "::error::Project $PROJECT_REF is not '$PROJECT_NAME' (found '${name:-nothing}'). Stopping."; exit 1
+          fi
+          region=$(pnpm exec supabase projects list -o json | jq -r --arg ref "$PROJECT_REF" '.[] | select(.id == $ref or .ref == $ref) | .region')
+          echo "SUPABASE_REGION=$region" >> "$GITHUB_ENV"
+          echo "Supabase target: $name ($PROJECT_REF, $region)"
+
+      - name: Read the Supabase API keys
+        run: |
+          keys=$(curl -sS --fail-with-body -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/api-keys?reveal=true") \
+            || { echo "::error::The Supabase access token cannot read the project's API keys: $keys"; exit 1; }
+          anon=$(echo "$keys" | jq -r '[.[] | select(.name == "anon")][0].api_key // empty')
+          service=$(echo "$keys" | jq -r '[.[] | select(.name == "service_role")][0].api_key // empty')
+          test -n "$anon" && test -n "$service" || { echo "::error::Could not find the anon and service_role keys."; exit 1; }
+          echo "::add-mask::$anon"
+          echo "::add-mask::$service"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=https://$PROJECT_REF.supabase.co"
+            echo "SUPABASE_ANON_KEY=$anon"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$service"
+          } >> "$GITHUB_ENV"
+          echo "Read the anon and service_role keys of $PROJECT_REF."
+
+      - name: Find the database pooler (IPv4)
+        # Runtime uses the transaction pooler (6543, serverless friendly; the
+        # app disables prepared statements). Seeding and cleanup use the
+        # session pooler (5432). Only a host that accepts postgres.<ref> with
+        # the database password is used, so a guess cannot reach another project.
+        run: |
+          password=$(jq -rn --arg p "$SUPABASE_DB_PASSWORD" '$p | @uri')
+          echo "::add-mask::$password"
+          user="postgres.$PROJECT_REF"
+          for host in aws-0-$SUPABASE_REGION.pooler.supabase.com aws-1-$SUPABASE_REGION.pooler.supabase.com aws-2-$SUPABASE_REGION.pooler.supabase.com; do
+            session="postgresql://$user:$password@$host:5432/postgres?sslmode=require"
+            transaction="postgresql://$user:$password@$host:6543/postgres?sslmode=require"
+            if PGCONNECT_TIMEOUT=10 psql "$session" -XAtqc 'select 1' >/dev/null 2>&1 \
+              && PGCONNECT_TIMEOUT=10 psql "$transaction" -XAtqc 'select 1' >/dev/null 2>&1; then
+              echo "::add-mask::$session"
+              echo "::add-mask::$transaction"
+              echo "SESSION_DB_URL=$session" >> "$GITHUB_ENV"
+              echo "RUNTIME_DB_URL=$transaction" >> "$GITHUB_ENV"
+              echo "Database pooler: $host (session 5432 and transaction 6543)."
+              exit 0
+            fi
+          done
+          echo "::error::Could not log in to the Supabase pooler for $PROJECT_REF."; exit 1
+
+      - name: Find or create the Vercel project
+        run: |
+          api() { curl -sS --fail-with-body -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" "$@"; }
+          scopes=""
+          if [ -n "$VERCEL_TEAM_ID" ]; then
+            scopes="$VERCEL_TEAM_ID"
+          else
+            teams=$(api "https://api.vercel.com/v2/teams?limit=50" | jq -r '.teams[].id') || teams=""
+            scopes="$teams personal"
+          fi
+          found=""
+          for scope in $scopes; do
+            q=""; [ "$scope" != personal ] && q="&teamId=$scope"
+            list=$(api "https://api.vercel.com/v10/projects?limit=100$q" 2>/dev/null) || continue
+            match=$(echo "$list" | jq -r '
+              [.projects[] | select((.link.org // "" | ascii_downcase) == "quickprodevapp" and (.link.repo // "" | ascii_downcase) == "quickpro-platform")]
+              + [.projects[] | select(.name | test("quickpro"; "i"))]
+              | unique_by(.id) | map("\(.id) \(.name)") | .[]')
+            if [ -n "$match" ]; then
+              if [ "$(echo "$match" | wc -l)" -gt 1 ]; then
+                echo "::error::More than one QuickPro project in this Vercel scope: $(echo "$match" | cut -d' ' -f2 | paste -sd, -). Rename or remove the extra one."; exit 1
+              fi
+              found="$scope $match"; break
+            fi
+          done
+          if [ -n "$found" ]; then
+            read -r scope project_id project_name <<< "$found"
+            echo "Reusing the Vercel project $project_name."
+          else
+            set -- $scopes
+            if [ -z "$VERCEL_TEAM_ID" ] && [ "$#" -gt 2 ]; then
+              echo "::error::No QuickPro project found and the token can see several teams. Add a VERCEL_TEAM_ID secret for the team that should own it."; exit 1
+            fi
+            scope=$1; q=""; [ "$scope" != personal ] && q="?teamId=$scope"
+            created=$(api -X POST "https://api.vercel.com/v11/projects$q" -d '{"name":"quickpro-platform","framework":"nextjs"}') \
+              || { echo "::error::Could not create the Vercel project: $created"; exit 1; }
+            project_id=$(echo "$created" | jq -r .id); project_name=$(echo "$created" | jq -r .name)
+            echo "Created the Vercel project $project_name."
+          fi
+          if [ "$scope" = personal ]; then
+            org_id=$(api "https://api.vercel.com/v2/user" | jq -r '.user.id // .user.uid')
+            team_q=""
+          else
+            org_id=$scope; team_q="teamId=$scope"
+          fi
+          {
+            echo "VERCEL_PROJECT_ID=$project_id"
+            echo "VERCEL_PROJECT_NAME=$project_name"
+            echo "VERCEL_ORG_ID=$org_id"
+            echo "TEAM_Q=$team_q"
+          } >> "$GITHUB_ENV"
+
+      - name: Require Vercel Authentication on previews
+        run: |
+          api() { curl -sS --fail-with-body -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" "$@"; }
+          project=$(api "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID?$TEAM_Q")
+          protection=$(echo "$project" | jq -r '.ssoProtection.deploymentType // empty')
+          if [ -z "$protection" ]; then
+            api -X PATCH "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID?$TEAM_Q" -d '{"ssoProtection":{"deploymentType":"preview"}}' >/dev/null
+            echo "Turned on Vercel Authentication for preview deployments."
+          else
+            echo "Vercel Authentication is on ($protection)."
+          fi
+          # A bypass secret lets this workflow's tests in. Visitors still need a Vercel login.
+          secret=$(echo "$project" | jq -r '(.protectionBypass // {}) | to_entries | map(select(.value.scope == "automation-bypass")) | first | .key // empty')
+          if [ -z "$secret" ]; then
+            out=$(api -X PATCH "https://api.vercel.com/v1/projects/$VERCEL_PROJECT_ID/protection-bypass?$TEAM_Q" -d '{"generate":{"note":"QuickPro GitHub Actions"}}') \
+              || { echo "::error::Could not create a protection bypass secret: $out"; exit 1; }
+            secret=$(echo "$out" | jq -r '(.protectionBypass // {}) | to_entries | map(select(.value.scope == "automation-bypass")) | first | .key // empty')
+          fi
+          test -n "$secret" || { echo "::error::No automation bypass secret on the project."; exit 1; }
+          echo "::add-mask::$secret"
+          echo "VERCEL_AUTOMATION_BYPASS_SECRET=$secret" >> "$GITHUB_ENV"
+
+      - name: Choose the preview address
+        run: |
+          alias="quickpro-preview-${PROJECT_REF:0:6}.vercel.app"
+          echo "PREVIEW_HOST=$alias" >> "$GITHUB_ENV"
+          echo "Preview address: https://$alias"
+
+      - name: Set Preview environment variables
+        run: |
+          api() { curl -sS --fail-with-body -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" "$@"; }
+          existing=$(api "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env?$TEAM_Q")
+          set_var() {
+            key=$1; value=$2; type=$3
+            shared=$(echo "$existing" | jq -r --arg k "$key" '[.envs[] | select(.key == $k) | select(.target | (index("production") or index("development")))] | length')
+            if [ "$shared" != "0" ]; then
+              echo "::error::$key already exists for Production or Development in Vercel. Not changing it; set it for Preview only by hand or remove it."; exit 1
+            fi
+            body=$(jq -n --arg k "$key" --arg v "$value" --arg t "$type" '{key:$k, value:$v, type:$t, target:["preview"]}')
+            api -X POST "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env?upsert=true&$TEAM_Q" -d "$body" >/dev/null
+            echo "Set $key (Preview, $type)."
+          }
+          set_var NEXT_PUBLIC_SUPABASE_URL "$NEXT_PUBLIC_SUPABASE_URL" plain
+          set_var NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY "$SUPABASE_ANON_KEY" plain
+          set_var NEXT_PUBLIC_SITE_URL "https://$PREVIEW_HOST" plain
+          set_var SUPABASE_SERVICE_ROLE_KEY "$SUPABASE_SERVICE_ROLE_KEY" sensitive
+          set_var DATABASE_URL "$RUNTIME_DB_URL" sensitive
+          set_var DATABASE_POOL_MAX 1 plain
+          set_var FILE_STORAGE_DRIVER supabase plain
+
+      - name: Deploy (preview, never production)
+        run: |
+          mkdir -p .vercel
+          jq -n --arg p "$VERCEL_PROJECT_ID" --arg o "$VERCEL_ORG_ID" '{projectId:$p, orgId:$o}' > .vercel/project.json
+          url=$(npx --yes "$VERCEL_CLI" deploy --yes --token "$VERCEL_TOKEN" --target preview)
+          echo "Deployment: $url"
+          echo "DEPLOY_URL=$url" >> "$GITHUB_ENV"
+          scope=(); [ -n "$TEAM_Q" ] && scope=(--scope "$VERCEL_ORG_ID")
+          npx --yes "$VERCEL_CLI" alias set "$url" "$PREVIEW_HOST" --token "$VERCEL_TOKEN" "${scope[@]}"
+
+      - name: Point Supabase Auth at the preview
+        run: |
+          site="https://$PREVIEW_HOST"
+          current=$(curl -sS --fail-with-body -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth") \
+            || { echo "::warning::The Supabase token cannot read Auth settings. Set Site URL to $site and add $site/** to Redirect URLs by hand."; exit 0; }
+          allow=$(echo "$current" | jq -r --arg u "$site/**" '(.uri_allow_list // "") | split(",") | map(select(. != "")) | (. + [$u]) | unique | join(",")')
+          body=$(jq -n --arg s "$site" --arg a "$allow" '{site_url:$s, uri_allow_list:$a}')
+          curl -sS --fail-with-body -X PATCH -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth" -d "$body" >/dev/null \
+            || { echo "::warning::Could not update Auth settings. Set Site URL to $site and add $site/** to Redirect URLs by hand."; exit 0; }
+          echo "Supabase Auth: site URL $site, redirect URLs $allow"
+          echo "$current" | jq -r '"Confirm email: \(if .mailer_autoconfirm then "off" else "on" end). Minimum password length: \(.password_min_length). Custom SMTP: \(if .smtp_host then "yes" else "no (built-in email only reaches Supabase organization members)" end)."'
+
+      - name: Smoke test the live site
+        run: |
+          base="https://$PREVIEW_HOST"
+          code() { curl -s -o /dev/null -w '%{http_code}' -H "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET" "$@"; }
+          fail=0
+          for path in / /sign-in /sign-up; do
+            c=$(code "$base$path"); echo "$path -> $c"; [ "$c" = 200 ] || fail=1
+          done
+          c=$(code "$base/app"); echo "/app (signed out) -> $c"; case "$c" in 307|308|302|303) ;; *) fail=1 ;; esac
+          public=$(curl -s -o /dev/null -w '%{http_code}' "$base/")
+          echo "/ without a Vercel login -> $public"
+          [ "$public" = 200 ] && { echo "::error::The preview is publicly reachable. Stopping."; fail=1; }
+          exit $fail
+
+      - name: Install Chromium
+        if: inputs.run_e2e
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Job flow end to end against the live site
+        if: inputs.run_e2e
+        env:
+          E2E_BASE_URL: https://${{ env.PREVIEW_HOST }}
+        run: DATABASE_URL="$SESSION_DB_URL" pnpm exec playwright test e2e/jobs.spec.ts --trace off
+      - name: Remove test accounts and data
+        if: always() && inputs.run_e2e && env.SESSION_DB_URL != ''
+        run: DATABASE_URL="$SESSION_DB_URL" pnpm e2e:cleanup
+      # No trace upload here: traces record request headers, including the
+      # protection bypass secret.
+
+      - name: Summary
+        run: |
+          {
+            echo "### QuickPro preview"
+            echo "- URL: https://$PREVIEW_HOST (Vercel login required)"
+            echo "- Vercel project: $VERCEL_PROJECT_NAME, Preview environment only"
+            echo "- Supabase: $PROJECT_NAME ($PROJECT_REF)"
+          } >> "$GITHUB_STEP_SUMMARY"

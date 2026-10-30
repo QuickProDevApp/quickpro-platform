@@ -13,9 +13,24 @@ const jobs = await import("@/server/data/jobs");
 
 afterAll(() => sql.end());
 
+function newYorkOffset(d: Date) {
+  return new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", timeZoneName: "shortOffset" })
+    .formatToParts(d)
+    .find((p) => p.type === "timeZoneName")!.value;
+}
+
+/**
+ * A date (YYYY-MM-DD) a day or more ahead in New York whose night does not
+ * cross a daylight saving change, so an overnight shift is a fixed length.
+ */
 function tomorrowInNewYork() {
-  const d = new Date(Date.now() + 36 * 3_600_000);
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d); // YYYY-MM-DD
+  for (let hours = 36; hours < 36 + 24 * 7; hours += 24) {
+    const d = new Date(Date.now() + hours * 3_600_000);
+    if (newYorkOffset(d) === newYorkOffset(new Date(d.getTime() + 24 * 3_600_000))) {
+      return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d);
+    }
+  }
+  throw new Error("No week without a daylight saving change");
 }
 
 /** Date and HH:MM in New York, `hours` from now. */

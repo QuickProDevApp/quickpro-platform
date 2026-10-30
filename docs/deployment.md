@@ -1,6 +1,24 @@
 # Deploying a preview
 
-QuickPro has not been deployed anywhere yet. This is the exact setup for a
+## Automated (GitHub Actions)
+
+`.github/workflows/vercel-preview.yml` (Actions tab, "Vercel preview deploy")
+does sections 1.4, 1.7 and 2 below for QuickPro Preview (`lwqlhifdxefboanvoooh`):
+it reuses the Vercel project linked to this repository (or creates
+`quickpro-platform`), sets the variables for the **Preview** environment only
+(secrets as Sensitive), requires Vercel Authentication on previews, deploys a
+preview (never production) at `https://quickpro-preview-lwqlhi.vercel.app`,
+points Supabase Auth at it, smoke tests it, and runs `e2e/jobs.spec.ts`
+against it. The test accounts (`@e2e.quickpro.test`) and their data are
+removed afterwards (`pnpm e2e:cleanup`).
+
+It needs a `VERCEL_TOKEN` repository secret (vercel.com/account/settings/tokens),
+plus `VERCEL_TEAM_ID` if the token can see more than one team. Migrations are
+applied separately (`supabase-preview.yml`).
+
+## By hand
+
+This is the exact setup for a
 private preview on Vercel and a hosted Supabase project, so the contractor,
 worker and staff journeys can be tested in a browser. Use a separate Supabase
 project for the preview, never one holding real customer data.
