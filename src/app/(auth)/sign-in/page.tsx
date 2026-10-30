@@ -12,6 +12,7 @@ export default async function SignInPage({
   searchParams: Promise<{ next?: string; confirmed?: string; error?: string }>;
 }) {
   const params = await searchParams;
+  const next = safeNextPath(params.next);
   return (
     <>
       <h1 className="text-xl font-semibold">Sign in to QuickPro</h1>
@@ -26,20 +27,25 @@ export default async function SignInPage({
         </div>
       ) : null}
       <ActionForm action={signIn} className="mt-6 space-y-4">
-        <input type="hidden" name="next" value={safeNextPath(params.next)} />
+        <input type="hidden" name="next" value={next} />
         <Field name="email" label="Email">
           <Input name="email" type="email" autoComplete="email" required />
         </Field>
         <Field name="password" label="Password">
           <Input name="password" type="password" autoComplete="current-password" required />
         </Field>
+        <p className="text-sm">
+          <Link href="/forgot-password" className="font-medium text-brand hover:underline">
+            Forgot your password?
+          </Link>
+        </p>
         <div className="pt-2">
           <SubmitButton pendingLabel="Signing in…">Sign in</SubmitButton>
         </div>
       </ActionForm>
       <p className="mt-6 text-sm text-muted">
         New to QuickPro?{" "}
-        <Link href="/sign-up" className="font-medium text-brand hover:underline">
+        <Link href={next === "/app" ? "/sign-up" : `/sign-up?next=${encodeURIComponent(next)}`} className="font-medium text-brand hover:underline">
           Create an account
         </Link>
       </p>

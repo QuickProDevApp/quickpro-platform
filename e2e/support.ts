@@ -143,3 +143,39 @@ export async function seedApprovedWorker(userId: string, homeTown: string, skill
 export function newYorkDate(days: number) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(Date.now() + days * 86_400_000));
 }
+
+/**
+ * The newest link in the local Supabase inbox for `email` whose URL contains
+ * `marker`. Supports Mailpit (current CLI) and Inbucket (older CLI).
+ */
+export async function latestEmailLink(email: string, marker: string): Promise<string> {
+  const base = process.env.E2E_MAILBOX_URL ?? "http://127.0.0.1:54324";
+  const find = (text: string) =>
+    [...text.replaceAll("&amp;", "&").matchAll(/https?:\/\/[^\s"'<>)]+/g)].map((m) => m[0]).find((u) => u.includes(marker));
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const mailpit = await fetch(`${base}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`).catch(() => null);
+    if (mailpit?.ok) {
+      const { messages } = (await mailpit.json()) as { messages: { ID: string }[] };
+      if (messages?.length) {
+        const message = (await (await fetch(`${base}/api/v1/message/${messages[0].ID}`)).json()) as { Text?: string; HTML?: string };
+        const link = find(`${message.Text ?? ""} ${message.HTML ?? ""}`);
+        if (link) return link;
+      }
+    } else {
+      const mailbox = email.split("@")[0];
+      const inbucket = await fetch(`${base}/api/v1/mailbox/${mailbox}`).catch(() => null);
+      if (inbucket?.ok) {
+        const list = (await inbucket.json()) as { id: string }[];
+        if (list.length) {
+          const message = (await (await fetch(`${base}/api/v1/mailbox/${mailbox}/${list.at(-1)!.id}`)).json()) as {
+            body: { text?: string; html?: string };
+          };
+          const link = find(`${message.body.text ?? ""} ${message.body.html ?? ""}`);
+          if (link) return link;
+        }
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  throw new Error(`No email with a ${marker} link arrived for ${email}`);
+}

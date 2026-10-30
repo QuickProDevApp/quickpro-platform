@@ -158,3 +158,19 @@ export function formatShift(startsAt: Date, endsAt: Date): string {
 export function shiftHours(startsAt: Date, endsAt: Date): number {
   return Math.round(((endsAt.getTime() - startsAt.getTime()) / 3_600_000) * 100) / 100;
 }
+
+export type OrgRole = "owner" | "admin" | "dispatcher" | "member";
+
+export const ORG_ROLE_LABEL: Record<OrgRole, string> = {
+  owner: "Owner",
+  admin: "Admin",
+  dispatcher: "Dispatcher",
+  member: "Member",
+};
+
+export const ORG_ROLE_DESCRIPTION: Record<OrgRole, string> = {
+  owner: "Everything, including owners and admins.",
+  admin: "Business profile, documents, team (except owners and admins) and jobs.",
+  dispatcher: "Post and staff jobs, see bookings.",
+  member: "Can see the business and its jobs.",
+};

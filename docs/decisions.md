@@ -240,3 +240,35 @@ worker accepts.
 
 - **Why:** workers need enough to decide; addresses and phone numbers are
   shared only when both sides have committed.
+
+## D-019 Team invitations are one-time links, stored only as a hash
+
+An owner or admin creates an invitation for an email address and a role.
+The database returns a random 128-bit token once; the app shows it as a link
+and the table keeps only its SHA-256 hash, so a leaked row or backup cannot
+be used to join. The invitee must be signed in with the invited address to
+accept. Invitations expire after 14 days, a new one to the same address
+replaces the open one, and there are at most 50 open per organization.
+Nobody is invited as owner; an owner promotes someone after they join.
+Admins manage dispatchers and members only; owners manage everyone. Every
+organization keeps at least one owner. All of this is in database functions
+(`invite_member`, `accept_invitation`, `change_member_role`, `remove_member`).
+
+- **Why:** QuickPro does not send email yet (no provider), and a link the
+  inviter sends works today without pretending an email went out.
+- **Cost:** the inviter has to send the link themselves. When email is
+  added, the same token goes into the email instead.
+
+## D-020 Password reset needs the email link, not just a session
+
+The reset link signs the person in through `/auth/confirm`, which also sets
+a short-lived httpOnly cookie (`qp_recovery`, 15 minutes). The "choose a new
+password" page and action require both a session and that cookie, then clear
+it. Signed-in people change their password on the account page by entering
+the current one.
+
+- **Why:** without the cookie, anyone with an unlocked signed-in browser
+  could set a new password from `/reset-password` without knowing the old
+  one.
+- **Cost:** Supabase's default reset email uses PKCE, so the link works only
+  in the browser that asked for it. The page says so.

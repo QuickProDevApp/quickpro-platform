@@ -1,6 +1,7 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/server/auth/supabase";
+import { markRecoverySession } from "@/server/auth/recovery";
 import { safeNextPath } from "@/lib/paths";
 
 /**
@@ -23,6 +24,10 @@ export async function GET(request: NextRequest) {
     ok = !(await supabase.auth.verifyOtp({ token_hash: tokenHash, type })).error;
   }
 
-  if (ok) return NextResponse.redirect(new URL(next, origin));
+  if (ok) {
+    // A password-reset link: let the reset page set a new password once.
+    if (searchParams.get("flow") === "recovery" || type === "recovery") await markRecoverySession();
+    return NextResponse.redirect(new URL(next, origin));
+  }
   return NextResponse.redirect(new URL("/sign-in?error=link", origin));
 }

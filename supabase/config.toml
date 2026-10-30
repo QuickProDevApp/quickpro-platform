@@ -31,11 +31,15 @@ file_size_limit = "10MiB"
 [auth]
 enabled = true
 site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3000/auth/confirm", "http://127.0.0.1:3000/auth/confirm"]
+additional_redirect_urls = ["http://localhost:3000/auth/confirm**", "http://127.0.0.1:3000/auth/confirm**"]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
 enable_signup = true
 minimum_password_length = 10
+
+# End-to-end tests send several auth emails an hour to the local inbox.
+[auth.rate_limit]
+email_sent = 100
 
 [auth.email]
 enable_signup = true
