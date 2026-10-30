@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { safeNextPath } from "@/lib/paths";
 import { ActionForm, Field, Input, SubmitButton } from "@/components/ui/form";
 import { signUp } from "../actions";
 
@@ -11,9 +12,9 @@ const intro: Record<string, string> = {
   customer: "Create your account, then register your property or organization.",
 };
 
-export default async function SignUpPage({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
-  const { as } = await searchParams;
-  const next = as && intro[as] ? `/app/onboarding?as=${as}` : "/app";
+export default async function SignUpPage({ searchParams }: { searchParams: Promise<{ as?: string; next?: string }> }) {
+  const { as, next: requested } = await searchParams;
+  const next = as && intro[as] ? `/app/onboarding?as=${as}` : safeNextPath(requested);
   return (
     <>
       <h1 className="text-xl font-semibold">Create your QuickPro account</h1>
@@ -35,7 +36,7 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
       </ActionForm>
       <p className="mt-6 text-sm text-muted">
         Already have an account?{" "}
-        <Link href="/sign-in" className="font-medium text-brand hover:underline">
+        <Link href={next === "/app" ? "/sign-in" : `/sign-in?next=${encodeURIComponent(next)}`} className="font-medium text-brand hover:underline">
           Sign in
         </Link>
       </p>

@@ -24,6 +24,7 @@ export default async function OrganizationLayout({
         ]
       : []),
     { href: `${base}/documents`, label: "Documents" },
+    { href: `${base}/team`, label: "Team" },
   ];
   return (
     <>
