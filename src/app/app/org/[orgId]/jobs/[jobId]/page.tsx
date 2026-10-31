@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JobPeople } from "@/components/app/job-people";
+import { JobThread } from "@/components/app/job-thread";
 import { JobFacts, SiteFacts } from "@/components/app/job-summary";
 import { JobStatusBadge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/button";
@@ -11,6 +12,8 @@ import { formatDateTime } from "@/lib/labels";
 import { uuid } from "@/lib/schemas";
 import { requireMembership } from "@/server/actions/guards";
 import { getJob, getJobSite, listJobPeople } from "@/server/data/jobs";
+import { getJobThread } from "@/server/data/messages";
+import { postJobMessageAction } from "@/app/app/messages/actions";
 import { canDispatch } from "@/server/data/organizations";
 import {
   cancelAssignmentAction,
@@ -34,7 +37,11 @@ export default async function OrganizationJobPage({
   if (!uuid.safeParse(jobId).success) notFound();
   const job = await getJob(user.id, jobId);
   if (!job || job.organization_id !== org.id) notFound();
-  const [site, people] = await Promise.all([getJobSite(user.id, job.id), listJobPeople(user.id, job.id)]);
+  const [site, people, messages] = await Promise.all([
+    getJobSite(user.id, job.id),
+    listJobPeople(user.id, job.id),
+    getJobThread(user.id, job.id),
+  ]);
   const posted = (await searchParams).posted === "1";
 
   const dispatcher = canDispatch(org.my_role);
@@ -68,8 +75,8 @@ export default async function OrganizationJobPage({
 
       {posted ? (
         <FormMessage tone="ok">
-          Job posted. Approved workers can now find it and apply. QuickPro does not send email or text notifications yet, so
-          check back here for applicants.
+          Job posted. Approved workers can now find it and apply. You&apos;ll get a QuickPro notification when someone
+          applies; email and text alerts aren&apos;t available yet.
         </FormMessage>
       ) : null}
       {job.status === "cancelled" ? <FormMessage tone="bad">Cancelled: {job.cancel_reason}</FormMessage> : null}
@@ -84,6 +91,12 @@ export default async function OrganizationJobPage({
             offerAction={dispatcher ? offerJobAction.bind(null, org.id, job.id) : undefined}
             declineAction={dispatcher ? declineApplicationAction.bind(null, org.id, job.id) : undefined}
             cancelAction={dispatcher ? cancelAssignmentAction.bind(null, org.id, job.id) : undefined}
+          />
+          <JobThread
+            messages={messages}
+            currentUserId={user.id}
+            postAction={postJobMessageAction.bind(null, job.id)}
+            description="Your team, workers you offered the job to or booked, and QuickPro staff can read this."
           />
         </div>
         <div className="space-y-6">

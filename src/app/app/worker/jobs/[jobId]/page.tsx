@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JobFacts, SiteFacts } from "@/components/app/job-summary";
+import { JobThread } from "@/components/app/job-thread";
 import { ApplicationStatusBadge, AssignmentStatusBadge, JobStatusBadge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { ActionForm, Field, FormMessage, Input, SubmitButton, Textarea } from "@/components/ui/form";
@@ -9,6 +10,8 @@ import { formatDateTime } from "@/lib/labels";
 import { uuid } from "@/lib/schemas";
 import { requireUser } from "@/server/auth/session";
 import { getJobForWorker, getJobSite } from "@/server/data/jobs";
+import { getJobThread } from "@/server/data/messages";
+import { postJobMessageAction } from "@/app/app/messages/actions";
 import { getWorkerProfile } from "@/server/data/workers";
 import {
   applyAction,
@@ -29,7 +32,12 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
   if (!uuid.safeParse(jobId).success) notFound();
   const [job, profile] = await Promise.all([getJobForWorker(user.id, jobId), getWorkerProfile(user.id)]);
   if (!job || !profile) notFound();
-  const site = job.assignment_status === "accepted" || job.assignment_status === "completed" ? await getJobSite(user.id, job.id) : null;
+  const booked = job.assignment_status === "accepted" || job.assignment_status === "completed";
+  const inThread = booked || job.assignment_status === "offered";
+  const [site, messages] = await Promise.all([
+    booked ? getJobSite(user.id, job.id) : null,
+    inThread ? getJobThread(user.id, job.id) : null,
+  ]);
 
   const now = new Date();
   const upcoming = job.status === "open" && job.starts_at > now;
@@ -101,6 +109,15 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
                 ) : null}
               </CardBody>
             </Card>
+          ) : null}
+
+          {messages ? (
+            <JobThread
+              messages={messages}
+              currentUserId={user.id}
+              postAction={postJobMessageAction.bind(null, job.id)}
+              description={`Talk to ${job.organization_name ?? "the business"} about this job. Other workers booked on it and QuickPro staff can read this too.`}
+            />
           ) : null}
 
           <Card>
