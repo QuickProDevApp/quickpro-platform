@@ -254,3 +254,29 @@ export const reasonSchema = z.object({
 export const applicationSchema = z.object({
   note: z.string().trim().max(1000).default(""),
 });
+
+const newPassword = z.string().min(10, "Use at least 10 characters.").max(72, "Use at most 72 characters.");
+
+export const emailOnlySchema = z.object({
+  email: z.email("Enter a valid email address.").trim().toLowerCase(),
+});
+
+export const newPasswordSchema = z
+  .object({ password: newPassword, confirm: z.string() })
+  .refine((v) => v.password === v.confirm, { path: ["confirm"], message: "The passwords don't match." });
+
+export const changePasswordSchema = z
+  .object({ currentPassword: z.string().min(1, "Enter your current password."), password: newPassword, confirm: z.string() })
+  .refine((v) => v.password === v.confirm, { path: ["confirm"], message: "The passwords don't match." });
+
+export const INVITABLE_ROLES = ["admin", "dispatcher", "member"] as const;
+
+export const inviteSchema = z.object({
+  email: z.email("Enter a valid email address.").trim().toLowerCase(),
+  role: z.enum(INVITABLE_ROLES, "Choose a role."),
+});
+
+export const memberRoleSchema = z.object({
+  userId: uuid,
+  role: z.enum(["owner", "admin", "dispatcher", "member"], "Choose a role."),
+});

@@ -33,10 +33,15 @@ Built:
 - Staff: jobs queue with "unfilled within 48 hours", hand matching of any
   approved worker ranked by town and skills.
 
+- Teams: owners and admins invite people by link with a role (admin,
+  dispatcher, member), change roles and remove people; anyone can leave
+  except the last owner.
+- Accounts: forgot password and reset by email, change password, resend the
+  confirmation email.
+
 Not built yet:
 
-- Team invites (owner, admin, dispatcher, member). The roles exist and are
-  enforced; there is no invite flow.
+- Invitation emails. Invitations are links the inviter sends themselves.
 - Notifications: email (and SMS later) for applications, offers and changes,
   through a real provider. Until then the screens say that nothing is sent.
 - Admin metrics beyond counts: fill rate, time to fill.

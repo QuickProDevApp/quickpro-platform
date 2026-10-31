@@ -43,7 +43,7 @@ begin
                     'contractor_service_areas', 'worker_profiles', 'worker_skills', 'worker_service_areas',
                     'worker_availability', 'qualification_documents', 'audit_log', 'markets',
                     'service_areas', 'service_categories', 'skills', 'engagement_types', 'jobs',
-                    'job_skills', 'job_sites', 'job_applications', 'job_assignments']) t
+                    'job_skills', 'job_sites', 'job_applications', 'job_assignments', 'organization_invitations']) t
   where to_regclass('public.' || t) is null;
   if v_missing is not null then
     raise exception 'Missing tables: %', v_missing;
