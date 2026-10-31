@@ -86,6 +86,7 @@ export default async function OrganizationJobPage({
         <div className="space-y-6">
           <JobPeople
             people={people}
+            skillsRequested={job.skill_names.length}
             canOffer={canOffer}
             canChange={canChange}
             offerAction={dispatcher ? offerJobAction.bind(null, org.id, job.id) : undefined}
@@ -104,7 +105,7 @@ export default async function OrganizationJobPage({
             <CardHeader title="Details" />
             <CardBody className="space-y-4">
               <JobFacts job={job} />
-              {job.description ? <p className="text-sm whitespace-pre-line text-ink-soft">{job.description}</p> : null}
+              {job.description ? <p className="border-t border-line pt-4 text-sm whitespace-pre-line text-ink-soft">{job.description}</p> : null}
             </CardBody>
           </Card>
           {site ? (

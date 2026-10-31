@@ -5,7 +5,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   await requireAdmin();
   return (
     <>
-      <div className="mb-2 text-xs font-medium tracking-wide text-muted uppercase">QuickPro staff</div>
       <SubNav
         items={[
           { href: "/app/admin", label: "Overview", exact: true },

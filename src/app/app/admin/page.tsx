@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { requireAdmin } from "@/server/auth/session";
 import { getAdminOverview } from "@/server/data/admin";
@@ -23,45 +23,53 @@ export default async function AdminOverviewPage() {
       href: "/app/admin/organizations?insurance=attention",
     },
   ];
+  const open = queues.filter((q) => q.value > 0).length;
+  const totals = [
+    { label: "Approved contractors", value: o.approved_contractors, href: "/app/admin/organizations?status=approved" },
+    { label: "Approved workers", value: o.approved_workers, href: "/app/admin/workers?status=approved" },
+    { label: "Open jobs, not started", value: jobs.open_jobs, href: "/app/admin/jobs?show=open" },
+    { label: "Filled jobs, not started", value: jobs.filled_upcoming, href: "/app/admin/jobs?show=filled" },
+    { label: "Jobs completed in the last 30 days", value: jobs.completed_30d, href: "/app/admin/jobs?show=completed" },
+  ];
   return (
     <>
-      <PageHeader title="Needs attention" description="Live counts from the database. Oldest submissions are listed first in each queue." />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {queues.map((q) => (
-          <Link key={q.label} href={q.href} className="group">
-            <Card className={`h-full p-5 transition-shadow group-hover:shadow-md ${q.value > 0 ? "border-brand/40" : ""}`}>
-              <p className="text-3xl font-semibold tabular-nums">{q.value}</p>
-              <p className="mt-1 text-sm text-muted">{q.label}</p>
-            </Card>
-          </Link>
-        ))}
-      </div>
-      <h2 className="mt-10 mb-3 text-sm font-semibold text-ink-soft">Approved so far</h2>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="p-5">
-          <p className="text-2xl font-semibold tabular-nums">{o.approved_contractors}</p>
-          <p className="mt-1 text-sm text-muted">Contractor businesses</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-2xl font-semibold tabular-nums">{o.approved_workers}</p>
-          <p className="mt-1 text-sm text-muted">Workers</p>
-        </Card>
-      </div>
-      <h2 className="mt-10 mb-3 text-sm font-semibold text-ink-soft">Jobs</h2>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "Open, not started", value: jobs.open_jobs, href: "/app/admin/jobs?show=open" },
-          { label: "Filled, not started", value: jobs.filled_upcoming, href: "/app/admin/jobs?show=filled" },
-          { label: "Completed in the last 30 days", value: jobs.completed_30d, href: "/app/admin/jobs?show=completed" },
-        ].map((c) => (
-          <Link key={c.label} href={c.href} className="group">
-            <Card className="h-full p-5 transition-shadow group-hover:shadow-md">
-              <p className="text-2xl font-semibold tabular-nums">{c.value}</p>
-              <p className="mt-1 text-sm text-muted">{c.label}</p>
-            </Card>
-          </Link>
-        ))}
-      </div>
+    <PageHeader title="Staff overview" description="Suffolk County, NY" />
+    <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <Card>
+        <CardHeader
+          title="Needs attention"
+          description={open === 0 ? "Every queue is clear." : `${open} of ${queues.length} queues have work waiting. Oldest items are listed first.`}
+        />
+        <ul className="divide-y divide-line">
+          {queues.map((q) => (
+            <li key={q.label}>
+              <Link href={q.href} className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-subtle/60 sm:px-5">
+                <span className={`min-w-0 flex-1 text-sm ${q.value > 0 ? "text-ink" : "text-muted"}`}>{q.label}</span>
+                <span
+                  className={`tabular inline-flex h-6 min-w-8 items-center justify-center rounded-md px-2 text-[13px] font-semibold ${
+                    q.value > 0 ? "bg-navy text-white" : "bg-subtle text-faint"
+                  }`}
+                >
+                  {q.value}
+                </span>
+                <span aria-hidden className="text-faint">›</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Card>
+      <Card>
+        <CardHeader title="Platform" description="Live counts." />
+        <dl className="divide-y divide-line">
+          {totals.map((t) => (
+            <Link key={t.label} href={t.href} className="flex items-baseline justify-between gap-4 px-4 py-3 transition-colors hover:bg-subtle/60 sm:px-5">
+              <dt className="text-sm text-muted">{t.label}</dt>
+              <dd className="tabular text-[15px] font-semibold text-ink">{t.value}</dd>
+            </Link>
+          ))}
+        </dl>
+      </Card>
+    </div>
     </>
   );
 }

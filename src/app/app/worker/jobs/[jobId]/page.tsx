@@ -6,7 +6,7 @@ import { JobThread } from "@/components/app/job-thread";
 import { ApplicationStatusBadge, AssignmentStatusBadge, JobStatusBadge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { ActionForm, Field, FormMessage, Input, SubmitButton, Textarea } from "@/components/ui/form";
-import { formatDateTime } from "@/lib/labels";
+import { formatCents, formatDateTime, formatShift } from "@/lib/labels";
 import { uuid } from "@/lib/schemas";
 import { requireUser } from "@/server/auth/session";
 import { getJobForWorker, getJobSite } from "@/server/data/jobs";
@@ -61,6 +61,11 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
           ) : null}
         </div>
         <p className="text-sm text-muted">{job.organization_name ?? "A QuickPro contractor"}</p>
+        <p className="tabular mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-ink">
+          <span className="font-semibold">{formatCents(job.pay_rate_cents)}/hr</span>
+          <span>{formatShift(job.starts_at, job.ends_at)}</span>
+          <span className="text-muted">{job.area_name}</span>
+        </p>
       </div>
 
       {job.status === "cancelled" ? <FormMessage tone="bad">The business cancelled this job: {job.cancel_reason}</FormMessage> : null}
@@ -111,6 +116,19 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
             </Card>
           ) : null}
 
+
+          <Card>
+            <CardHeader title="About the job" />
+            <CardBody className="space-y-4">
+              <JobFacts job={job} />
+              {job.description ? <p className="border-t border-line pt-4 text-sm whitespace-pre-line text-ink-soft">{job.description}</p> : null}
+              <p className="text-xs text-muted">
+                {job.organization_name ?? "The business"} engages you directly on the basis above. QuickPro connects you with
+                the business and is not your employer.
+              </p>
+            </CardBody>
+          </Card>
+
           {messages ? (
             <JobThread
               messages={messages}
@@ -119,21 +137,10 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
               description={`Talk to ${job.organization_name ?? "the business"} about this job. Other workers booked on it and QuickPro staff can read this too.`}
             />
           ) : null}
-
-          <Card>
-            <CardHeader title="About the job" />
-            <CardBody className="space-y-4">
-              <JobFacts job={job} />
-              {job.description ? <p className="text-sm whitespace-pre-line text-ink-soft">{job.description}</p> : null}
-              <p className="text-xs text-muted">
-                {job.organization_name ?? "The business"} engages you directly on the basis above. QuickPro connects you with
-                the business and is not your employer.
-              </p>
-            </CardBody>
-          </Card>
         </div>
 
-        <div className="space-y-6">
+        {/* On phones, applying comes first. */}
+        <div className={canApply ? "order-first space-y-6 lg:order-none" : "space-y-6"}>
           {canApply ? (
             <Card>
               <CardHeader title="Apply" description="The business sees your name, headline, skills and home town. Your phone number is shared only if you accept an offer." />

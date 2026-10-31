@@ -14,7 +14,7 @@ export function FilterLinks({
   extra?: Record<string, string | undefined>;
 }) {
   return (
-    <div className="mb-4 flex flex-wrap gap-1.5">
+    <div className="mb-4 inline-flex max-w-full gap-0.5 overflow-x-auto rounded-md bg-subtle p-0.5 ring-1 ring-inset ring-line [scrollbar-width:none]">
       {options.map((o) => {
         const qs = new URLSearchParams();
         for (const [k, v] of Object.entries(extra)) if (v) qs.set(k, v);
@@ -24,8 +24,9 @@ export function FilterLinks({
           <Link
             key={o.label}
             href={`${basePath}${qs.size ? `?${qs}` : ""}`}
-            className={`rounded-full border px-3 py-1 text-sm ${
-              active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink-soft hover:border-line-strong"
+            aria-current={active ? "page" : undefined}
+            className={`shrink-0 rounded-[5px] px-3 py-1.5 text-[13px] font-medium whitespace-nowrap transition-colors ${
+              active ? "bg-surface text-ink shadow-[0_1px_2px_rgba(13,22,38,0.08)] ring-1 ring-line" : "text-muted hover:text-ink"
             }`}
           >
             {o.label}

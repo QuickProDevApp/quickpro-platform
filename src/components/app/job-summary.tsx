@@ -5,7 +5,7 @@ import type { Job, JobSite } from "@/server/data/jobs";
 export function JobFacts({ job }: { job: Job }) {
   const hours = shiftHours(job.starts_at, job.ends_at);
   return (
-    <dl className="grid gap-4 text-sm sm:grid-cols-2">
+    <dl className="divide-y divide-line text-sm">
       <Fact label="When" value={formatShift(job.starts_at, job.ends_at)} detail={`${hours} hours, Eastern time`} />
       <Fact label="Where" value={`${job.area_name}, NY`} />
       <Fact label="Pay" value={`${formatCents(job.pay_rate_cents)} an hour`} detail={`About ${formatCents(Math.round(job.pay_rate_cents * hours))} for the shift`} />
@@ -19,7 +19,7 @@ export function JobFacts({ job }: { job: Job }) {
 
 export function SiteFacts({ site }: { site: JobSite }) {
   return (
-    <dl className="grid gap-4 text-sm sm:grid-cols-2">
+    <dl className="divide-y divide-line text-sm">
       <Fact label="Address" value={`${site.address_line1}, ${site.city}, NY ${site.postal_code}`} />
       <Fact label="Ask for" value={site.contact_name} detail={site.contact_phone} />
       {site.site_notes ? <Fact label="Arrival notes" value={site.site_notes} /> : null}
@@ -29,10 +29,12 @@ export function SiteFacts({ site }: { site: JobSite }) {
 
 function Fact({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
-    <div>
-      <dt className="text-xs font-medium tracking-wide text-muted uppercase">{label}</dt>
-      <dd className="mt-0.5 text-ink">{value}</dd>
-      {detail ? <dd className="text-xs text-muted">{detail}</dd> : null}
+    <div className="grid grid-cols-[6.5rem_1fr] gap-x-3 py-2.5 first:pt-0 last:pb-0">
+      <dt className="text-[13px] text-muted">{label}</dt>
+      <dd className="min-w-0 text-ink">
+        {value}
+        {detail ? <span className="mt-0.5 block text-xs leading-[1.125rem] text-muted">{detail}</span> : null}
+      </dd>
     </div>
   );
 }

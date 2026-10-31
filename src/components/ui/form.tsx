@@ -68,12 +68,12 @@ export function ActionForm({
 
 export function FormMessage({ tone, children }: { tone: "ok" | "bad" | "info"; children: ReactNode }) {
   const styles = {
-    ok: "border-ok/30 bg-ok-soft text-ok",
-    bad: "border-bad/30 bg-bad-soft text-bad",
-    info: "border-info/30 bg-info-soft text-info",
+    ok: "border-ok/25 bg-ok-soft text-ok",
+    bad: "border-bad/25 bg-bad-soft text-bad",
+    info: "border-info/20 bg-info-soft text-ink-soft",
   }[tone];
   return (
-    <p role={tone === "bad" ? "alert" : "status"} className={`rounded-lg border px-3 py-2 text-sm ${styles}`}>
+    <p role={tone === "bad" ? "alert" : "status"} className={`rounded-md border px-3 py-2 text-sm ${styles}`}>
       {children}
     </p>
   );
@@ -93,12 +93,12 @@ export function Field({
   const errors = use(ErrorsContext)?.[name];
   return (
     <div className="space-y-1.5">
-      <label htmlFor={name} className="block text-sm font-medium text-ink">
+      <label htmlFor={name} className="block text-[13px] font-medium text-ink">
         {label}
       </label>
       {children}
       {errors?.length ? (
-        <p className="text-sm text-bad" id={`${name}-error`}>
+        <p className="text-[13px] text-bad" id={`${name}-error`}>
           {errors[0]}
         </p>
       ) : hint ? (
@@ -109,24 +109,34 @@ export function Field({
 }
 
 const control =
-  "block w-full rounded-lg border border-line-strong bg-surface px-3 text-sm text-ink placeholder:text-muted/70 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 disabled:bg-canvas disabled:text-muted";
+  "block w-full rounded-md border border-line-strong bg-surface px-3 text-base text-ink shadow-[0_1px_1px_rgba(13,22,38,0.03)] transition-[border-color,box-shadow] duration-150 placeholder:text-faint hover:border-faint focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15 aria-[invalid=true]:border-bad aria-[invalid=true]:focus:ring-bad/15 disabled:bg-subtle disabled:text-muted sm:text-sm";
+
+/** Marks a control invalid and links it to its error when the form returned one for it. */
+function useInvalid(name: string | undefined) {
+  const errors = use(ErrorsContext);
+  const invalid = Boolean(name && errors?.[name]?.length);
+  return invalid ? { "aria-invalid": true as const, "aria-describedby": `${name}-error` } : {};
+}
 
 export function Input(props: ComponentProps<"input">) {
-  return <input id={props.name} {...props} className={`${control} h-10 ${props.className ?? ""}`} />;
+  const invalid = useInvalid(props.name);
+  return <input id={props.name} {...invalid} {...props} className={`${control} h-10 sm:h-9 ${props.className ?? ""}`} />;
 }
 
 export function Textarea(props: ComponentProps<"textarea">) {
-  return <textarea id={props.name} rows={4} {...props} className={`${control} py-2 ${props.className ?? ""}`} />;
+  const invalid = useInvalid(props.name);
+  return <textarea id={props.name} rows={4} {...invalid} {...props} className={`${control} py-2 ${props.className ?? ""}`} />;
 }
 
 export function Select(props: ComponentProps<"select">) {
-  return <select id={props.name} {...props} className={`${control} h-10 ${props.className ?? ""}`} />;
+  const invalid = useInvalid(props.name);
+  return <select id={props.name} {...invalid} {...props} className={`${control} h-10 pr-8 sm:h-9 ${props.className ?? ""}`} />;
 }
 
 export function Checkbox({ label, ...props }: ComponentProps<"input"> & { label: ReactNode }) {
   return (
-    <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-line px-3 py-2.5 text-sm hover:bg-canvas has-[:checked]:border-brand has-[:checked]:bg-brand-soft">
-      <input type="checkbox" {...props} className="mt-0.5 h-4 w-4 accent-[var(--color-brand)]" />
+    <label className="flex cursor-pointer items-start gap-2.5 rounded-md border border-line px-3 py-2.5 text-sm transition-colors hover:border-line-strong has-[:checked]:border-navy/40 has-[:checked]:bg-subtle">
+      <input type="checkbox" {...props} className="mt-0.5 h-4 w-4 accent-[var(--color-navy)]" />
       <span className="text-ink">{label}</span>
     </label>
   );
@@ -149,8 +159,24 @@ export function SubmitButton({
 }) {
   const pending = use(PendingContext);
   return (
-    <Button type="submit" disabled={pending} variant={variant} size={size} name={name} value={value}>
-      {pending ? pendingLabel : children}
+    <Button type="submit" disabled={pending} aria-busy={pending || undefined} variant={variant} size={size} name={name} value={value}>
+      {pending ? (
+        <>
+          <Spinner />
+          {pendingLabel}
+        </>
+      ) : (
+        children
+      )}
     </Button>
+  );
+}
+
+export function Spinner() {
+  return (
+    <svg aria-hidden viewBox="0 0 16 16" className="h-3.5 w-3.5 animate-spin" fill="none">
+      <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2" />
+      <path d="M14.5 8A6.5 6.5 0 0 0 8 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   );
 }

@@ -22,14 +22,15 @@ export default async function AppHome() {
     <>
       <PageHeader
         title={`Welcome${user.fullName ? `, ${user.fullName.split(" ")[0]}` : ""}`}
-        description="Choose where to work."
+        description="Your businesses and profiles on QuickPro."
         actions={
           <LinkButton href="/app/onboarding" variant="secondary">
             Add a business or profile
           </LinkButton>
         }
       />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <Card className="max-w-3xl">
+        <ul className="divide-y divide-line">
         {user.isAdmin ? (
           <HubCard href="/app/admin" title="QuickPro staff" subtitle="Reviews, matching and the audit log" />
         ) : null}
@@ -50,21 +51,26 @@ export default async function AppHome() {
             badge={<ReviewStatusBadge status={roles.worker.status} />}
           />
         ) : null}
-      </div>
+        </ul>
+      </Card>
     </>
   );
 }
 
 function HubCard({ href, title, subtitle, badge }: { href: string; title: string; subtitle: string; badge?: React.ReactNode }) {
   return (
-    <Link href={href} className="group">
-      <Card className="h-full p-5 transition-shadow group-hover:shadow-md">
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="font-semibold text-ink">{title}</h2>
-          {badge}
-        </div>
-        <p className="mt-1 text-sm text-muted">{subtitle}</p>
-      </Card>
-    </Link>
+    <li>
+      <Link href={href} className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-subtle/60 sm:px-5">
+        <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-navy text-sm font-semibold text-white">
+          {title.charAt(0).toUpperCase()}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-medium text-ink">{title}</span>
+          <span className="block truncate text-[13px] text-muted">{subtitle}</span>
+        </span>
+        {badge}
+        <span aria-hidden className="text-faint">›</span>
+      </Link>
+    </li>
   );
 }

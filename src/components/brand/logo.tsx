@@ -3,18 +3,18 @@ import Link from "next/link";
 export function Logo({ href = "/", inverted = false }: { href?: string; inverted?: boolean }) {
   return (
     <Link href={href} className="inline-flex items-center gap-2" aria-label="QuickPro home">
-      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
-        <rect width="28" height="28" rx="7" fill={inverted ? "#ffffff" : "#1b4fd8"} />
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+        <rect width="24" height="24" rx="6" fill={inverted ? "#ffffff" : "#0f2147"} />
         <path
-          d="M8 14.5 12.2 18.5 20 9.5"
+          d="M7 12.4 10.6 16 17.2 8.4"
           fill="none"
-          stroke={inverted ? "#1b4fd8" : "#ffffff"}
-          strokeWidth="2.6"
+          stroke={inverted ? "#0f2147" : "#ffffff"}
+          strokeWidth="2.2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
       </svg>
-      <span className={`text-[17px] font-semibold tracking-tight ${inverted ? "text-white" : "text-ink"}`}>
+      <span className={`text-[16px] font-semibold tracking-[-0.02em] ${inverted ? "text-white" : "text-ink"}`}>
         QuickPro
       </span>
     </Link>

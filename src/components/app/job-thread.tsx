@@ -54,11 +54,11 @@ export function JobThread({
                       m.hidden && !m.body
                         ? "border border-dashed border-line-strong text-muted"
                         : mine
-                          ? "bg-brand text-white"
+                          ? "bg-navy text-white"
                           : "bg-canvas text-ink"
                     }`}
                   >
-                    <p className={`text-xs ${mine && !(m.hidden && !m.body) ? "text-blue-100" : "text-muted"}`}>
+                    <p className={`text-xs ${mine && !(m.hidden && !m.body) ? "text-white/70" : "text-muted"}`}>
                       {mine ? "You" : m.author_name} · {SIDE_LABEL[m.author_side]} · {timeFormat.format(m.created_at)}
                     </p>
                     {m.body !== null ? (

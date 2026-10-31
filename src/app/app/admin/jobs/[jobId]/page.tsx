@@ -92,6 +92,7 @@ export default async function AdminJobPage({ params }: { params: Promise<{ jobId
           ) : null}
           <JobPeople
             people={people}
+            skillsRequested={job.skill_names.length}
             canOffer={canOffer}
             canChange={live && job.ends_at > now}
             offerAction={staffOfferAction.bind(null, job.id)}
@@ -110,7 +111,7 @@ export default async function AdminJobPage({ params }: { params: Promise<{ jobId
             <CardHeader title="Details" />
             <CardBody className="space-y-4">
               <JobFacts job={job} />
-              {job.description ? <p className="text-sm whitespace-pre-line text-ink-soft">{job.description}</p> : null}
+              {job.description ? <p className="border-t border-line pt-4 text-sm whitespace-pre-line text-ink-soft">{job.description}</p> : null}
             </CardBody>
           </Card>
           {site ? (

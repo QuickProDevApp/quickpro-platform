@@ -1,42 +1,72 @@
 @import "tailwindcss";
 
+/*
+ * QuickPro design tokens. See docs/design.md for how to use them.
+ * Restrained palette: ink and neutrals carry the interface; navy is the
+ * brand and primary action; blue is reserved for links, focus and "new".
+ */
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  --color-canvas: #f5f6f8;
+  --color-canvas: #f7f8fa;
   --color-surface: #ffffff;
-  --color-ink: #0f1729;
-  --color-ink-soft: #334155;
-  --color-muted: #64748b;
-  --color-line: #e2e6ec;
-  --color-line-strong: #cbd2dc;
+  --color-subtle: #f2f4f7;
+  --color-ink: #0d1626;
+  --color-ink-soft: #364152;
+  --color-muted: #667085;
+  --color-faint: #98a2b3;
+  --color-line: #e7e9ee;
+  --color-line-strong: #d0d5dd;
 
-  --color-brand: #1b4fd8;
-  --color-brand-strong: #163fae;
-  --color-brand-soft: #e8eefc;
-  --color-navy: #0b1b3f;
+  --color-navy: #0f2147;
+  --color-navy-strong: #0a1733;
+  --color-brand: #2251d1;
+  --color-brand-strong: #1a3fa6;
+  --color-brand-soft: #eef2fd;
 
-  --color-ok: #0f7a4f;
-  --color-ok-soft: #e3f4ec;
-  --color-warn: #a35b00;
-  --color-warn-soft: #fdf1df;
-  --color-bad: #b42318;
-  --color-bad-soft: #fde8e7;
-  --color-info: #1b4fd8;
-  --color-info-soft: #e8eefc;
+  --color-ok: #067647;
+  --color-ok-soft: #ecfdf3;
+  --color-warn: #b54708;
+  --color-warn-soft: #fffaeb;
+  --color-bad: #c01f13;
+  --color-bad-soft: #fef3f2;
+  --color-info: #2251d1;
+  --color-info-soft: #eef2fd;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.375rem;
 }
 
 html {
   color-scheme: light;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   background: var(--color-canvas);
   color: var(--color-ink);
+  font-feature-settings: "ss01", "cv11";
 }
 
 :focus-visible {
   outline: 2px solid var(--color-brand);
   outline-offset: 2px;
+}
+
+/* Figures line up in tables and summaries. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+summary::-webkit-details-marker {
+  display: none;
 }

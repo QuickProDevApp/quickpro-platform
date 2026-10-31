@@ -6,7 +6,8 @@ import { JobStatusBadge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/button";
 import { Card, EmptyState } from "@/components/ui/card";
 import { FormMessage } from "@/components/ui/form";
-import { formatCents, formatShift } from "@/lib/labels";
+import { Table, TBody, Td, Th, THead, Tr, RowLink } from "@/components/ui/table";
+import { formatCents, formatShift, shiftParts } from "@/lib/labels";
 import { requireMembership } from "@/server/actions/guards";
 import { listOrganizationJobs, type JobFilter } from "@/server/data/jobs";
 import { canDispatch } from "@/server/data/organizations";
@@ -39,7 +40,7 @@ export default async function OrganizationJobsPage({
           Your business can post jobs once QuickPro staff approve your registration.
         </FormMessage>
       ) : null}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <FilterLinks
           basePath={base}
           param="show"
@@ -54,37 +55,88 @@ export default async function OrganizationJobsPage({
       </div>
       <Card>
         {jobs.length === 0 ? (
-          <div className="p-5">
+          <div className="p-4 sm:p-5">
             <EmptyState title={show === "upcoming" ? "No upcoming jobs" : "No jobs here yet"}>
               {canPost && show === "upcoming" ? "Post a job to find local workers for it." : null}
             </EmptyState>
           </div>
         ) : (
-          <ul className="divide-y divide-line">
-            {jobs.map((j) => (
-              <li key={j.id}>
-                <Link href={`${base}/${j.id}`} className="flex flex-wrap items-start justify-between gap-3 px-5 py-4 hover:bg-canvas">
-                  <div className="min-w-0">
-                    <p className="font-medium text-ink">{j.title}</p>
-                    <p className="text-sm text-muted">
-                      {formatShift(j.starts_at, j.ends_at)} · {j.area_name} · {formatCents(j.pay_rate_cents)}/hr
+          <>
+            {/* Phones: stacked rows. */}
+            <ul className="divide-y divide-line md:hidden">
+              {jobs.map((j) => (
+                <li key={j.id}>
+                  <Link href={`${base}/${j.id}`} className="block px-4 py-3.5 active:bg-subtle">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="min-w-0 font-medium text-ink">{j.title}</p>
+                      <JobStatusBadge job={j} />
+                    </div>
+                    <p className="mt-0.5 text-[13px] text-muted">
+                      {formatShift(j.starts_at, j.ends_at)} · {j.area_name}
                     </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <span className="text-ink-soft tabular-nums">
-                      {j.accepted_count}/{j.headcount} booked
-                    </span>
-                    {j.applicant_count > 0 ? (
-                      <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand">
-                        {j.applicant_count} new {j.applicant_count === 1 ? "applicant" : "applicants"}
+                    <p className="tabular mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-soft">
+                      <span>
+                        {j.accepted_count}/{j.headcount} booked
                       </span>
-                    ) : null}
-                    <JobStatusBadge job={j} />
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
+                      <span>{formatCents(j.pay_rate_cents)}/hr</span>
+                      {j.applicant_count > 0 ? (
+                        <span className="font-medium text-brand">
+                          {j.applicant_count} new {j.applicant_count === 1 ? "applicant" : "applicants"}
+                        </span>
+                      ) : null}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden md:block">
+              <Table label="Jobs">
+                <THead>
+                  <Th>Job</Th>
+                  <Th>When</Th>
+                  <Th align="right">Pay</Th>
+                  <Th align="right">Booked</Th>
+                  <Th>Applicants</Th>
+                  <Th>Status</Th>
+                </THead>
+                <TBody>
+                  {jobs.map((j) => {
+                    const when = shiftParts(j.starts_at, j.ends_at);
+                    return (
+                      <Tr key={j.id}>
+                        <Td>
+                          <RowLink href={`${base}/${j.id}`}>{j.title}</RowLink>
+                          <p className="text-[13px] text-muted">{j.area_name}</p>
+                        </Td>
+                        <Td className="whitespace-nowrap">
+                          <p className="text-ink">{when.day}</p>
+                          <p className="text-[13px] text-muted">{when.time}</p>
+                        </Td>
+                        <Td align="right" className="tabular whitespace-nowrap text-ink">
+                          {formatCents(j.pay_rate_cents)}
+                          <span className="text-muted">/hr</span>
+                        </Td>
+                        <Td align="right" className="tabular whitespace-nowrap text-ink">
+                          {j.accepted_count}
+                          <span className="text-muted"> / {j.headcount}</span>
+                        </Td>
+                        <Td className="whitespace-nowrap">
+                          {j.applicant_count > 0 ? (
+                            <span className="tabular font-medium text-brand">{j.applicant_count} new</span>
+                          ) : (
+                            <span className="text-faint">None</span>
+                          )}
+                        </Td>
+                        <Td>
+                          <JobStatusBadge job={j} />
+                        </Td>
+                      </Tr>
+                    );
+                  })}
+                </TBody>
+              </Table>
+            </div>
+          </>
         )}
       </Card>
     </div>

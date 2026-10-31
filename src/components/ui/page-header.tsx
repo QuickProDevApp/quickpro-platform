@@ -17,19 +17,19 @@ export function PageHeader({
   return (
     <header className="mb-6">
       {back ? (
-        <Link href={back.href} className="mb-2 inline-flex items-center text-sm text-muted hover:text-ink">
-          ← {back.label}
+        <Link href={back.href} className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted transition-colors hover:text-ink">
+          <span aria-hidden>←</span> {back.label}
         </Link>
       ) : null}
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight text-ink">{title}</h1>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-[22px] leading-7 font-semibold tracking-[-0.015em] text-ink sm:text-2xl">{title}</h1>
             {meta}
           </div>
           {description ? <p className="mt-1 max-w-2xl text-sm text-muted">{description}</p> : null}
         </div>
-        {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
     </header>
   );
