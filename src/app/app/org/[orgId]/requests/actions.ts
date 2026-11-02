@@ -19,6 +19,14 @@ import {
   submitQuote,
   withdrawQuote,
 } from "@/server/data/requests";
+import {
+  cancelSubcontract,
+  completeSubcontract,
+  listProjectSubcontracts,
+  offerSubcontract,
+  postSubcontractMessage,
+  respondToSubcontract,
+} from "@/server/data/subcontracts";
 import { toUserMessage, UserFacingError } from "@/server/errors";
 import {
   completionNoteSchema,
@@ -28,6 +36,8 @@ import {
   quoteSchema,
   reasonSchema,
   serviceRequestSchema,
+  subcontractOfferSchema,
+  subcontractResponseSchema,
   uuid,
   type FormState,
 } from "@/lib/schemas";
@@ -194,6 +204,113 @@ export async function withdrawQuoteAction(orgId: string, requestId: string): Pro
     if (!quote) throw new UserFacingError("Quote not found.");
     await withdrawQuote(user.id, quote.id);
     return done(orgId, "Quote withdrawn.");
+  } catch (error) {
+    return { ok: false, message: toUserMessage(error) };
+  }
+}
+
+// Subcontracts ------------------------------------------------------------------
+
+/** A subcontract on this request that this business is part of, on either side. */
+async function requireSubcontract(orgId: string, requestId: string, subcontractId: unknown, dispatch = true) {
+  const { user, org } = dispatch ? await requireOrgDispatcher(orgId, "contractor") : await requireMembership(orgId);
+  const rid = uuid.safeParse(requestId);
+  const sid = uuid.safeParse(subcontractId);
+  const all = rid.success && sid.success ? await listProjectSubcontracts(user.id, rid.data) : [];
+  const subcontract = all.find((s) => s.id === sid.data && (s.prime_id === org.id || s.sub_id === org.id));
+  if (!subcontract) throw new UserFacingError("Subcontract not found.");
+  return { user, org, subcontract, requestId: rid.data as string };
+}
+
+export async function offerSubcontractAction(orgId: string, requestId: string, _: FormState, formData: FormData): Promise<FormState> {
+  try {
+    const { user, org } = await requireOrgDispatcher(orgId, "contractor");
+    const id = uuid.safeParse(requestId);
+    const request = id.success ? await getRequest(user.id, id.data) : null;
+    if (!request || request.awarded_contractor_id !== org.id) throw new UserFacingError("Project not found.");
+    const parsed = subcontractOfferSchema.safeParse(formObject(formData));
+    if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
+    await offerSubcontract(user.id, request.id, parsed.data);
+    return done(orgId, "Offer sent. They'll get a QuickPro notification and can accept or decline.");
+  } catch (error) {
+    return { ok: false, message: toUserMessage(error) };
+  }
+}
+
+export async function respondToSubcontractAction(
+  orgId: string,
+  requestId: string,
+  subcontractId: string,
+  _: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  let accept: boolean;
+  try {
+    const { user, org, subcontract } = await requireSubcontract(orgId, requestId, subcontractId);
+    if (subcontract.sub_id !== org.id) throw new UserFacingError("Subcontract not found.");
+    const parsed = subcontractResponseSchema.safeParse(formObject(formData));
+    if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
+    accept = parsed.data.decision === "accept";
+    await respondToSubcontract(user.id, subcontract.id, accept, parsed.data.note);
+  } catch (error) {
+    return { ok: false, message: toUserMessage(error) };
+  }
+  revalidatePath(`/app/org/${orgId}`, "layout");
+  redirect(`/app/org/${orgId}/requests/${requestId}?subcontract=${accept ? "accepted" : "declined"}`);
+}
+
+export async function cancelSubcontractAction(
+  orgId: string,
+  requestId: string,
+  subcontractId: string,
+  _: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  try {
+    const { user, subcontract } = await requireSubcontract(orgId, requestId, subcontractId);
+    const parsed = reasonSchema.safeParse(formObject(formData));
+    if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
+    await cancelSubcontract(user.id, subcontract.id, parsed.data.reason);
+  } catch (error) {
+    return { ok: false, message: toUserMessage(error) };
+  }
+  revalidatePath(`/app/org/${orgId}`, "layout");
+  redirect(`/app/org/${orgId}/requests/${requestId}?subcontract=ended`);
+}
+
+export async function completeSubcontractAction(
+  orgId: string,
+  requestId: string,
+  subcontractId: string,
+  _: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  try {
+    const { user, org, subcontract } = await requireSubcontract(orgId, requestId, subcontractId);
+    if (subcontract.sub_id !== org.id) throw new UserFacingError("Subcontract not found.");
+    const parsed = completionNoteSchema.safeParse(formObject(formData));
+    if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
+    await completeSubcontract(user.id, subcontract.id, parsed.data.note);
+  } catch (error) {
+    return { ok: false, message: toUserMessage(error) };
+  }
+  revalidatePath(`/app/org/${orgId}`, "layout");
+  redirect(`/app/org/${orgId}/requests/${requestId}?subcontract=completed`);
+}
+
+export async function postSubcontractMessageAction(
+  orgId: string,
+  requestId: string,
+  subcontractId: string,
+  _: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  try {
+    const { user, subcontract } = await requireSubcontract(orgId, requestId, subcontractId, false);
+    const parsed = messageSchema.safeParse(formObject(formData));
+    if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
+    await postSubcontractMessage(user.id, subcontract.id, parsed.data.body);
+    return done(orgId, "Sent.");
   } catch (error) {
     return { ok: false, message: toUserMessage(error) };
   }

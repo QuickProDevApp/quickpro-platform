@@ -54,14 +54,18 @@ export function ProjectJobs({
   jobHref,
   action,
   emptyText,
+  primeId,
 }: {
   jobs: ProjectJob[];
+  /** The awarded contractor: jobs run by anyone else (subcontractors) are labelled with their business. */
+  primeId?: string | null;
   attendance: ProjectAttendance[];
-  jobHref?: (jobId: string) => string;
+  jobHref?: (jobId: string) => string | undefined;
   action?: React.ReactNode;
   emptyText: string;
 }) {
   const active = jobs.filter((j) => j.status !== "cancelled");
+
   const booked = active.reduce((n, j) => n + j.booked, 0);
   const needed = active.reduce((n, j) => n + j.headcount, 0);
   return (
@@ -79,18 +83,24 @@ export function ProjectJobs({
         <ul className="divide-y divide-line">
           {jobs.map((j) => {
             const crew = attendance.filter((a) => a.job_id === j.id);
+            const href = jobHref?.(j.id);
             return (
               <li key={j.id} className="px-4 py-3.5 sm:px-5" data-testid="project-job">
                 <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
                   <div className="min-w-0">
-                    {jobHref ? (
-                      <Link href={jobHref(j.id)} className="font-medium text-ink hover:text-brand hover:underline">
+                    {href ? (
+                      <Link href={href} className="font-medium text-ink hover:text-brand hover:underline">
                         {j.title}
                       </Link>
                     ) : (
                       <p className="font-medium text-ink">{j.title}</p>
                     )}
-                    <p className="tabular text-[13px] text-muted">{formatShift(j.starts_at, j.ends_at)}</p>
+                    <p className="tabular text-[13px] text-muted">
+                      {formatShift(j.starts_at, j.ends_at)}
+                      {primeId && j.organization_id !== primeId ? (
+                        <span className="font-sans"> · {j.organization_name}</span>
+                      ) : null}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="tabular text-[13px] text-ink-soft">
@@ -140,6 +150,9 @@ const EVENT_TONE: Record<string, "ok" | "warn" | "bad" | "info" | "neutral"> = {
   "work.reported": "info",
   "work.reopened": "warn",
   "job.cancelled": "bad",
+  "subcontract.accepted": "info",
+  "subcontract.completed": "ok",
+  "subcontract.cancelled": "bad",
 };
 
 /** The project's history, newest first. */

@@ -6,6 +6,9 @@ test("someone who forgot their password resets it from the email link", async ({
 
   await page.goto("/sign-in");
   await page.getByRole("link", { name: "Forgot your password?" }).click();
+  // The sign-in page has an Email field too: wait for the reset page before typing,
+  // or the address can land in the old page's field and the reset form submits empty.
+  await expect(page.getByRole("heading", { name: "Reset your password" })).toBeVisible();
   await page.getByLabel("Email").fill(account.email);
   await page.getByRole("button", { name: "Send reset link" }).click();
   await expect(page.getByText(/has a QuickPro account, we sent it a link/)).toBeVisible();

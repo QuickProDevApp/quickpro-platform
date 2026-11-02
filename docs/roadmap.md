@@ -63,7 +63,9 @@ revise and withdraw, award, cancel, staff oversight. Then (D-026): the
 awarded contractor schedules jobs for the project, the customer follows
 staffing and attendance, the two businesses message on the request, and the
 contractor reports the work complete for the customer to confirm, with a
-project history. Still to do: reviews, public contractor profiles.
+project history. Then (D-027): the awarded contractor can subcontract part
+of the project to another approved contractor, who staffs its own jobs and
+reports its part complete. Still to do: reviews, public contractor profiles.
 
 - Customers submit job requests (scope, site, schedule, budget).
 - Matching to approved contractors by category and area; staff can route.

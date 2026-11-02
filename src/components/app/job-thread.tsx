@@ -20,6 +20,7 @@ const SIDE_LABEL: Record<ThreadMessage["author_side"], string> = {
   former: "No longer on this job",
   customer: "Customer",
   contractor: "Contractor",
+  subcontractor: "Subcontractor",
 };
 
 /**
@@ -33,6 +34,7 @@ export function JobThread({
   hideAction,
   description,
   placeholder = "Parking, gear, timing…",
+  title = "Messages",
 }: {
   messages: ThreadMessage[];
   currentUserId: string;
@@ -40,10 +42,11 @@ export function JobThread({
   hideAction?: Action;
   description: string;
   placeholder?: string;
+  title?: string;
 }) {
   return (
     <Card>
-      <CardHeader title="Messages" description={description} />
+      <CardHeader title={title} description={description} />
       <CardBody className="space-y-4">
         {messages.length === 0 ? (
           <EmptyState title="No messages yet" />

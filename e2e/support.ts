@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
-import postgres from "postgres";
+import postgres, { type TransactionSql } from "postgres";
 
 function required(name: string) {
   const value = process.env[name];
@@ -255,6 +255,57 @@ export async function startJobNow(jobId: string, minutesAgo = 10) {
          where id = ${jobId}
       `;
     });
+  } finally {
+    await sql.end();
+  }
+}
+
+/**
+ * A customer request awarded to a contractor, made through the real workflow
+ * functions as each business's owner (row level security applies): the
+ * customer posts it, the contractor quotes, the customer accepts.
+ */
+export async function seedAwardedProject(o: {
+  customerOwnerId: string;
+  customerId: string;
+  contractorOwnerId: string;
+  contractorId: string;
+  title: string;
+  amountCents?: number;
+}) {
+  const sql = platformSql();
+  const as = <T>(userId: string, fn: (tx: TransactionSql) => Promise<T>) =>
+    sql.begin(async (tx) => {
+      await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: userId, role: "authenticated" })}, true)`;
+      await tx`set local role authenticated`;
+      return fn(tx);
+    }) as Promise<T>;
+  try {
+    const requestId = await as(o.customerOwnerId, async (tx) => {
+      const [r] = await tx<{ id: string }[]>`
+        insert into public.service_requests
+          (organization_id, title, description, category_id, service_area_id, preferred_start, budget_min_cents, budget_max_cents, created_by)
+        select ${o.customerId}, ${o.title}, 'Nightly cleaning of three floors plus exterior glass on the south face.', c.id, a.id,
+               current_date + 7, 200000, 500000, ${o.customerOwnerId}
+        from public.service_categories c, public.service_areas a
+        where c.slug = 'commercial-cleaning' and a.slug = 'islip'
+        returning id
+      `;
+      await tx`
+        insert into public.service_request_sites (request_id, address_line1, city, postal_code, access_notes, contact_name, contact_phone)
+        values (${r.id}, '200 Carleton Ave', 'Central Islip', '11722', 'Loading dock on the east side.', 'Sam Security', '631-555-0199')
+      `;
+      return r.id;
+    });
+    const quoteId = await as(o.contractorOwnerId, async (tx) => {
+      const [q] = await tx<{ id: string }[]>`
+        select public.submit_quote(${requestId}, ${o.contractorId}, ${o.amountCents ?? 320000},
+          'Nightly cleaning of all three floors, plus the exterior glass.', current_date + 7, current_date + 30) as id
+      `;
+      return q.id;
+    });
+    await as(o.customerOwnerId, (tx) => tx`select public.accept_quote(${quoteId})`);
+    return requestId;
   } finally {
     await sql.end();
   }

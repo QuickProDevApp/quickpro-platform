@@ -269,6 +269,9 @@ export function completeRequest(userId: string, requestId: string) {
 
 export type ProjectJob = {
   id: string;
+  /** The business running the job: the awarded contractor or one of its subcontractors. */
+  organization_id: string;
+  organization_name: string;
   title: string;
   status: JobStatus;
   starts_at: Date;
@@ -294,6 +297,7 @@ export type ProjectEvent = {
   summary: string;
   detail: string;
   job_id: string | null;
+  subcontract_id: string | null;
   actor_label: string;
   created_at: Date;
 };
@@ -308,7 +312,10 @@ export type ProjectMessage = {
   created_at: Date;
 };
 
-/** Jobs scheduled for an awarded request, for the customer, the awarded contractor and staff. */
+/**
+ * Jobs scheduled for an awarded request: all of them for the customer, the
+ * awarded contractor and staff; a subcontractor gets its own.
+ */
 export function listProjectJobs(userId: string, requestId: string) {
   return withUser(userId, (tx) => tx<ProjectJob[]>`select * from public.request_jobs(${requestId})`);
 }
@@ -320,7 +327,7 @@ export function listProjectAttendance(userId: string, requestId: string) {
 /** The project's history, oldest first. */
 export function listProjectEvents(userId: string, requestId: string) {
   return withUser(userId, (tx) => tx<ProjectEvent[]>`
-    select e.id, e.kind, e.summary, e.detail, e.job_id, e.actor_label, e.created_at
+    select e.id, e.kind, e.summary, e.detail, e.job_id, e.subcontract_id, e.actor_label, e.created_at
     from public.service_request_events e
     where e.request_id = ${requestId}
     order by e.created_at, e.id

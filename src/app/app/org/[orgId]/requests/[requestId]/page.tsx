@@ -5,6 +5,7 @@ import { JobThread } from "@/components/app/job-thread";
 import { ProjectJobs, ProjectNotice, ProjectProgress, ProjectTimeline, projectStages } from "@/components/app/project";
 import { QuoteList } from "@/components/app/quote-list";
 import { RequestFacts, RequestSiteFacts } from "@/components/app/request-summary";
+import { EndSubcontract, PrimeSubcontracts, ProjectBusinesses, SubcontractTerms } from "@/components/app/subcontracts";
 import { Badge, QuoteStatusBadge, RequestStatusBadge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
@@ -29,14 +30,26 @@ import {
   type ServiceRequest,
 } from "@/server/data/requests";
 import {
+  getSubcontractThread,
+  listMySubcontracts,
+  listProjectSubcontracts,
+  subcontractorDirectory,
+  type Subcontract,
+} from "@/server/data/subcontracts";
+import {
   acceptQuoteAction,
   cancelRequestAction,
+  cancelSubcontractAction,
+  completeSubcontractAction,
   confirmCompletionAction,
   declineQuoteAction,
   inviteContractorAction,
+  offerSubcontractAction,
   postProjectMessageAction,
+  postSubcontractMessageAction,
   reopenWorkAction,
   reportWorkCompleteAction,
+  respondToSubcontractAction,
   submitQuoteAction,
   withdrawQuoteAction,
 } from "../actions";
@@ -48,7 +61,7 @@ export default async function RequestPage({
   searchParams,
 }: {
   params: Promise<{ orgId: string; requestId: string }>;
-  searchParams: Promise<{ posted?: string; awarded?: string; sentback?: string }>;
+  searchParams: Promise<{ posted?: string; awarded?: string; sentback?: string; subcontract?: string }>;
 }) {
   const { orgId, requestId } = await params;
   const { user, org } = await requireMembership(orgId);
@@ -89,6 +102,9 @@ export default async function RequestPage({
       {query.sentback === "1" && org.kind === "customer" && request.status === "awarded" && !request.work_completed_at ? (
         <FormMessage tone="ok">Sent back to the contractor with your note. They&apos;ll report the work complete again when it&apos;s done.</FormMessage>
       ) : null}
+      {query.subcontract && org.kind === "contractor" && SUBCONTRACT_BANNER[query.subcontract] ? (
+        <FormMessage tone="ok">{SUBCONTRACT_BANNER[query.subcontract]}</FormMessage>
+      ) : null}
       {request.status === "cancelled" ? (
         <FormMessage tone="bad">
           Cancelled {formatDateTime(request.cancelled_at)}: {request.cancel_reason}
@@ -105,6 +121,13 @@ export default async function RequestPage({
     </div>
   );
 }
+
+const SUBCONTRACT_BANNER: Record<string, string> = {
+  accepted: "You accepted the subcontract. The site and contact are below; schedule your jobs when you're ready.",
+  declined: "You declined the subcontract. The contractor was told.",
+  completed: "You reported your part complete. The contractor was told.",
+  ended: "The subcontract was ended and the other business was told why.",
+};
 
 function Details({ request, showCustomer }: { request: ServiceRequest; showCustomer?: boolean }) {
   return (
@@ -143,6 +166,7 @@ async function CustomerView({
     open && dispatcher ? contractorDirectory(user.id, org.id, request.category_id, null) : Promise.resolve([]),
     project ? loadProject(user.id, request.id) : Promise.resolve(null),
   ]);
+  const businesses = work?.subcontracts ?? [];
   const quotedIds = new Set(quotes.filter((q) => q.status !== "withdrawn").map((q) => q.contractor_id));
   const awarded = quotes.find((q) => q.status === "accepted");
   const visibleQuotes = quotes.filter((q) => q.status !== "withdrawn");
@@ -193,6 +217,7 @@ async function CustomerView({
             <ProjectJobs
               jobs={work.jobs}
               attendance={work.attendance}
+              primeId={request.awarded_contractor_id}
               emptyText={`${awarded.contractor_name} schedules the crew here. You'll see each job, who's booked, and when they check in and out.`}
             />
             <JobThread
@@ -298,7 +323,9 @@ async function CustomerView({
             <CardHeader
               title="Site and contact"
               description={
-                awarded ? `Shared with ${awarded.contractor_name}.` : "Shared only with the contractor you award."
+                awarded
+                  ? `Shared with ${[awarded.contractor_name, ...businesses.map((b) => b.sub_name)].join(", ")}.`
+                  : "Shared only with the contractor you award."
               }
             />
             <CardBody>
@@ -306,6 +333,7 @@ async function CustomerView({
             </CardBody>
           </Card>
         ) : null}
+        {awarded ? <ProjectBusinesses primeName={awarded.contractor_name} subcontracts={businesses} /> : null}
         {work ? <ProjectTimeline events={work.events} /> : null}
         {dispatcher && open ? (
           <Card>
@@ -343,13 +371,17 @@ async function ContractorView({
 }) {
   const dispatcher = canDispatch(org.my_role);
   const won = request.awarded_contractor_id === org.id;
-  const [quote, site, invited, insurance, work] = await Promise.all([
+  const [quote, site, invited, insurance, work, mine] = await Promise.all([
     getContractorQuote(user.id, request.id, org.id),
     getRequestSite(user.id, request.id),
     isInvited(user.id, request.id, org.id),
     getInsuranceStatus(user.id, org.id),
     won ? loadProject(user.id, request.id) : Promise.resolve(null),
+    won ? Promise.resolve([]) : listMySubcontracts(user.id, request.id, org.id),
   ]);
+  if (!won && mine.length) {
+    return <SubcontractorView user={user} org={org} request={request} subcontract={mine[0]} dispatcher={dispatcher} site={site} />;
+  }
   const open = request.status === "open";
   const canQuote = dispatcher && open && quote?.status !== "declined" && quote?.status !== "accepted";
   const now = new Date();
@@ -497,15 +529,16 @@ async function ContractorView({
 
 type ProjectData = Awaited<ReturnType<typeof loadProject>>;
 
-/** Everything the two businesses see about an awarded project. */
+/** Everything the customer and the awarded contractor see about an awarded project. */
 async function loadProject(userId: string, requestId: string) {
-  const [jobs, attendance, events, messages] = await Promise.all([
+  const [jobs, attendance, events, messages, subcontracts] = await Promise.all([
     listProjectJobs(userId, requestId),
     listProjectAttendance(userId, requestId),
     listProjectEvents(userId, requestId),
     getProjectThread(userId, requestId),
+    listProjectSubcontracts(userId, requestId),
   ]);
-  return { jobs, attendance, events, messages };
+  return { jobs, attendance, events, messages, subcontracts };
 }
 
 function ProjectStatus({ request, work }: { request: ServiceRequest; work: ProjectData }) {
@@ -526,7 +559,7 @@ function ProjectStatus({ request, work }: { request: ServiceRequest; work: Proje
   );
 }
 
-function ContractorProject({
+async function ContractorProject({
   org,
   request,
   work,
@@ -544,6 +577,8 @@ function ContractorProject({
   const open = work.jobs.filter((j) => j.status === "open" || j.status === "filled").length;
   const completed = work.jobs.filter((j) => j.status === "completed").length;
   const canSchedule = dispatcher && inProgress && !reported;
+  const liveSubs = work.subcontracts.filter((s) => s.status === "offered" || s.status === "accepted");
+  const directory = canSchedule && org.status === "approved" ? await subcontractorDirectory(userId, org.id, request.category_id) : [];
   const lastReopen = [...work.events].reverse().find((e) => e.kind === "work.reopened" || e.kind === "work.reported");
   return (
     <>
@@ -561,7 +596,8 @@ function ContractorProject({
       <ProjectJobs
         jobs={work.jobs}
         attendance={work.attendance}
-        jobHref={(id) => `/app/org/${org.id}/jobs/${id}`}
+        primeId={org.id}
+        jobHref={(id) => (work.jobs.find((j) => j.id === id)?.organization_id === org.id ? `/app/org/${org.id}/jobs/${id}` : undefined)}
         action={
           canSchedule ? (
             <LinkButton href={`/app/org/${org.id}/jobs/new?request=${request.id}`} size="sm">
@@ -571,6 +607,15 @@ function ContractorProject({
         }
         emptyText="Schedule a job to staff this project. Each job is posted to approved workers, and you choose who to offer it to."
       />
+      {work.subcontracts.length || canSchedule ? (
+        <PrimeSubcontracts
+          subcontracts={work.subcontracts}
+          href={(s) => `/app/org/${org.id}/requests/${request.id}/subcontracts/${s.id}`}
+          directory={directory}
+          offerAction={canSchedule ? offerSubcontractAction.bind(null, org.id, request.id) : undefined}
+          categoryName={request.category_name}
+        />
+      ) : null}
       {dispatcher && inProgress && !reported ? (
         <Card>
           <CardHeader
@@ -578,11 +623,13 @@ function ContractorProject({
             description={`${request.customer_name} is asked to confirm. They can send it back with a note if something is left.`}
           />
           <CardBody>
-            {open > 0 || completed === 0 ? (
+            {open > 0 || completed === 0 || liveSubs.length > 0 ? (
               <p className="text-sm text-muted">
                 {open > 0
                   ? `Complete or cancel the ${open} ${open === 1 ? "job" : "jobs"} still open first. A job can be marked complete once it has started.`
-                  : "Complete at least one job on this project first."}
+                  : liveSubs.length > 0
+                    ? `Wait for ${liveSubs.map((s) => s.sub_name).join(", ")} to report ${liveSubs.length === 1 ? "its part" : "their parts"} complete, or end ${liveSubs.length === 1 ? "that subcontract" : "those subcontracts"}.`
+                    : "Complete at least one job on this project first."}
               </p>
             ) : (
               <ActionForm action={reportWorkCompleteAction.bind(null, org.id, request.id)}>
@@ -601,10 +648,145 @@ function ContractorProject({
         postAction={
           request.status !== "cancelled" ? postProjectMessageAction.bind(null, org.id, request.id) : undefined
         }
-        description={`Between your team and ${request.customer_name}. Workers don't see this thread; use each job's messages for the crew.`}
+        description={`Between your team and ${request.customer_name}. Workers and subcontractors don't see this thread; use each job's messages for the crew.`}
         placeholder="Start date, access, scope questions…"
       />
     </>
+  );
+}
+
+/** A business that was offered, or took on, part of another contractor's project. */
+async function SubcontractorView({
+  user,
+  org,
+  request,
+  subcontract: sc,
+  dispatcher,
+  site,
+}: {
+  user: CurrentUser;
+  org: OrganizationWithRole;
+  request: ServiceRequest;
+  subcontract: Subcontract;
+  dispatcher: boolean;
+  site: Awaited<ReturnType<typeof getRequestSite>>;
+}) {
+  const working = sc.status === "accepted" || sc.status === "completed";
+  const [jobs, attendance, events, messages] = await Promise.all([
+    working ? listProjectJobs(user.id, request.id) : Promise.resolve([]),
+    working ? listProjectAttendance(user.id, request.id) : Promise.resolve([]),
+    listProjectEvents(user.id, request.id),
+    getSubcontractThread(user.id, sc.id),
+  ]);
+  const inProgress = request.status === "awarded" && !request.work_completed_at;
+  const accepted = sc.status === "accepted";
+  const openJobs = jobs.filter((j) => j.status === "open" || j.status === "filled").length;
+  const doneJobs = jobs.filter((j) => j.status === "completed").length;
+  const respond = respondToSubcontractAction.bind(null, org.id, request.id, sc.id);
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+      <div className="space-y-6">
+        {sc.status === "offered" ? (
+          <ProjectNotice tone="warn" title={`${sc.prime_name} offered you part of this project`}>
+            <p>
+              They won {request.customer_name}&apos;s request and want your business for the scope below. Accept to see
+              the site and contact and schedule your own jobs; your crews and price stay between your two businesses.
+            </p>
+            {dispatcher && inProgress ? (
+              <ActionForm action={respond} className="mt-3 space-y-3">
+                <Field name="note" id="subcontract-note" label="Note to the contractor" hint="Optional. Start date, questions, or why you can't.">
+                  <Textarea name="note" id="subcontract-note" maxLength={1000} rows={2} />
+                </Field>
+                <div className="flex flex-wrap gap-2">
+                  <SubmitButton name="decision" value="accept" pendingLabel="Saving…">
+                    Accept subcontract
+                  </SubmitButton>
+                  <SubmitButton name="decision" value="decline" variant="secondary" pendingLabel="Saving…">
+                    Decline
+                  </SubmitButton>
+                </div>
+              </ActionForm>
+            ) : !inProgress ? (
+              <p className="mt-2 font-medium text-ink">This project is no longer in progress.</p>
+            ) : (
+              <p className="mt-2">Owners, admins and dispatchers on your team can answer this offer.</p>
+            )}
+          </ProjectNotice>
+        ) : null}
+        <SubcontractTerms subcontract={sc} viewer="sub" />
+        {working ? (
+          <>
+            <ProjectJobs
+              jobs={jobs}
+              attendance={attendance}
+              jobHref={(id) => `/app/org/${org.id}/jobs/${id}`}
+              action={
+                dispatcher && accepted && inProgress ? (
+                  <LinkButton href={`/app/org/${org.id}/jobs/new?request=${request.id}`} size="sm">
+                    Schedule a job
+                  </LinkButton>
+                ) : undefined
+              }
+              emptyText="Schedule a job for your part. It's posted to approved workers, and you choose who to offer it to."
+            />
+            {dispatcher && accepted ? (
+              <Card>
+                <CardHeader
+                  title="Report your part complete"
+                  description={`${sc.prime_name} is told, and reports the whole project to ${request.customer_name} when everything is done.`}
+                />
+                <CardBody>
+                  {openJobs > 0 || doneJobs === 0 ? (
+                    <p className="text-sm text-muted">
+                      {openJobs > 0
+                        ? `Complete or cancel your ${openJobs} open ${openJobs === 1 ? "job" : "jobs"} first. A job can be marked complete once it has started.`
+                        : "Complete at least one job for your part first."}
+                    </p>
+                  ) : (
+                    <ActionForm action={completeSubcontractAction.bind(null, org.id, request.id, sc.id)}>
+                      <Field name="note" id="part-note" label="Note for the contractor" hint="Optional. What was done, anything to know.">
+                        <Textarea name="note" id="part-note" maxLength={1000} rows={2} />
+                      </Field>
+                      <SubmitButton pendingLabel="Reporting…">Report part complete</SubmitButton>
+                    </ActionForm>
+                  )}
+                </CardBody>
+              </Card>
+            ) : null}
+          </>
+        ) : null}
+        {sc.status !== "declined" ? (
+          <JobThread
+            title={`Messages with ${sc.prime_name}`}
+            messages={messages}
+            currentUserId={user.id}
+            postAction={
+              sc.status === "cancelled" ? undefined : postSubcontractMessageAction.bind(null, org.id, request.id, sc.id)
+            }
+            description={`Between your team and ${sc.prime_name}. ${request.customer_name} doesn't see this thread.`}
+            placeholder="Start time, access, materials…"
+          />
+        ) : null}
+        {dispatcher && accepted ? (
+          <EndSubcontract action={cancelSubcontractAction.bind(null, org.id, request.id, sc.id)} otherName={sc.prime_name} />
+        ) : null}
+      </div>
+      <div className="space-y-6">
+        <Details request={request} showCustomer />
+        {site ? (
+          <Card>
+            <CardHeader title="Site and contact" description={`Shared by ${sc.prime_name} for your part of the work.`} />
+            <CardBody>
+              <RequestSiteFacts site={site} />
+            </CardBody>
+          </Card>
+        ) : (
+          <p className="px-1 text-[13px] text-muted">The street address and on-site contact are shared if you accept.</p>
+        )}
+        {events.length ? <ProjectTimeline events={events} /> : null}
+      </div>
+    </div>
   );
 }
 
