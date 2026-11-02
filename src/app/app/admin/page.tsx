@@ -67,7 +67,15 @@ export default async function AdminOverviewPage() {
         </ul>
       </Card>
       <Card>
-        <CardHeader title="Platform" description="Live counts." />
+        <CardHeader
+          title="Platform"
+          description="Live counts."
+          action={
+            <Link href="/app/admin/analytics" className="text-[13px] font-medium text-brand hover:underline">
+              Analytics →
+            </Link>
+          }
+        />
         <dl className="divide-y divide-line">
           {totals.map((t) => (
             <Link key={t.label} href={t.href} className="flex items-baseline justify-between gap-4 px-4 py-3 transition-colors hover:bg-subtle/60 sm:px-5">

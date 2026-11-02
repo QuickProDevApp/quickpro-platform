@@ -396,3 +396,30 @@ export async function seedSubcontract(o: {
     await sql.end();
   }
 }
+
+/** An open service request posted by a customer's owner, in any category and town. */
+export async function seedOpenRequest(o: { customerOwnerId: string; customerId: string; title: string; category: string; town: string }) {
+  const sql = platformSql();
+  try {
+    return await sql.begin(async (tx) => {
+      await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: o.customerOwnerId, role: "authenticated" })}, true)`;
+      await tx`set local role authenticated`;
+      const [r] = await tx<{ id: string }[]>`
+        insert into public.service_requests
+          (organization_id, title, description, category_id, service_area_id, preferred_start, budget_min_cents, budget_max_cents, created_by)
+        select ${o.customerId}, ${o.title}, 'Spring cleanup of the grounds, beds and walkways around the building.', c.id, a.id,
+               current_date + 10, 150000, 300000, ${o.customerOwnerId}
+        from public.service_categories c, public.service_areas a
+        where c.slug = ${o.category} and a.slug = ${o.town}
+        returning id
+      `;
+      await tx`
+        insert into public.service_request_sites (request_id, address_line1, city, postal_code, access_notes, contact_name, contact_phone)
+        values (${r.id}, '15 North Ferry Rd', 'Shelter Island', '11964', 'Park by the side gate.', 'Sam Grounds', '631-555-0188')
+      `;
+      return r.id as string;
+    });
+  } finally {
+    await sql.end();
+  }
+}

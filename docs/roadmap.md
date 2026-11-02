@@ -44,7 +44,7 @@ Not built yet:
 - Invitation emails. Invitations are links the inviter sends themselves.
 - Notifications: email (and SMS later) for applications, offers and changes,
   through a real provider. Until then the screens say that nothing is sent.
-- Admin metrics beyond counts: fill rate, time to fill.
+- Admin metrics beyond counts: fill rate, time to fill. (Built with D-030.)
 - Travel distance and availability matching (towns and skills only for now).
 
 ## Phase 3: Job management and crew coordination (modules D, E)
@@ -95,7 +95,9 @@ Card and bank payments only once the legal and operational model is settled
 ## Phase 6: Operations, analytics, expansion (module G)
 
 - Support tickets. (Disputes about agreed work shipped with D-028.)
-- Market and category dashboards for staff.
+- Market and category dashboards for staff. Built (D-030): fill rate, time to
+  fill, quotes and awards, invoiced and paid, reviews and disputes, coverage
+  gaps, by category and town, with charts and a CSV export.
 - Opening Nassau County: flip `markets.is_active`, review service areas.
 
 ## Known follow-ups
