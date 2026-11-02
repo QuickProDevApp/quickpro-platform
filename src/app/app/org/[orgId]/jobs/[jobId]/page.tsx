@@ -55,9 +55,15 @@ export default async function OrganizationJobPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <Link href={`/app/org/${org.id}/jobs`} className="text-sm text-muted hover:text-ink">
-            ← Jobs
-          </Link>
+          {job.service_request_id ? (
+            <Link href={`/app/org/${org.id}/requests/${job.service_request_id}`} className="text-sm text-muted hover:text-ink">
+              ← Project: {job.project_title ?? "customer request"}
+            </Link>
+          ) : (
+            <Link href={`/app/org/${org.id}/jobs`} className="text-sm text-muted hover:text-ink">
+              ← Jobs
+            </Link>
+          )}
           <div className="mt-1 flex flex-wrap items-center gap-3">
             <h2 className="text-xl font-semibold text-ink">{job.title}</h2>
             <JobStatusBadge job={job} />

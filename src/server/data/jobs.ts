@@ -46,6 +46,9 @@ export type Job = {
   cancel_reason: string | null;
   completed_at: Date | null;
   created_at: Date;
+  /** The customer project this job is part of. The title is visible to the contractor and staff, not to workers. */
+  service_request_id: string | null;
+  project_title: string | null;
   skill_ids: string[];
   skill_names: string[];
   accepted_count: number;
@@ -64,7 +67,8 @@ function jobColumns(tx: Tx) {
     j.title, j.description, j.category_id, c.name as category_name, j.service_area_id, a.name as area_name,
     j.starts_at, j.ends_at, j.headcount, j.pay_rate_cents, j.engagement_type_id,
     e.name as engagement_name, e.description as engagement_description,
-    j.status, j.cancel_reason, j.completed_at, j.created_at,
+    j.status, j.cancel_reason, j.completed_at, j.created_at, j.service_request_id,
+    (select sr.title from public.service_requests sr where sr.id = j.service_request_id) as project_title,
     coalesce((select array_agg(js.skill_id) from public.job_skills js where js.job_id = j.id), '{}') as skill_ids,
     coalesce((select array_agg(s.name order by s.sort_order) from public.job_skills js
               join public.skills s on s.id = js.skill_id where js.job_id = j.id), '{}') as skill_names,
@@ -114,15 +118,15 @@ async function saveSkillsAndSite(tx: Tx, jobId: string, input: JobInput, skillId
   `;
 }
 
-/** Job, skills and site in one transaction. */
-export function createJob(userId: string, orgId: string, input: JobInput, skillIds: string[]) {
+/** Job, skills and site in one transaction. With a request id, the job is scheduled for that awarded project. */
+export function createJob(userId: string, orgId: string, input: JobInput, skillIds: string[], requestId: string | null = null) {
   return withUser(userId, async (tx) => {
     const { startsAt, endsAt } = times(tx, input);
     const [{ id }] = await tx<{ id: string }[]>`
       insert into public.jobs (organization_id, title, description, category_id, service_area_id, starts_at, ends_at,
-                               headcount, pay_rate_cents, engagement_type_id, created_by)
+                               headcount, pay_rate_cents, engagement_type_id, created_by, service_request_id)
       values (${orgId}, ${input.title}, ${input.description}, ${input.categoryId}, ${input.serviceAreaId},
-              ${startsAt}, ${endsAt}, ${input.headcount}, ${input.payRate}, ${input.engagementTypeId}, ${userId})
+              ${startsAt}, ${endsAt}, ${input.headcount}, ${input.payRate}, ${input.engagementTypeId}, ${userId}, ${requestId})
       returning id
     `;
     await saveSkillsAndSite(tx, id, input, skillIds);

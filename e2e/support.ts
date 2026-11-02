@@ -236,3 +236,26 @@ export async function seedContractorCoverage(orgId: string, categorySlug: string
     await sql.end();
   }
 }
+
+/**
+ * Test-only clock jump: moves a job so it started `minutesAgo` minutes ago,
+ * as it would be on the day of the work. Runs with triggers off (like the
+ * platform's own maintenance), because the posting rules refuse past start
+ * times. Everything after this step goes through the app as usual.
+ */
+export async function startJobNow(jobId: string, minutesAgo = 10) {
+  const sql = platformSql();
+  try {
+    await sql.begin(async (tx) => {
+      await tx`set local session_replication_role = replica`;
+      await tx`
+        update public.jobs
+           set starts_at = now() - make_interval(mins => ${minutesAgo}),
+               ends_at = now() + interval '4 hours'
+         where id = ${jobId}
+      `;
+    });
+  } finally {
+    await sql.end();
+  }
+}

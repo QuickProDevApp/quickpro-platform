@@ -316,8 +316,8 @@ same rule as job sites.
 - **Quoting needs the same standing as staffing:** an approved contractor
   with a reviewed, unexpired general liability certificate.
 - **Not yet:** no money moves. Invoices, fees and payments are Step 5;
-  reviews and disputes are Step 4. Request threads (customer and contractor
-  messaging) are not built; the awarded contractor gets the site contact.
+  reviews and disputes are Step 4. (Request threads and project delivery
+  followed in D-026.)
 
 ## D-025 A marketing site built from the real product
 
@@ -333,3 +333,27 @@ available. No testimonials, logos, metrics or pricing until they are real.
   a status color in the app. Ink, white and warm off-white (`paper`) carry
   the pages.
 - **Cost:** product screens must be recaptured when the app's look changes.
+
+## D-026 An awarded request becomes a project the contractor staffs and the customer confirms
+
+After a customer awards a request, the winning contractor schedules jobs
+for it (`jobs.service_request_id`) and staffs them through the existing job
+workflow. Only the awarded contractor can link a job, and only while the
+work is in progress. The customer follows the work on the request page:
+each job's staffing, and who checked in and out (names and times only;
+workers' contact details stay with the contractor). The two businesses
+have a message thread on the request. Workers never see the customer's name
+or the quote.
+
+- **Completion is two-sided:** the contractor reports the work complete once
+  every job on the project is completed or cancelled (at least one
+  completed); the customer confirms it, or sends it back with a reason.
+  Customers can no longer close awarded work on their own. Staff can close
+  an awarded request directly when a customer can't confirm, and the
+  history records that staff did it.
+- **History:** each step is written to `service_request_events` by database
+  triggers and workflow functions, readable by the customer, the awarded
+  contractor and staff. People cannot write to it.
+- **Requirements:** requests carry an optional requirements field (badges,
+  hours, certifications) that contractors see before quoting.
+- **Not yet:** invoices and payments (Step 5), reviews and disputes (Step 4).

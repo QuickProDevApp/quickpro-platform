@@ -327,6 +327,7 @@ export const serviceRequestSchema = z
       .trim()
       .min(10, "Describe the work in a sentence or two: what, how big, how often.")
       .max(4000),
+    requirements: z.string().trim().max(2000, "Keep requirements under 2,000 characters.").default(""),
     categoryId: uuid,
     serviceAreaId: uuid,
     preferredStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a start date."),
@@ -365,3 +366,7 @@ export const quoteSchema = z.object({
 });
 
 export type QuoteInput = z.infer<typeof quoteSchema>;
+
+export const completionNoteSchema = z.object({
+  note: z.string().trim().max(1000, "Keep the note under 1,000 characters.").default(""),
+});
