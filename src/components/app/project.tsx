@@ -30,7 +30,7 @@ export function ProjectProgress({ stages }: { stages: Stage[] }) {
             className={`block h-1 rounded-full ${s.done ? "bg-navy" : s.current ? "bg-signal" : "bg-line"}`}
           />
           <span
-            className={`mt-1.5 block truncate text-[11px] leading-tight sm:text-xs ${
+            className={`mt-1.5 block text-[11px] leading-tight break-words hyphens-auto sm:text-xs ${
               s.done ? "font-medium text-ink" : s.current ? "font-medium text-signal-ink" : "text-muted"
             }`}
           >
@@ -100,19 +100,19 @@ export function ProjectJobs({
                   </div>
                 </div>
                 {crew.length ? (
-                  <table className="mt-2.5 w-full text-[13px]">
+                  <table className="mt-2.5 w-full table-fixed text-[13px]">
                     <caption className="sr-only">Attendance for {j.title}</caption>
                     <thead className="text-left text-[11px] tracking-wide text-faint uppercase">
                       <tr>
-                        <th className="pb-1 font-medium">Worker</th>
-                        <th className="pb-1 font-medium">In</th>
-                        <th className="pb-1 font-medium">Out</th>
+                        <th className="w-1/2 pb-1 font-medium">Worker</th>
+                        <th className="w-1/4 pb-1 font-medium">In</th>
+                        <th className="w-1/4 pb-1 font-medium">Out</th>
                       </tr>
                     </thead>
                     <tbody className="tabular">
                       {crew.map((a, i) => (
                         <tr key={`${a.job_id}-${i}`} className="border-t border-line/70" data-testid="attendance-row">
-                          <td className="py-1.5 pr-2 text-ink">{a.worker_name}</td>
+                          <td className="truncate py-1.5 pr-2 text-ink">{a.worker_name}</td>
                           <td className="py-1.5 pr-2 text-ink-soft">
                             {a.checked_in_at ? clock.format(a.checked_in_at) : "—"}
                           </td>

@@ -10,7 +10,7 @@ import { LinkButton } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
 import { ActionForm, Field, FormMessage, Input, SubmitButton, Textarea } from "@/components/ui/form";
 import { formatCents, formatDate, formatDateTime } from "@/lib/labels";
-import { uuid } from "@/lib/schemas";
+import { uuid, type FormState } from "@/lib/schemas";
 import { requireMembership } from "@/server/actions/guards";
 import type { CurrentUser } from "@/server/auth/session";
 import { canDispatch, getInsuranceStatus, type OrganizationWithRole } from "@/server/data/organizations";
@@ -208,7 +208,7 @@ async function CustomerView({
         ) : null}
         <Card>
           <CardHeader
-            title={awarded ? "Awarded" : `Quotes (${visibleQuotes.length})`}
+            title={awarded ? "Accepted quote" : `Quotes (${visibleQuotes.length})`}
             description={
               awarded
                 ? `${awarded.contractor_name} · ${formatCents(awarded.amount_cents)} · accepted ${formatDateTime(awarded.decided_at)}`
@@ -307,27 +307,25 @@ async function CustomerView({
           </Card>
         ) : null}
         {work ? <ProjectTimeline events={work.events} /> : null}
-        {dispatcher && (open || request.status === "awarded") ? (
+        {dispatcher && open ? (
           <Card>
-            <CardHeader
-              title="Cancel request"
-              description={
-                open
-                  ? "Declines every open quote. Contractors see your reason."
-                  : "The awarded contractor sees your reason."
-              }
-            />
+            <CardHeader title="Cancel request" description="Declines every open quote. Contractors see your reason." />
             <CardBody>
-              <ActionForm action={cancelRequestAction.bind(null, org.id, request.id)}>
-                <Field name="reason" label="Reason">
-                  <Input name="reason" required maxLength={1000} />
-                </Field>
-                <SubmitButton variant="danger" pendingLabel="Cancelling…">
-                  Cancel request
-                </SubmitButton>
-              </ActionForm>
+              <CancelForm action={cancelRequestAction.bind(null, org.id, request.id)} />
             </CardBody>
           </Card>
+        ) : dispatcher && request.status === "awarded" ? (
+          <details className="rounded-lg border border-line bg-surface">
+            <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-ink-soft hover:text-ink sm:px-5">
+              Cancel this project…
+            </summary>
+            <div className="space-y-3 border-t border-line px-4 py-4 sm:px-5">
+              <p className="text-[13px] text-muted">
+                The awarded contractor sees your reason. Jobs they scheduled stay with them to cancel.
+              </p>
+              <CancelForm action={cancelRequestAction.bind(null, org.id, request.id)} />
+            </div>
+          </details>
         ) : null}
       </div>
     </div>
@@ -476,8 +474,8 @@ async function ContractorView({
           <FormMessage tone="info">Owners, admins and dispatchers on your team can quote on this request.</FormMessage>
         ) : null}
       </div>
-      {/* Phones read the request before the quote form. */}
-      <div className="-order-1 space-y-6 lg:order-none">
+      {/* Phones read the request before the quote form; on a won project the work comes first. */}
+      <div className={`space-y-6 ${won ? "" : "-order-1 lg:order-none"}`}>
         <Details request={request} showCustomer />
         {site ? (
           <Card>
@@ -607,6 +605,19 @@ function ContractorProject({
         placeholder="Start date, access, scope questions…"
       />
     </>
+  );
+}
+
+function CancelForm({ action }: { action: (state: FormState, formData: FormData) => Promise<FormState> }) {
+  return (
+    <ActionForm action={action}>
+      <Field name="reason" label="Reason">
+        <Input name="reason" required maxLength={1000} />
+      </Field>
+      <SubmitButton variant="danger" pendingLabel="Cancelling…">
+        Cancel request
+      </SubmitButton>
+    </ActionForm>
   );
 }
 

@@ -223,7 +223,7 @@ test("customer → contractor → worker → confirmed project", async ({ browse
   await expect(customer.getByText(/Sent back to the contractor with your note/)).toBeVisible();
 
   await contractor.reload();
-  await expect(contractor.getByText(/sent the work back/)).toBeVisible();
+  await expect(contractor.getByText(`${orgName} sent the work back`)).toBeVisible();
   await expect(contractor.getByText(/vestibule by the east door/).first()).toBeVisible();
   await contractor.getByRole("button", { name: "Report work complete" }).click();
   await expect(contractor.getByText(/Waiting for .* to confirm/)).toBeVisible();
