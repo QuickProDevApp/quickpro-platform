@@ -520,3 +520,32 @@ export const invoicePaymentSchema = z.object({
 export const invoiceVoidSchema = z.object({
   reason: z.string().trim().max(1000, "Keep the reason under 1,000 characters.").default(""),
 });
+
+// Support requests (D-031) -------------------------------------------------
+
+export const SUPPORT_TOPICS = ["account", "verification", "jobs", "projects", "billing", "safety", "technical", "other"] as const;
+export const SUPPORT_STATUSES = ["open", "waiting", "resolved"] as const;
+export const SUPPORT_PRIORITIES = ["normal", "high", "urgent"] as const;
+
+export const supportTicketSchema = z.object({
+  topic: z.enum(SUPPORT_TOPICS, "Choose what it's about."),
+  subject: z.string().trim().min(3, "Add a short subject.").max(120, "Keep the subject under 120 characters."),
+  body: z
+    .string()
+    .trim()
+    .min(10, "Describe what you need help with (at least 10 characters).")
+    .max(4000, "Keep messages under 4,000 characters."),
+  // "" means it isn't about one of the person's businesses.
+  organizationId: z.union([uuid, z.literal("")]).default(""),
+});
+
+export const supportMessageSchema = z.object({
+  body: z.string().trim().min(1, "Write a message first.").max(4000, "Keep messages under 4,000 characters."),
+  internal: z.boolean().default(false),
+});
+
+export const supportUpdateSchema = z.object({
+  status: z.enum(SUPPORT_STATUSES, "Choose a status."),
+  priority: z.enum(SUPPORT_PRIORITIES, "Choose a priority."),
+  assignedTo: z.union([uuid, z.literal("")]).default(""),
+});

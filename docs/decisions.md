@@ -469,3 +469,28 @@ approved contractor covers), weekly or monthly charts, and a CSV export.
   posting to the booking that filled the last position.
 - **Later:** pre-aggregated tables or a reporting replica if the queries get
   slow at volume; finer staff roles (finance, support) for who sees money.
+
+## D-031 Support requests to QuickPro staff
+
+Anyone signed in (customers, contractors, subcontractors, workers) can ask
+QuickPro staff for help from Help and support in the account menu. A request
+has a topic, a subject, a description and, optionally, which of the person's
+businesses it's about. Staff work a queue (Staff → Support) and the staff
+overview counts requests waiting on them.
+
+- **Conversation:** the person and staff reply on the request. Staff can add
+  internal notes that the person never sees (row level security hides them,
+  not just the page). Staff names are shown to staff only; the person sees
+  "QuickPro support".
+- **Status:** open (waiting on staff), waiting (staff replied, waiting on the
+  person) and resolved. A staff reply moves it to waiting and assigns it to
+  that staff member if nobody has it; the person's reply moves it back to
+  open. Either side can resolve it, and the person can reopen it by replying
+  within 30 days. After that they open a new one.
+- **Priority:** safety requests come in urgent and the page says to call 911
+  first if someone is in danger. Staff can change priority and assignment.
+- **Notifications** are in-app only (no email provider yet). Nothing is
+  deleted; there are no delete paths. Limits: 10 requests a day per person,
+  10 messages a minute.
+- **Not yet:** attachments, email in and out, canned replies, response-time
+  targets. Nothing on the page promises a response time.

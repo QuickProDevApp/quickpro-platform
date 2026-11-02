@@ -6,17 +6,20 @@ import { requireAdmin } from "@/server/auth/session";
 import { getAdminOverview } from "@/server/data/admin";
 import { getJobCountsForAdmin } from "@/server/data/jobs";
 import { getRequestCountsForAdmin } from "@/server/data/requests";
+import { getSupportCounts } from "@/server/data/support";
 
 export const metadata: Metadata = { title: "Staff overview" };
 
 export default async function AdminOverviewPage() {
   const admin = await requireAdmin();
-  const [o, jobs, requests] = await Promise.all([
+  const [o, jobs, requests, support] = await Promise.all([
     getAdminOverview(admin.id),
     getJobCountsForAdmin(admin.id),
     getRequestCountsForAdmin(admin.id),
+    getSupportCounts(admin.id),
   ]);
   const queues = [
+    { label: "Support requests waiting on staff", value: support.needs_reply, href: "/app/admin/support" },
     { label: "Open jobs starting within 48 hours, not filled", value: jobs.unfilled_soon, href: "/app/admin/jobs" },
     { label: "Service requests open 3+ days without a quote", value: requests.unquoted_stale, href: "/app/admin/requests" },
     { label: "Organizations awaiting review", value: o.pending_organizations, href: "/app/admin/organizations?status=pending_review" },
