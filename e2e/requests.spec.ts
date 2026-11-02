@@ -54,7 +54,7 @@ test("a customer posts a request, a contractor quotes, and the customer awards t
 
   // The contractor now sees the site and the work under Won.
   await contractor.goto(`/app/org/${contractorId}/requests?show=awarded`);
-  await contractor.getByTestId("request-row").filter({ hasText: title }).first().click();
+  await contractor.getByRole("link", { name: title }).click();
   await expect(contractor.getByText(/accepted your quote of \$3,200.00/)).toBeVisible();
   await expect(contractor.getByText(/200 Carleton Ave/)).toBeVisible();
 
