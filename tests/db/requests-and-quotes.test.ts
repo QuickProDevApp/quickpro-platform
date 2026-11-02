@@ -185,8 +185,8 @@ describe("quotes", () => {
     expect(mine.map((q) => q.amount_cents)).toEqual([320000]);
     const all = await asUser(customer.owner, (tx) => tx`select id from public.quotes where request_id = ${id}`);
     expect(all).toHaveLength(2);
-    const names = await asUser(contractorOwner, (tx) => tx<{ name: string }[]>`select name from public.request_party_names(${id}) order by name`);
-    expect(names.map((n) => n.name)).toEqual(["Harbor Office Park", "Harborline Facility Services"]);
+    const names = await asUser(contractorOwner, (tx) => tx<{ name: string }[]>`select name from public.request_party_names(${id})`);
+    expect(names.map((n) => n.name).sort()).toEqual(["Harbor Office Park", "Harborline Facility Services"]);
     expect(await kindsFor(customer.owner, `/requests/${id}`)).toEqual(["quote.received", "quote.received"]);
   });
 
