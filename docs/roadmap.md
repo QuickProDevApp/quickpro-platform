@@ -59,8 +59,11 @@ Not built yet:
 
 Built in Step 3 (D-024): requests with private sites, matching by category
 and town, invitations from the contractor directory, private quotes with
-revise and withdraw, award, cancel, complete, staff oversight. Still to do:
-reviews, public contractor profiles, request messaging.
+revise and withdraw, award, cancel, staff oversight. Then (D-026): the
+awarded contractor schedules jobs for the project, the customer follows
+staffing and attendance, the two businesses message on the request, and the
+contractor reports the work complete for the customer to confirm, with a
+project history. Still to do: reviews, public contractor profiles.
 
 - Customers submit job requests (scope, site, schedule, budget).
 - Matching to approved contractors by category and area; staff can route.

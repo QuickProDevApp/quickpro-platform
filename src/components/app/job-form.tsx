@@ -19,10 +19,16 @@ export function JobForm({
   minPayCents,
   submitLabel,
   booked = false,
+  prefill,
+  intro,
 }: {
   action: Action;
   job?: Job;
   site?: JobSite | null;
+  /** Starting values for a new job, e.g. from the project it is scheduled for. */
+  prefill?: Partial<Pick<Job, "title" | "description" | "category_id" | "service_area_id" | "local_date">>;
+  /** Shown above the form. */
+  intro?: React.ReactNode;
   categories: ServiceCategory[];
   areas: ServiceArea[];
   skills: (Skill & { category_name: string | null })[];
@@ -35,15 +41,16 @@ export function JobForm({
   const lockNote = booked ? "Locked while workers are offered or booked. Cancel their assignments to change it." : undefined;
   return (
     <ActionForm action={action} className="space-y-6">
+      {intro}
       <Card>
         <CardHeader title="The work" />
         <CardBody className="space-y-4">
           <Field name="title" label="Job title" hint="For example: Overnight floor strip and wax">
-            <Input name="title" defaultValue={job?.title} required maxLength={120} />
+            <Input name="title" defaultValue={job?.title ?? prefill?.title} required maxLength={120} />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field name="categoryId" label="Category">
-              <Select name="categoryId" defaultValue={job?.category_id ?? categories[0]?.id}>
+              <Select name="categoryId" defaultValue={job?.category_id ?? prefill?.category_id ?? categories[0]?.id}>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -52,7 +59,7 @@ export function JobForm({
               </Select>
             </Field>
             <Field name="serviceAreaId" label="Town" hint={lockNote}>
-              <Select name="serviceAreaId" defaultValue={job?.service_area_id} disabled={booked}>
+              <Select name="serviceAreaId" defaultValue={job?.service_area_id ?? prefill?.service_area_id} disabled={booked}>
                 {areas.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.name}
@@ -63,7 +70,7 @@ export function JobForm({
             </Field>
           </div>
           <Field name="description" label="What workers will do" hint="Tasks, equipment provided, dress code, anything they should bring.">
-            <Textarea name="description" defaultValue={job?.description} maxLength={4000} />
+            <Textarea name="description" defaultValue={job?.description ?? prefill?.description} maxLength={4000} />
           </Field>
           <fieldset>
             <legend className="mb-2 text-sm font-medium text-ink">Skills you are looking for</legend>
@@ -82,7 +89,7 @@ export function JobForm({
         <CardBody className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
             <Field name="date" label="Date" hint={lockNote}>
-              <Input type="date" name="date" defaultValue={job?.local_date} readOnly={booked} required />
+              <Input type="date" name="date" defaultValue={job?.local_date ?? prefill?.local_date} readOnly={booked} required />
             </Field>
             <Field name="startTime" label="Start time">
               <Input type="time" name="startTime" defaultValue={job?.local_start ?? "08:00"} readOnly={booked} required />

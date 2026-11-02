@@ -81,11 +81,14 @@ export function FormMessage({ tone, children }: { tone: "ok" | "bad" | "info"; c
 
 export function Field({
   name,
+  id,
   label,
   hint,
   children,
 }: {
   name: string;
+  /** The control's id when it differs from its name, e.g. two forms on one page. */
+  id?: string;
   label: ReactNode;
   hint?: ReactNode;
   children: ReactNode;
@@ -93,7 +96,7 @@ export function Field({
   const errors = use(ErrorsContext)?.[name];
   return (
     <div className="space-y-1.5">
-      <label htmlFor={name} className="block text-[13px] font-medium text-ink">
+      <label htmlFor={id ?? name} className="block text-[13px] font-medium text-ink">
         {label}
       </label>
       {children}

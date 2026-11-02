@@ -58,10 +58,8 @@ test("a customer posts a request, a contractor quotes, and the customer awards t
   await expect(contractor.getByText(/accepted your quote of \$3,200.00/)).toBeVisible();
   await expect(contractor.getByText(/200 Carleton Ave/)).toBeVisible();
 
-  // The customer marks it complete.
-  await customer.reload();
-  await customer.getByRole("button", { name: "Mark complete" }).click();
-  await expect(customer.getByText(/^Marked complete [A-Z][a-z]{2} /)).toBeVisible();
+  // Delivery and completion are covered end to end in marketplace-flow.spec.ts.
+  await expect(contractor.getByRole("link", { name: "Schedule a job" })).toBeVisible();
 });
 
 test("customers browse approved contractors by service and town", async ({ page }, testInfo) => {

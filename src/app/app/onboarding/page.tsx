@@ -77,8 +77,8 @@ function OrganizationForm({
   return (
     <ActionForm action={createOrganizationAction} className="mt-auto space-y-3 pt-5">
       <input type="hidden" name="kind" value={kind} />
-      <Field name="name" label={label}>
-        <Input name="name" autoComplete="organization" required />
+      <Field name="name" id={`${kind}-name`} label={label}>
+        <Input name="name" id={`${kind}-name`} autoComplete="organization" required />
       </Field>
       {markets.length === 1 ? (
         <>
@@ -88,8 +88,8 @@ function OrganizationForm({
           </p>
         </>
       ) : (
-        <Field name="marketId" label="Market">
-          <Select name="marketId" defaultValue="">
+        <Field name="marketId" id={`${kind}-market`} label="Market">
+          <Select name="marketId" id={`${kind}-market`} defaultValue="">
             <option value="" disabled>
               Choose a market
             </option>

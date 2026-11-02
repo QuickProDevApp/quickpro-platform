@@ -27,7 +27,12 @@ import {
   getOrganizationReadiness,
 } from "@/server/data/organizations";
 import { listCategories, listServiceAreas } from "@/server/data/reference";
-import { countOpenRequestsForContractor, listCustomerRequests, type ServiceRequest } from "@/server/data/requests";
+import {
+  countOpenRequestsForContractor,
+  listContractorRequests,
+  listCustomerRequests,
+  type ServiceRequest,
+} from "@/server/data/requests";
 import { submitOrganizationAction } from "./actions";
 
 export default async function OrganizationOverview({ params }: { params: Promise<{ orgId: string }> }) {
@@ -47,10 +52,12 @@ export default async function OrganizationOverview({ params }: { params: Promise
     operating ? listOrganizationJobs(user.id, org.id, "upcoming") : [],
   ]);
   const customerOperating = !isContractor && org.status === "approved";
-  const [requests, openToQuote] = await Promise.all([
+  const [requests, openToQuote, won] = await Promise.all([
     customerOperating ? listCustomerRequests(user.id, org.id, "active") : Promise.resolve([]),
     operating ? countOpenRequestsForContractor(user.id, org.id) : Promise.resolve(0),
+    operating ? listContractorRequests(user.id, org.id, "awarded") : Promise.resolve([]),
   ]);
+  const activeProjects = won.filter((r) => r.status === "awarded");
   const canSubmit = manager && (org.status === "draft" || org.status === "rejected");
   const ready = readiness.every((i) => i.done);
   const subject = isContractor ? "business registration" : "organization registration";
@@ -78,7 +85,9 @@ export default async function OrganizationOverview({ params }: { params: Promise
                 <ActionForm action={submitOrganizationAction.bind(null, org.id)}>
                   <SubmitButton pendingLabel="Submitting…">Submit for review</SubmitButton>
                   {!ready ? (
-                    <p className="text-xs text-muted">Finish the items above first. We will tell you what is missing.</p>
+                    <p className="text-xs text-muted">
+                      Finish the items above first. We will tell you what is missing.
+                    </p>
                   ) : null}
                 </ActionForm>
               </CardBody>
@@ -93,6 +102,9 @@ export default async function OrganizationOverview({ params }: { params: Promise
               </Link>
             </FormMessage>
           ) : null}
+          {operating && activeProjects.length ? (
+            <ContractorProjectsPanel orgId={org.id} projects={activeProjects} />
+          ) : null}
           {operating ? (
             <Operations orgId={org.id} jobs={upcoming} canPost={canDispatch(org.my_role)} now={new Date().getTime()} />
           ) : customerOperating ? (
@@ -102,8 +114,8 @@ export default async function OrganizationOverview({ params }: { params: Promise
               <CardHeader title="What's next" />
               <CardBody className="text-sm text-ink-soft">
                 <p>
-                  Once approved, your business can quote on customer requests for the services and towns you list,
-                  and post jobs for approved local workers to apply to.
+                  Once approved, your business can quote on customer requests for the services and towns you list, and
+                  post jobs for approved local workers to apply to.
                 </p>
               </CardBody>
             </Card>
@@ -140,7 +152,10 @@ export default async function OrganizationOverview({ params }: { params: Promise
                 />
                 <div>
                   <p className="mb-1 text-xs font-medium tracking-wide text-muted uppercase">Areas</p>
-                  <TagList empty="No areas yet" items={areas.filter((a) => caps.areaIds.includes(a.id)).map((a) => a.name)} />
+                  <TagList
+                    empty="No areas yet"
+                    items={areas.filter((a) => caps.areaIds.includes(a.id)).map((a) => a.name)}
+                  />
                 </div>
               </CardBody>
             </Card>
@@ -167,7 +182,9 @@ export default async function OrganizationOverview({ params }: { params: Promise
                       <p className="font-medium text-ink">{DOCUMENT_TYPE_LABEL[d.doc_type]}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-2">
                         <DocumentStatusBadge status={d.status} expiresOn={d.expires_on} />
-                        {d.expires_on ? <span className="text-xs text-muted">Expires {formatDate(d.expires_on)}</span> : null}
+                        {d.expires_on ? (
+                          <span className="text-xs text-muted">Expires {formatDate(d.expires_on)}</span>
+                        ) : null}
                       </div>
                     </li>
                   ))}
@@ -192,12 +209,15 @@ const INSURANCE_TONE: Record<InsuranceStatus, "ok" | "info" | "bad" | "neutral">
 function InsuranceCard({ status, documentsHref }: { status: InsuranceStatus; documentsHref: string }) {
   return (
     <Card>
-      <CardHeader title="General liability insurance" action={<Badge tone={INSURANCE_TONE[status]}>{INSURANCE_STATUS_LABEL[status]}</Badge>} />
+      <CardHeader
+        title="General liability insurance"
+        action={<Badge tone={INSURANCE_TONE[status]}>{INSURANCE_STATUS_LABEL[status]}</Badge>}
+      />
       <CardBody className="space-y-2 text-sm text-ink-soft">
         <p>
           QuickPro staff must review a current certificate before approving your business. Upload the renewal before
-          this one expires; staff track expiring certificates. A staff review means a person checked the certificate
-          you uploaded. QuickPro does not confirm coverage with your insurer.
+          this one expires; staff track expiring certificates. A staff review means a person checked the certificate you
+          uploaded. QuickPro does not confirm coverage with your insurer.
         </p>
         {status !== "current" && status !== "pending_review" ? (
           <a href={documentsHref} className="font-medium text-brand hover:underline">
@@ -242,7 +262,13 @@ function Operations({ orgId, jobs, canPost, now }: { orgId: string; jobs: Job[];
       <CardHeader
         title="Operations"
         description={`${jobs.length} upcoming ${jobs.length === 1 ? "job" : "jobs"}`}
-        action={canPost ? <LinkButton href={`${base}/new`} size="sm">Post a job</LinkButton> : null}
+        action={
+          canPost ? (
+            <LinkButton href={`${base}/new`} size="sm">
+              Post a job
+            </LinkButton>
+          ) : null
+        }
       />
       {attention.length ? (
         <div className="border-b border-line px-4 py-3 sm:px-5">
@@ -272,7 +298,9 @@ function Operations({ orgId, jobs, canPost, now }: { orgId: string; jobs: Job[];
       ) : null}
       {next.length === 0 ? (
         <div className="p-4 sm:p-5">
-          <EmptyState title="No upcoming jobs">Post a job when you need extra hands. Approved local workers can find it and apply.</EmptyState>
+          <EmptyState title="No upcoming jobs">
+            Post a job when you need extra hands. Approved local workers can find it and apply.
+          </EmptyState>
         </div>
       ) : (
         <ul className="divide-y divide-line">
@@ -280,7 +308,10 @@ function Operations({ orgId, jobs, canPost, now }: { orgId: string; jobs: Job[];
             const when = shiftParts(j.starts_at, j.ends_at);
             return (
               <li key={j.id}>
-                <Link href={`${base}/${j.id}`} className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-subtle/60 sm:px-5">
+                <Link
+                  href={`${base}/${j.id}`}
+                  className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-subtle/60 sm:px-5"
+                >
                   <div className="w-16 shrink-0 text-[13px] leading-5">
                     <p className="font-medium text-ink">{when.day.split(", ")[0]}</p>
                     <p className="text-muted">{when.day.split(", ")[1]}</p>
@@ -312,9 +343,18 @@ function Operations({ orgId, jobs, canPost, now }: { orgId: string; jobs: Job[];
   );
 }
 
-function CustomerRequestsPanel({ orgId, requests, canPost }: { orgId: string; requests: ServiceRequest[]; canPost: boolean }) {
+function CustomerRequestsPanel({
+  orgId,
+  requests,
+  canPost,
+}: {
+  orgId: string;
+  requests: ServiceRequest[];
+  canPost: boolean;
+}) {
   const base = `/app/org/${orgId}/requests`;
   const waiting = requests.reduce((n, r) => n + (r.status === "open" ? r.quote_count : 0), 0);
+  const toConfirm = requests.filter((r) => r.status === "awarded" && r.work_completed_at);
   return (
     <Card>
       <CardHeader
@@ -324,8 +364,29 @@ function CustomerRequestsPanel({ orgId, requests, canPost }: { orgId: string; re
             ? `${requests.length} active · ${waiting} ${waiting === 1 ? "quote" : "quotes"} waiting for your decision`
             : undefined
         }
-        action={canPost ? <LinkButton href={`${base}/new`} size="sm">Request service</LinkButton> : null}
+        action={
+          canPost ? (
+            <LinkButton href={`${base}/new`} size="sm">
+              Request service
+            </LinkButton>
+          ) : null
+        }
       />
+      {toConfirm.length ? (
+        <div className="border-b border-line px-4 py-3 sm:px-5">
+          <p className="text-xs font-medium text-muted">Needs your confirmation</p>
+          <ul className="mt-1.5 space-y-1 text-sm">
+            {toConfirm.map((r) => (
+              <li key={r.id}>
+                <Link href={`${base}/${r.id}`} className="text-brand hover:underline">
+                  {r.title}
+                </Link>
+                <span className="text-muted"> · {r.awarded_contractor_name} reported the work complete</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       {requests.length === 0 ? (
         <CardBody>
           <EmptyState title="No active requests">
@@ -336,20 +397,61 @@ function CustomerRequestsPanel({ orgId, requests, canPost }: { orgId: string; re
         <ul className="divide-y divide-line">
           {requests.slice(0, 6).map((r) => (
             <li key={r.id}>
-              <Link href={`${base}/${r.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-subtle/60 sm:px-5">
+              <Link
+                href={`${base}/${r.id}`}
+                className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-subtle/60 sm:px-5"
+              >
                 <span className="min-w-0">
                   <span className="block truncate font-medium text-ink">{r.title}</span>
                   <span className="block text-[13px] text-muted">
                     {formatDateRange(r.preferred_start, r.preferred_end)} ·{" "}
-                    {r.quote_count === 0 ? "No quotes yet" : `${r.quote_count} ${r.quote_count === 1 ? "quote" : "quotes"}, from ${formatCents(r.lowest_quote_cents)}`}
+                    {r.awarded_contractor_name
+                      ? `${r.awarded_contractor_name} · ${r.project_job_count} ${r.project_job_count === 1 ? "job" : "jobs"} scheduled`
+                      : r.quote_count === 0
+                        ? "No quotes yet"
+                        : `${r.quote_count} ${r.quote_count === 1 ? "quote" : "quotes"}, from ${formatCents(r.lowest_quote_cents)}`}
                   </span>
                 </span>
-                <RequestStatusBadge status={r.status} />
+                <RequestStatusBadge status={r.status} workReported={!!r.work_completed_at} />
               </Link>
             </li>
           ))}
         </ul>
       )}
+    </Card>
+  );
+}
+
+/** Work this contractor won and is still delivering. */
+function ContractorProjectsPanel({ orgId, projects }: { orgId: string; projects: ServiceRequest[] }) {
+  const base = `/app/org/${orgId}/requests`;
+  return (
+    <Card>
+      <CardHeader
+        title="Projects in progress"
+        description={`${projects.length} awarded ${projects.length === 1 ? "project" : "projects"}`}
+      />
+      <ul className="divide-y divide-line">
+        {projects.map((r) => (
+          <li key={r.id}>
+            <Link
+              href={`${base}/${r.id}`}
+              className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-subtle/60 sm:px-5"
+            >
+              <span className="min-w-0">
+                <span className="block truncate font-medium text-ink">{r.title}</span>
+                <span className="block text-[13px] text-muted">
+                  {r.customer_name} · {formatCents(r.awarded_amount_cents)} ·{" "}
+                  {r.project_job_count === 0
+                    ? "No jobs scheduled yet"
+                    : `${r.project_job_count} ${r.project_job_count === 1 ? "job" : "jobs"}`}
+                </span>
+              </span>
+              <RequestStatusBadge status={r.status} workReported={!!r.work_completed_at} />
+            </Link>
+          </li>
+        ))}
+      </ul>
     </Card>
   );
 }

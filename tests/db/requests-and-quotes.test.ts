@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import {
   addMember,
+  approvedCustomer,
   areaId,
   asAnon,
   asUser,
@@ -9,58 +10,13 @@ import {
   createApprovedContractor,
   createUser,
   glDocumentId,
+  postRequest,
   sql,
+  submitQuote as quote,
   suffolkId,
 } from "./helpers";
 
 afterAll(() => sql.end());
-
-async function approvedCustomer(admin: string, name = "Harbor Office Park") {
-  const owner = await createUser("Casey Customer");
-  const market = await suffolkId();
-  const orgId = await asUser(owner, async (tx) => {
-    const [{ id }] = await tx<{ id: string }[]>`select public.create_organization('customer', ${name}, ${market}) as id`;
-    await tx`
-      update public.organizations set phone = '631-555-0123', email = 'pm@example.test',
-        address_line1 = '10 Main St', city = 'Islip', postal_code = '11751' where id = ${id}
-    `;
-    await tx`select public.submit_organization_for_review(${id})`;
-    return id;
-  });
-  await asUser(admin, (tx) => tx`select public.review_organization(${orgId}, 'approved', null)`);
-  return { owner, orgId };
-}
-
-type RequestOverrides = { area?: string; category?: string; startsInDays?: number };
-
-async function postRequest(userId: string, orgId: string, o: RequestOverrides = {}) {
-  const category = await categoryId(o.category ?? "commercial-cleaning");
-  const area = await areaId(o.area ?? "islip");
-  return asUser(userId, async (tx) => {
-    const [{ id }] = await tx<{ id: string }[]>`
-      insert into public.service_requests
-        (organization_id, title, description, category_id, service_area_id, preferred_start, budget_min_cents, budget_max_cents, created_by)
-      values
-        (${orgId}, 'Nightly office cleaning', 'Three floors, about 24,000 square feet, five nights a week.',
-         ${category}, ${area}, current_date + ${o.startsInDays ?? 14}::int, 200000, 400000, ${userId})
-      returning id
-    `;
-    await tx`
-      insert into public.service_request_sites (request_id, address_line1, city, postal_code, access_notes, contact_name, contact_phone)
-      values (${id}, '200 Carleton Ave', 'Central Islip', '11722', 'Loading dock on the east side.', 'Pat Manager', '631-555-0199')
-    `;
-    return id;
-  });
-}
-
-const quote = (userId: string, requestId: string, contractorId: string, amountCents = 320000, validDays = 30) =>
-  asUser(userId, async (tx) => {
-    const [{ id }] = await tx<{ id: string }[]>`
-      select public.submit_quote(${requestId}, ${contractorId}, ${amountCents},
-        'Nightly cleaning of all three floors, restrooms and break rooms.', current_date + 10, current_date + ${validDays}::int) as id
-    `;
-    return id;
-  });
 
 async function setting() {
   const admin = await createAdmin();
@@ -261,13 +217,15 @@ describe("awarding work", () => {
     await expect(quote(contractorOwner, id, contractorId)).rejects.toThrow(/already decided/);
   });
 
-  it("completes awarded work and cancels with a reason", async () => {
-    const { customer, contractorOwner, contractorId } = await setting();
+  it("lets staff close awarded work and customers cancel with a reason", async () => {
+    const { admin, customer, contractorOwner, contractorId } = await setting();
     const id = await postRequest(customer.owner, customer.orgId);
-    await expect(asUser(customer.owner, (tx) => tx`select public.complete_service_request(${id})`)).rejects.toThrow(/Only awarded work/);
+    await expect(asUser(admin, (tx) => tx`select public.complete_service_request(${id})`)).rejects.toThrow(/Only awarded work/);
     const q = await quote(contractorOwner, id, contractorId);
     await asUser(customer.owner, (tx) => tx`select public.accept_quote(${q})`);
-    await asUser(customer.owner, (tx) => tx`select public.complete_service_request(${id})`);
+    // Customers confirm after the contractor reports the work complete (project-delivery tests).
+    await expect(asUser(customer.owner, (tx) => tx`select public.complete_service_request(${id})`)).rejects.toThrow(/Confirm completion once/);
+    await asUser(admin, (tx) => tx`select public.complete_service_request(${id})`);
     expect(await requestStatus(id)).toBe("completed");
     expect(await kindsFor(contractorOwner, `/requests/${id}`)).toContain("request.completed");
 

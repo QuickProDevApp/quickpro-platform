@@ -77,7 +77,7 @@ async function CustomerRequests({ user, org, show }: { user: CurrentUser; org: O
                   <Link href={`${base}/${r.id}`} className="block px-4 py-3.5 active:bg-subtle" data-testid="request-row">
                     <div className="flex items-start justify-between gap-3">
                       <p className="min-w-0 font-medium text-ink">{r.title}</p>
-                      <RequestStatusBadge status={r.status} />
+                      <RequestStatusBadge status={r.status} workReported={!!r.work_completed_at} />
                     </div>
                     <p className="mt-0.5 text-[13px] text-muted">
                       {r.category_name} · {r.area_name} · {formatDateRange(r.preferred_start, r.preferred_end)}
@@ -119,7 +119,7 @@ async function CustomerRequests({ user, org, show }: { user: CurrentUser; org: O
                         {r.lowest_quote_cents != null ? formatCents(r.lowest_quote_cents) : <span className="text-faint">—</span>}
                       </Td>
                       <Td>
-                        <RequestStatusBadge status={r.status} />
+                        <RequestStatusBadge status={r.status} workReported={!!r.work_completed_at} />
                       </Td>
                     </Tr>
                   ))}

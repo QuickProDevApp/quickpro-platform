@@ -18,6 +18,8 @@ const SIDE_LABEL: Record<ThreadMessage["author_side"], string> = {
   worker: "Worker",
   staff: "QuickPro staff",
   former: "No longer on this job",
+  customer: "Customer",
+  contractor: "Contractor",
 };
 
 /**
@@ -30,12 +32,14 @@ export function JobThread({
   postAction,
   hideAction,
   description,
+  placeholder = "Parking, gear, timing…",
 }: {
   messages: ThreadMessage[];
   currentUserId: string;
   postAction?: Action;
   hideAction?: Action;
   description: string;
+  placeholder?: string;
 }) {
   return (
     <Card>
@@ -59,7 +63,7 @@ export function JobThread({
                     }`}
                   >
                     <p className={`text-xs ${mine && !(m.hidden && !m.body) ? "text-white/70" : "text-muted"}`}>
-                      {mine ? "You" : m.author_name} · {SIDE_LABEL[m.author_side]} · {timeFormat.format(m.created_at)}
+                      {mine ? "You" : m.author_name} · {m.organization_name ?? SIDE_LABEL[m.author_side]} · {timeFormat.format(m.created_at)}
                     </p>
                     {m.body !== null ? (
                       <p className="mt-0.5 whitespace-pre-line break-words">{m.body}</p>
@@ -88,7 +92,7 @@ export function JobThread({
         {postAction ? (
           <ActionForm action={postAction} resetOnSuccess successMessage={false}>
             <Field name="body" label="New message">
-              <Textarea name="body" rows={3} maxLength={2000} placeholder="Parking, gear, timing…" />
+              <Textarea name="body" rows={3} maxLength={2000} placeholder={placeholder} />
             </Field>
             <SubmitButton pendingLabel="Sending…">Send</SubmitButton>
           </ActionForm>
