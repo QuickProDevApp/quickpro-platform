@@ -175,6 +175,8 @@ export type JobOverrides = {
   startsInHours?: number;
   hours?: number;
   skills?: string[];
+  /** Schedules the job for this awarded service request. */
+  requestId?: string;
 };
 
 /** Posts a job (with its site) as `userId`, the way the app does. */
@@ -188,10 +190,10 @@ export async function postJob(userId: string, orgId: string, o: JobOverrides = {
   return asUser(userId, async (tx) => {
     const [{ id }] = await tx<{ id: string }[]>`
       insert into public.jobs (organization_id, title, description, category_id, service_area_id, starts_at, ends_at,
-                               headcount, pay_rate_cents, engagement_type_id, created_by)
+                               headcount, pay_rate_cents, engagement_type_id, created_by, service_request_id)
       values (${orgId}, 'Office floor refinish', 'Strip and wax 4,000 sq ft.', ${category}, ${area},
               now() + make_interval(hours => ${startsIn}), now() + make_interval(hours => ${startsIn + hours}),
-              ${o.headcount ?? 2}, ${o.payCents ?? 2400}, ${engagement}, ${userId})
+              ${o.headcount ?? 2}, ${o.payCents ?? 2400}, ${engagement}, ${userId}, ${o.requestId ?? null})
       returning id
     `;
     for (const skill of skills) await tx`insert into public.job_skills (job_id, skill_id) values (${id}, ${skill})`;
@@ -230,3 +232,54 @@ export async function marketplace() {
   await createApprovedWorker(worker, admin);
   return { owner, admin, orgId, worker };
 }
+
+// Service requests ---------------------------------------------------------
+
+export async function approvedCustomer(admin: string, name = "Harbor Office Park") {
+  const owner = await createUser("Casey Customer");
+  const market = await suffolkId();
+  const orgId = await asUser(owner, async (tx) => {
+    const [{ id }] = await tx<{ id: string }[]>`select public.create_organization('customer', ${name}, ${market}) as id`;
+    await tx`
+      update public.organizations set phone = '631-555-0123', email = 'pm@example.test',
+        address_line1 = '10 Main St', city = 'Islip', postal_code = '11751' where id = ${id}
+    `;
+    await tx`select public.submit_organization_for_review(${id})`;
+    return id;
+  });
+  await asUser(admin, (tx) => tx`select public.review_organization(${orgId}, 'approved', null)`);
+  return { owner, orgId };
+}
+
+export type RequestOverrides = { area?: string; category?: string; startsInDays?: number; requirements?: string };
+
+export async function postRequest(userId: string, orgId: string, o: RequestOverrides = {}) {
+  const category = await categoryId(o.category ?? "commercial-cleaning");
+  const area = await areaId(o.area ?? "islip");
+  return asUser(userId, async (tx) => {
+    const [{ id }] = await tx<{ id: string }[]>`
+      insert into public.service_requests
+        (organization_id, title, description, category_id, service_area_id, preferred_start, budget_min_cents, budget_max_cents,
+         created_by, requirements)
+      values
+        (${orgId}, 'Nightly office cleaning', 'Three floors, about 24,000 square feet, five nights a week.',
+         ${category}, ${area}, current_date + ${o.startsInDays ?? 14}::int, 200000, 400000, ${userId}, ${o.requirements ?? ""})
+      returning id
+    `;
+    await tx`
+      insert into public.service_request_sites (request_id, address_line1, city, postal_code, access_notes, contact_name, contact_phone)
+      values (${id}, '200 Carleton Ave', 'Central Islip', '11722', 'Loading dock on the east side.', 'Pat Manager', '631-555-0199')
+    `;
+    return id;
+  });
+}
+
+export const submitQuote = (userId: string, requestId: string, contractorId: string, amountCents = 320000, validDays = 30) =>
+  asUser(userId, async (tx) => {
+    const [{ id }] = await tx<{ id: string }[]>`
+      select public.submit_quote(${requestId}, ${contractorId}, ${amountCents},
+        'Nightly cleaning of all three floors, restrooms and break rooms.', current_date + 10, current_date + ${validDays}::int) as id
+    `;
+    return id;
+  });
+

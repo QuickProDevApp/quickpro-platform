@@ -5,7 +5,9 @@ export type ThreadMessage = {
   id: string;
   author_id: string | null;
   author_name: string;
-  author_side: "business" | "worker" | "staff" | "former";
+  author_side: "business" | "worker" | "staff" | "former" | "customer" | "contractor";
+  /** On a project thread, the author's business. */
+  organization_name?: string | null;
   body: string | null;
   created_at: Date;
   hidden: boolean;

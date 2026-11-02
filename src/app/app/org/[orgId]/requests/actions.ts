@@ -2,22 +2,35 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireOrgDispatcher } from "@/server/actions/guards";
+import { requireMembership, requireOrgDispatcher } from "@/server/actions/guards";
 import {
   acceptQuote,
   cancelRequest,
-  completeRequest,
+  confirmCompletion,
   createRequest,
   declineQuote,
   getContractorQuote,
   getRequest,
   inviteContractor,
   listRequestQuotes,
+  postProjectMessage,
+  reopenWork,
+  reportWorkComplete,
   submitQuote,
   withdrawQuote,
 } from "@/server/data/requests";
 import { toUserMessage, UserFacingError } from "@/server/errors";
-import { fieldErrorsOf, formObject, quoteSchema, reasonSchema, serviceRequestSchema, uuid, type FormState } from "@/lib/schemas";
+import {
+  completionNoteSchema,
+  fieldErrorsOf,
+  formObject,
+  messageSchema,
+  quoteSchema,
+  reasonSchema,
+  serviceRequestSchema,
+  uuid,
+  type FormState,
+} from "@/lib/schemas";
 
 function done(orgId: string, message: string): FormState {
   revalidatePath(`/app/org/${orgId}`, "layout");
@@ -101,11 +114,40 @@ export async function cancelRequestAction(orgId: string, requestId: string, _: F
   }
 }
 
-export async function completeRequestAction(orgId: string, requestId: string): Promise<FormState> {
+export async function confirmCompletionAction(orgId: string, requestId: string): Promise<FormState> {
   try {
     const { user, request } = await requireCustomerRequest(orgId, requestId);
-    await completeRequest(user.id, request.id);
-    return done(orgId, "Marked complete.");
+    await confirmCompletion(user.id, request.id);
+    return done(orgId, "Completion confirmed. The contractor was notified.");
+  } catch (error) {
+    return { ok: false, message: toUserMessage(error) };
+  }
+}
+
+export async function reopenWorkAction(orgId: string, requestId: string, _: FormState, formData: FormData): Promise<FormState> {
+  try {
+    const { user, request } = await requireCustomerRequest(orgId, requestId);
+    const parsed = reasonSchema.safeParse(formObject(formData));
+    if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
+    await reopenWork(user.id, request.id, parsed.data.reason);
+  } catch (error) {
+    return { ok: false, message: toUserMessage(error) };
+  }
+  // The confirmation card disappears with the form, so the page says what happened.
+  revalidatePath(`/app/org/${orgId}`, "layout");
+  redirect(`/app/org/${orgId}/requests/${requestId}?sentback=1`);
+}
+
+/** Either business on an awarded project. The database checks that the user belongs to one of them. */
+export async function postProjectMessageAction(orgId: string, requestId: string, _: FormState, formData: FormData): Promise<FormState> {
+  try {
+    const { user } = await requireMembership(orgId);
+    const id = uuid.safeParse(requestId);
+    if (!id.success) throw new UserFacingError("Request not found.");
+    const parsed = messageSchema.safeParse(formObject(formData));
+    if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
+    await postProjectMessage(user.id, id.data, parsed.data.body);
+    return done(orgId, "Sent.");
   } catch (error) {
     return { ok: false, message: toUserMessage(error) };
   }
@@ -123,6 +165,22 @@ export async function submitQuoteAction(orgId: string, requestId: string, _: For
     const existing = await getContractorQuote(user.id, id.data, org.id);
     await submitQuote(user.id, id.data, org.id, parsed.data);
     return done(orgId, existing && existing.status === "submitted" ? "Quote updated. The customer was told about the change." : "Quote sent to the customer.");
+  } catch (error) {
+    return { ok: false, message: toUserMessage(error) };
+  }
+}
+
+/** The awarded contractor reports the project done; the customer then confirms. */
+export async function reportWorkCompleteAction(orgId: string, requestId: string, _: FormState, formData: FormData): Promise<FormState> {
+  try {
+    const { user, org } = await requireOrgDispatcher(orgId, "contractor");
+    const id = uuid.safeParse(requestId);
+    const request = id.success ? await getRequest(user.id, id.data) : null;
+    if (!request || request.awarded_contractor_id !== org.id) throw new UserFacingError("Project not found.");
+    const parsed = completionNoteSchema.safeParse(formObject(formData));
+    if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
+    await reportWorkComplete(user.id, request.id, parsed.data.note);
+    return done(orgId, `Reported complete. ${request.customer_name} was asked to confirm.`);
   } catch (error) {
     return { ok: false, message: toUserMessage(error) };
   }

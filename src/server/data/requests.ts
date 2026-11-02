@@ -1,6 +1,6 @@
 import "server-only";
 import { withUser, type Tx } from "@/server/db/client";
-import type { QuoteStatus, RequestStatus } from "@/lib/labels";
+import type { AssignmentStatus, JobStatus, QuoteStatus, RequestStatus } from "@/lib/labels";
 import type { QuoteInput, ServiceRequestInput } from "@/lib/schemas";
 
 // Service requests and quotes. Every query runs as the signed-in user under
@@ -14,6 +14,7 @@ export type ServiceRequest = {
   customer_name: string;
   title: string;
   description: string;
+  requirements: string;
   category_id: string;
   category_name: string;
   service_area_id: string;
@@ -29,6 +30,15 @@ export type ServiceRequest = {
   cancelled_at: Date | null;
   cancel_reason: string | null;
   created_at: Date;
+  /** Set when the awarded contractor reported the work complete; cleared if the customer sends it back. */
+  work_completed_at: Date | null;
+  completion_note: string | null;
+  /** The contractor that won, for the customer, that contractor and staff. */
+  awarded_contractor_id: string | null;
+  awarded_contractor_name: string | null;
+  awarded_amount_cents: number | null;
+  /** Jobs scheduled for the project (customer, awarded contractor and staff; 0 for anyone else). */
+  project_job_count: number;
   /** Quotes the viewer can see: all of them for the customer and staff, its own for a contractor. */
   quote_count: number;
   lowest_quote_cents: number | null;
@@ -63,12 +73,18 @@ export type Quote = {
 
 function requestColumns(tx: Tx) {
   return tx`
-    r.id, r.organization_id, o.name as customer_name, r.title, r.description,
+    r.id, r.organization_id, o.name as customer_name, r.title, r.description, r.requirements,
     r.category_id, c.name as category_name, r.service_area_id, a.name as area_name,
     to_char(r.preferred_start, 'YYYY-MM-DD') as preferred_start,
     to_char(r.preferred_end, 'YYYY-MM-DD') as preferred_end,
     r.budget_min_cents, r.budget_max_cents, r.status, r.awarded_quote_id, r.awarded_at, r.completed_at,
-    r.cancelled_at, r.cancel_reason, r.created_at,
+    r.cancelled_at, r.cancel_reason, r.created_at, r.work_completed_at, r.completion_note,
+    (select aq.contractor_id from public.quotes aq where aq.id = r.awarded_quote_id) as awarded_contractor_id,
+    (select p.name from public.quotes aq join public.request_party_names(r.id) p on p.organization_id = aq.contractor_id
+      where aq.id = r.awarded_quote_id) as awarded_contractor_name,
+    (select aq.amount_cents from public.quotes aq where aq.id = r.awarded_quote_id) as awarded_amount_cents,
+    case when r.awarded_quote_id is not null and app.can_see_request_site(r.id)
+         then (select count(*)::int from public.request_jobs(r.id)) else 0 end as project_job_count,
     (select count(*)::int from public.quotes q where q.request_id = r.id and q.status in ('submitted', 'accepted')) as quote_count,
     (select min(q.amount_cents)::int from public.quotes q where q.request_id = r.id and q.status in ('submitted', 'accepted')) as lowest_quote_cents
   `;
@@ -199,9 +215,9 @@ export function createRequest(userId: string, orgId: string, input: ServiceReque
   return withUser(userId, async (tx) => {
     const [{ id }] = await tx<{ id: string }[]>`
       insert into public.service_requests
-        (organization_id, title, description, category_id, service_area_id, preferred_start, preferred_end,
+        (organization_id, title, description, requirements, category_id, service_area_id, preferred_start, preferred_end,
          budget_min_cents, budget_max_cents, created_by)
-      values (${orgId}, ${input.title}, ${input.description}, ${input.categoryId}, ${input.serviceAreaId},
+      values (${orgId}, ${input.title}, ${input.description}, ${input.requirements}, ${input.categoryId}, ${input.serviceAreaId},
               ${input.preferredStart}, ${input.preferredEnd}, ${input.budgetMin}, ${input.budgetMax}, ${userId})
       returning id
     `;
@@ -244,8 +260,94 @@ export function cancelRequest(userId: string, requestId: string, reason: string)
   return withUser(userId, (tx) => tx`select public.cancel_service_request(${requestId}, ${reason})`);
 }
 
+/** Staff close an awarded request directly. */
 export function completeRequest(userId: string, requestId: string) {
   return withUser(userId, (tx) => tx`select public.complete_service_request(${requestId})`);
+}
+
+// Project delivery ---------------------------------------------------------------
+
+export type ProjectJob = {
+  id: string;
+  title: string;
+  status: JobStatus;
+  starts_at: Date;
+  ends_at: Date;
+  headcount: number;
+  booked: number;
+  checked_in: number;
+  checked_out: number;
+  completed_at: Date | null;
+};
+
+export type ProjectAttendance = {
+  job_id: string;
+  worker_name: string;
+  status: AssignmentStatus;
+  checked_in_at: Date | null;
+  checked_out_at: Date | null;
+};
+
+export type ProjectEvent = {
+  id: string;
+  kind: string;
+  summary: string;
+  detail: string;
+  job_id: string | null;
+  actor_label: string;
+  created_at: Date;
+};
+
+export type ProjectMessage = {
+  id: string;
+  author_id: string | null;
+  author_name: string;
+  author_side: "customer" | "contractor" | "staff";
+  organization_name: string | null;
+  body: string;
+  created_at: Date;
+};
+
+/** Jobs scheduled for an awarded request, for the customer, the awarded contractor and staff. */
+export function listProjectJobs(userId: string, requestId: string) {
+  return withUser(userId, (tx) => tx<ProjectJob[]>`select * from public.request_jobs(${requestId})`);
+}
+
+export function listProjectAttendance(userId: string, requestId: string) {
+  return withUser(userId, (tx) => tx<ProjectAttendance[]>`select * from public.request_attendance(${requestId})`);
+}
+
+/** The project's history, oldest first. */
+export function listProjectEvents(userId: string, requestId: string) {
+  return withUser(userId, (tx) => tx<ProjectEvent[]>`
+    select e.id, e.kind, e.summary, e.detail, e.job_id, e.actor_label, e.created_at
+    from public.service_request_events e
+    where e.request_id = ${requestId}
+    order by e.created_at, e.id
+  `);
+}
+
+/** Shaped like a job thread so the same message view renders it. Project messages are never hidden. */
+export function getProjectThread(userId: string, requestId: string) {
+  return withUser(userId, (tx) => tx<(ProjectMessage & { hidden: false; hidden_reason: null })[]>`
+    select *, false as hidden, null::text as hidden_reason from public.request_thread(${requestId})
+  `);
+}
+
+export function postProjectMessage(userId: string, requestId: string, body: string) {
+  return withUser(userId, (tx) => tx`select public.post_request_message(${requestId}, ${body})`);
+}
+
+export function reportWorkComplete(userId: string, requestId: string, note: string) {
+  return withUser(userId, (tx) => tx`select public.report_request_work_complete(${requestId}, ${note})`);
+}
+
+export function confirmCompletion(userId: string, requestId: string) {
+  return withUser(userId, (tx) => tx`select public.confirm_request_completion(${requestId})`);
+}
+
+export function reopenWork(userId: string, requestId: string, reason: string) {
+  return withUser(userId, (tx) => tx`select public.reopen_request_work(${requestId}, ${reason})`);
 }
 
 export type DirectoryContractor = {

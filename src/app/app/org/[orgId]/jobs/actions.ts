@@ -13,6 +13,7 @@ import {
   offerJob,
   updateJob,
 } from "@/server/data/jobs";
+import { getRequest } from "@/server/data/requests";
 import { toUserMessage, UserFacingError } from "@/server/errors";
 import { fieldErrorsOf, formObject, jobSchema, reasonSchema, uuid, type FormState } from "@/lib/schemas";
 
@@ -32,13 +33,16 @@ function done(orgId: string, message: string): FormState {
 
 const skillIds = (formData: FormData) => formData.getAll("skillId").map((v) => uuid.parse(v));
 
-export async function createJobAction(orgId: string, _: FormState, formData: FormData): Promise<FormState> {
+export async function createJobAction(orgId: string, requestId: string | null, _: FormState, formData: FormData): Promise<FormState> {
   let jobId: string;
   try {
     const { user, org } = await requireDispatcher(orgId);
+    // The database also refuses a project this business did not win.
+    const project = requestId === null ? null : uuid.safeParse(requestId).success ? await getRequest(user.id, requestId) : null;
+    if (requestId !== null && (!project || project.awarded_contractor_id !== org.id)) throw new UserFacingError("Project not found.");
     const parsed = jobSchema.safeParse(formObject(formData));
     if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
-    jobId = await createJob(user.id, org.id, parsed.data, skillIds(formData));
+    jobId = await createJob(user.id, org.id, parsed.data, skillIds(formData), project?.id ?? null);
   } catch (error) {
     return { ok: false, message: toUserMessage(error) };
   }

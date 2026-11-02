@@ -98,7 +98,9 @@ export function ApplicationStatusBadge({ status }: { status: ApplicationStatus }
 
 const requestTone: Record<RequestStatus, Tone> = { open: "info", awarded: "ok", completed: "neutral", cancelled: "bad" };
 
-export function RequestStatusBadge({ status }: { status: RequestStatus }) {
+/** With `workReported`, an awarded request is waiting for the customer to confirm completion. */
+export function RequestStatusBadge({ status, workReported = false }: { status: RequestStatus; workReported?: boolean }) {
+  if (status === "awarded" && workReported) return <Badge dot tone="warn">Awaiting confirmation</Badge>;
   return <Badge dot tone={requestTone[status]}>{REQUEST_STATUS_LABEL[status]}</Badge>;
 }
 

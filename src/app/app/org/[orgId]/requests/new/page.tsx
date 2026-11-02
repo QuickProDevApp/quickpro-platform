@@ -61,6 +61,13 @@ export default async function NewRequestPage({ params }: { params: Promise<{ org
             >
               <Textarea name="description" required minLength={10} maxLength={4000} rows={5} />
             </Field>
+            <Field
+              name="requirements"
+              label="Requirements"
+              hint="Optional: certifications, insurance limits, background or badge checks, equipment, working hours."
+            >
+              <Textarea name="requirements" maxLength={2000} rows={3} />
+            </Field>
           </CardBody>
         </Card>
 
