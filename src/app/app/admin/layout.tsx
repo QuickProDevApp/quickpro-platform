@@ -8,6 +8,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <SubNav
         items={[
           { href: "/app/admin", label: "Overview", exact: true },
+          { href: "/app/admin/analytics", label: "Analytics" },
           { href: "/app/admin/jobs", label: "Jobs" },
           { href: "/app/admin/requests", label: "Requests" },
           { href: "/app/admin/organizations", label: "Organizations" },

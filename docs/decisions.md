@@ -446,3 +446,26 @@ the business that engages them.
   security and the functions.
 - **Delivery:** the recipient gets a QuickPro notification. Email isn't sent
   yet, so the invoice prints cleanly (or saves as PDF) from the browser.
+
+## D-030 Staff market analytics from live tables, no new schema
+
+Staff get a market analytics page (Staff → Analytics) for one market over
+the last 7, 30, 90 days or 12 months, optionally narrowed to one category:
+projects posted, quoted and awarded (with value), shift fill rate and time
+to fill, check-ins, what contractors invoiced and marked paid, reviews and
+disputes, approved businesses and workers, breakdowns by category and
+town, coverage gaps (category and town pairs customers asked for that no
+approved contractor covers), weekly or monthly charts, and a CSV export.
+
+- **No migration.** Every number is a read-only query run as the signed-in
+  staff member; row level security already lets staff read these tables.
+  The data layer refuses anyone who isn't staff, and the page and export
+  return not found to them.
+- **Counted, not estimated.** Definitions are in `src/server/data/analytics.ts`
+  and on the page ("How these are counted"). Money is what contractors
+  invoiced and marked paid; QuickPro still doesn't move money (D-029).
+- **Fill rate** counts shifts that have started (not cancelled), so future
+  shifts that are still filling don't drag it down. Time to fill runs from
+  posting to the booking that filled the last position.
+- **Later:** pre-aggregated tables or a reporting replica if the queries get
+  slow at volume; finer staff roles (finance, support) for who sees money.
