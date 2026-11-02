@@ -12,6 +12,7 @@ import { formatDateTime } from "@/lib/labels";
 import { uuid } from "@/lib/schemas";
 import { requireMembership } from "@/server/actions/guards";
 import { getJob, getJobSite, listJobPeople } from "@/server/data/jobs";
+import { getJobWorkerRatings } from "@/server/data/reviews";
 import { getJobThread } from "@/server/data/messages";
 import { postJobMessageAction } from "@/app/app/messages/actions";
 import { canDispatch } from "@/server/data/organizations";
@@ -37,14 +38,15 @@ export default async function OrganizationJobPage({
   if (!uuid.safeParse(jobId).success) notFound();
   const job = await getJob(user.id, jobId);
   if (!job || job.organization_id !== org.id) notFound();
-  const [site, people, messages] = await Promise.all([
+  const dispatcher = canDispatch(org.my_role);
+  const [site, people, messages, ratings] = await Promise.all([
     getJobSite(user.id, job.id),
     listJobPeople(user.id, job.id),
     getJobThread(user.id, job.id),
+    dispatcher ? getJobWorkerRatings(user.id, job.id) : undefined,
   ]);
   const posted = (await searchParams).posted === "1";
 
-  const dispatcher = canDispatch(org.my_role);
   const now = new Date();
   const live = job.status === "open" || job.status === "filled";
   const canOffer = dispatcher && job.status === "open" && job.starts_at > now;
@@ -98,6 +100,8 @@ export default async function OrganizationJobPage({
             offerAction={dispatcher ? offerJobAction.bind(null, org.id, job.id) : undefined}
             declineAction={dispatcher ? declineApplicationAction.bind(null, org.id, job.id) : undefined}
             cancelAction={dispatcher ? cancelAssignmentAction.bind(null, org.id, job.id) : undefined}
+            ratings={ratings}
+            shiftHref={(id) => `/app/org/${org.id}/jobs/${job.id}/shifts/${id}`}
           />
           <JobThread
             messages={messages}

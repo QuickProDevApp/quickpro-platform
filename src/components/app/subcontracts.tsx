@@ -121,6 +121,7 @@ export function PrimeSubcontracts({
                     {choices.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
+                        {c.rating_count ? ` · ★ ${Number(c.rating_avg).toFixed(1)} (${c.rating_count})` : ""}
                         {c.serves_category ? "" : ` (doesn't list ${categoryName.toLowerCase()})`}
                       </option>
                     ))}

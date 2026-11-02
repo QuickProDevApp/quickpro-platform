@@ -65,7 +65,11 @@ staffing and attendance, the two businesses message on the request, and the
 contractor reports the work complete for the customer to confirm, with a
 project history. Then (D-027): the awarded contractor can subcontract part
 of the project to another approved contractor, who staffs its own jobs and
-reports its part complete. Still to do: reviews, public contractor profiles.
+reports its part complete. Then (D-028): two-way, double-blind reviews of
+every finished project, subcontract and shift, with ratings in directories
+and applicant lists, replies, flags and staff moderation; and disputes about
+agreed work, discussed by both sides and staff and closed with an outcome.
+Still to do: public contractor profiles.
 
 - Customers submit job requests (scope, site, schedule, budget).
 - Matching to approved contractors by category and area; staff can route.
@@ -85,7 +89,7 @@ record, fee structure, worker pay flows).
 
 ## Phase 6: Operations, analytics, expansion (module G)
 
-- Disputes and support tickets.
+- Support tickets. (Disputes about agreed work shipped with D-028.)
 - Market and category dashboards for staff.
 - Opening Nassau County: flip `markets.is_active`, review service areas.
 

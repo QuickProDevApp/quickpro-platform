@@ -81,6 +81,8 @@ export type SubcontractorOption = {
   category_names: string[];
   area_names: string[];
   serves_category: boolean;
+  rating_avg: string | null;
+  rating_count: number;
 };
 
 export function subcontractorDirectory(userId: string, primeId: string, categoryId: string | null) {

@@ -369,6 +369,9 @@ export type DirectoryContractor = {
   serves_category: boolean;
   serves_area: boolean;
   insurance_reviewed: boolean;
+  /** Average of published, visible reviews; null with none. */
+  rating_avg: string | null;
+  rating_count: number;
 };
 
 export function contractorDirectory(userId: string, customerId: string, categoryId: string | null, areaId: string | null) {

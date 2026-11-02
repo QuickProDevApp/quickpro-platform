@@ -388,3 +388,53 @@ export const subcontractResponseSchema = z.object({
   decision: z.enum(["accept", "decline"], "Choose accept or decline."),
   note: z.string().trim().max(1000, "Keep the note under 1,000 characters.").default(""),
 });
+
+export const WORK_CONTEXTS = ["project", "subcontract", "shift"] as const;
+
+export const reviewSchema = z.object({
+  rating: z.coerce
+    .number("Choose a rating from 1 to 5 stars.")
+    .int("Choose a rating from 1 to 5 stars.")
+    .min(1, "Choose a rating from 1 to 5 stars.")
+    .max(5, "Choose a rating from 1 to 5 stars."),
+  body: z.string().trim().max(2000, "Keep the review under 2,000 characters.").default(""),
+});
+
+export const reviewReplySchema = z.object({
+  reviewId: uuid,
+  reply: z.string().trim().min(1, "Write a reply first.").max(1000, "Keep the reply under 1,000 characters."),
+});
+
+export const reviewFlagSchema = z.object({
+  reviewId: uuid,
+  reason: z.string().trim().min(5, "Tell staff what's wrong with this review.").max(500, "Keep the reason under 500 characters."),
+});
+
+export const DISPUTE_REASONS = ["quality", "incomplete", "no_show", "hours", "payment", "damage", "conduct", "other"] as const;
+
+export const disputeSchema = z.object({
+  reason: z.enum(DISPUTE_REASONS, "Choose what the problem is about."),
+  summary: z
+    .string()
+    .trim()
+    .min(20, "Describe what happened in a few sentences (at least 20 characters).")
+    .max(2000, "Keep the description under 2,000 characters."),
+  desiredOutcome: z.string().trim().max(1000, "Keep this under 1,000 characters.").default(""),
+});
+
+export const DISPUTE_OUTCOMES = ["resolved_by_parties", "upheld", "partly_upheld", "not_upheld"] as const;
+
+export const disputeResolutionSchema = z.object({
+  outcome: z.enum(DISPUTE_OUTCOMES, "Choose an outcome."),
+  resolution: z
+    .string()
+    .trim()
+    .min(10, "Explain the decision to both sides (at least 10 characters).")
+    .max(2000, "Keep the resolution under 2,000 characters."),
+});
+
+export const moderateReviewSchema = z.object({
+  reviewId: uuid,
+  decision: z.enum(["hide", "keep"], "Choose hide or keep."),
+  reason: z.string().trim().max(500, "Keep the reason under 500 characters.").default(""),
+});

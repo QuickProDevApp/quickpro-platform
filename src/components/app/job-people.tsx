@@ -1,9 +1,12 @@
+import Link from "next/link";
+import { RatingSummary } from "@/components/app/trust";
 import { ApplicationStatusBadge, AssignmentStatusBadge } from "@/components/ui/badge";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ActionForm, Input, SubmitButton } from "@/components/ui/form";
 import { formatDateTime } from "@/lib/labels";
 import type { FormState } from "@/lib/schemas";
 import type { JobPerson } from "@/server/data/jobs";
+import type { Rating } from "@/server/data/reviews";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
@@ -19,8 +22,14 @@ export function JobPeople({
   declineAction,
   cancelAction,
   skillsRequested,
+  ratings,
+  shiftHref,
 }: {
   people: JobPerson[];
+  /** Each worker's rating from businesses, when the viewer may see it. */
+  ratings?: Map<string, Rating>;
+  /** Where a booked worker's shift is reviewed and disputes are raised. */
+  shiftHref?: (assignmentId: string) => string;
   /** How many skills the job asks for, to describe each person's match. */
   skillsRequested: number;
   /** The job is open and has not started. */
@@ -37,8 +46,15 @@ export function JobPeople({
   const others = people.filter((p) => !booked.includes(p) && !offered.includes(p) && !applicants.includes(p));
 
   const row = (p: JobPerson, children?: React.ReactNode) => (
-    <PersonRow key={p.worker_user_id} person={p} skillsRequested={skillsRequested}>
+    <PersonRow key={p.worker_user_id} person={p} skillsRequested={skillsRequested} rating={ratings?.get(p.worker_user_id)}>
       {children}
+      {shiftHref && p.assignment_id && (booked.includes(p) || (p.assignment_status === "cancelled" && p.responded_at)) ? (
+        <p>
+          <Link href={shiftHref(p.assignment_id)} className="text-[13px] font-medium text-brand hover:underline">
+            {p.assignment_status === "completed" ? "Review this shift, or report a problem →" : "Report a problem with this booking →"}
+          </Link>
+        </p>
+      ) : null}
     </PersonRow>
   );
 
@@ -147,7 +163,17 @@ function Section({ title, note, children }: { title: string; note?: string; chil
   );
 }
 
-function PersonRow({ person: p, skillsRequested, children }: { person: JobPerson; skillsRequested: number; children?: React.ReactNode }) {
+function PersonRow({
+  person: p,
+  skillsRequested,
+  rating,
+  children,
+}: {
+  person: JobPerson;
+  skillsRequested: number;
+  rating?: Rating;
+  children?: React.ReactNode;
+}) {
   const match =
     skillsRequested === 0
       ? null
@@ -166,6 +192,11 @@ function PersonRow({ person: p, skillsRequested, children }: { person: JobPerson
               .filter(Boolean)
               .join(" · ")}
           </p>
+          {rating ? (
+            <p className="mt-0.5">
+              <RatingSummary rating={rating} compact />
+            </p>
+          ) : null}
         </div>
         {p.assignment_status ? (
           <AssignmentStatusBadge status={p.assignment_status} />

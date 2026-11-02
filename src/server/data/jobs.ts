@@ -227,6 +227,8 @@ export type WorkerJob = Job & {
   application_status: ApplicationStatus | null;
   assignment_id: string | null;
   assignment_status: AssignmentStatus | null;
+  /** When the worker answered the offer; a cancelled booking that was once accepted has one. */
+  assignment_responded_at: Date | null;
   checked_in_at: Date | null;
   checked_out_at: Date | null;
 };
@@ -238,7 +240,8 @@ function workerColumns(tx: Tx, userId: string) {
     (select count(*)::int from public.job_skills js join public.worker_skills ws on ws.skill_id = js.skill_id
       where js.job_id = j.id and ws.user_id = ${userId}) as matching_skills,
     ap.id as application_id, ap.status as application_status,
-    asg.id as assignment_id, asg.status as assignment_status, asg.checked_in_at, asg.checked_out_at
+    asg.id as assignment_id, asg.status as assignment_status, asg.responded_at as assignment_responded_at,
+    asg.checked_in_at, asg.checked_out_at
   `;
 }
 

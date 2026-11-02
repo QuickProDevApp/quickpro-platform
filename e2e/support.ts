@@ -310,3 +310,62 @@ export async function seedAwardedProject(o: {
     await sql.end();
   }
 }
+
+/**
+ * Finishes an awarded project through the real workflow functions, as each
+ * party: the contractor posts a job on it, the worker applies and accepts,
+ * the shift runs (after a test-only clock jump), the contractor completes
+ * the job and reports the work, and the customer confirms.
+ */
+export async function seedFinishedProject(o: {
+  requestId: string;
+  customerOwnerId: string;
+  contractorOwnerId: string;
+  contractorId: string;
+  workerId: string;
+  jobTitle: string;
+}) {
+  const sql = platformSql();
+  const as = <T>(userId: string, fn: (tx: TransactionSql) => Promise<T>) =>
+    sql.begin(async (tx) => {
+      await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: userId, role: "authenticated" })}, true)`;
+      await tx`set local role authenticated`;
+      return fn(tx);
+    }) as Promise<T>;
+  try {
+    const jobId = await as(o.contractorOwnerId, async (tx) => {
+      const [job] = await tx<{ id: string }[]>`
+        insert into public.jobs (organization_id, title, description, category_id, service_area_id, starts_at, ends_at,
+                                 headcount, pay_rate_cents, engagement_type_id, created_by, service_request_id)
+        select ${o.contractorId}, ${o.jobTitle}, 'Strip and wax the lobby.', c.id, a.id,
+               now() + interval '2 days', now() + interval '2 days 8 hours',
+               1, 2600, e.id, ${o.contractorOwnerId}, ${o.requestId}
+        from public.service_categories c, public.service_areas a, public.engagement_types e
+        where c.slug = 'commercial-cleaning' and a.slug = 'islip' and e.slug = 'contractor-employee'
+        returning id
+      `;
+      await tx`
+        insert into public.job_sites (job_id, address_line1, city, postal_code, contact_name, contact_phone)
+        values (${job.id}, '200 Carleton Ave', 'Central Islip', '11722', 'Sam', '631-555-0177')
+      `;
+      return job.id;
+    });
+    await as(o.workerId, (tx) => tx`select public.apply_to_job(${jobId}, 'Available')`);
+    const [{ id: assignmentId }] = await as(o.contractorOwnerId, (tx) => tx<{ id: string }[]>`
+      select public.offer_job(${jobId}, ${o.workerId}) as id
+    `);
+    await as(o.workerId, (tx) => tx`select public.respond_to_offer(${assignmentId}, true)`);
+    await sql.begin(async (tx) => {
+      await tx`set local session_replication_role = replica`;
+      await tx`update public.jobs set starts_at = now() - interval '30 minutes', ends_at = now() + interval '3 hours' where id = ${jobId}`;
+    });
+    await as(o.workerId, (tx) => tx`select public.check_in(${assignmentId})`);
+    await as(o.workerId, (tx) => tx`select public.check_out(${assignmentId})`);
+    await as(o.contractorOwnerId, (tx) => tx`select public.complete_job(${jobId})`);
+    await as(o.contractorOwnerId, (tx) => tx`select public.report_request_work_complete(${o.requestId}, 'All three floors done.')`);
+    await as(o.customerOwnerId, (tx) => tx`select public.confirm_request_completion(${o.requestId})`);
+    return { jobId, assignmentId };
+  } finally {
+    await sql.end();
+  }
+}
