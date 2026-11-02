@@ -6,6 +6,8 @@ import { ProjectJobs, ProjectNotice, ProjectProgress, ProjectTimeline, projectSt
 import { QuoteList } from "@/components/app/quote-list";
 import { RequestFacts, RequestSiteFacts } from "@/components/app/request-summary";
 import { EndSubcontract, PrimeSubcontracts, ProjectBusinesses, SubcontractTerms } from "@/components/app/subcontracts";
+import { RatingSummary } from "@/components/app/trust";
+import { WorkTrust } from "@/components/app/work-trust";
 import { Badge, QuoteStatusBadge, RequestStatusBadge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
@@ -15,6 +17,7 @@ import { uuid, type FormState } from "@/lib/schemas";
 import { requireMembership } from "@/server/actions/guards";
 import type { CurrentUser } from "@/server/auth/session";
 import { canDispatch, getInsuranceStatus, type OrganizationWithRole } from "@/server/data/organizations";
+import { getRequestCustomerRating, type Rating } from "@/server/data/reviews";
 import {
   contractorDirectory,
   getContractorQuote,
@@ -129,12 +132,26 @@ const SUBCONTRACT_BANNER: Record<string, string> = {
   ended: "The subcontract was ended and the other business was told why.",
 };
 
-function Details({ request, showCustomer }: { request: ServiceRequest; showCustomer?: boolean }) {
+function Details({
+  request,
+  showCustomer,
+  customerRating,
+}: {
+  request: ServiceRequest;
+  showCustomer?: boolean;
+  /** The customer's rating from contractors, for contractors. */
+  customerRating?: Rating;
+}) {
   return (
     <Card>
       <CardHeader title="Details" />
       <CardBody className="space-y-4">
         <RequestFacts request={request} showCustomer={showCustomer} />
+        {customerRating ? (
+          <p className="flex flex-wrap items-center gap-x-2 text-[13px] text-muted">
+            {request.customer_name} as a customer: <RatingSummary rating={customerRating} />
+          </p>
+        ) : null}
         <p className="border-t border-line pt-4 text-sm whitespace-pre-line text-ink-soft">{request.description}</p>
         {request.requirements ? (
           <div className="border-t border-line pt-4">
@@ -220,6 +237,15 @@ async function CustomerView({
               primeId={request.awarded_contractor_id}
               emptyText={`${awarded.contractor_name} schedules the crew here. You'll see each job, who's booked, and when they check in and out.`}
             />
+            <WorkTrust
+              userId={user.id}
+              context="project"
+              targetId={request.id}
+              orgId={org.id}
+              finished={request.status === "completed"}
+              engaged={request.status === "awarded" || request.status === "completed"}
+              canAct={dispatcher}
+            />
             <JobThread
               messages={work.messages}
               currentUserId={user.id}
@@ -289,6 +315,9 @@ async function CustomerView({
                             ? `Serves ${request.area_name}`
                             : `Doesn't list ${request.area_name}`}
                           {c.years_in_business != null ? ` · ${c.years_in_business} years in business` : ""}
+                        </p>
+                        <p className="mt-0.5">
+                          <RatingSummary rating={c} compact />
                         </p>
                       </div>
                       {state === "quoted" ? (
@@ -371,16 +400,27 @@ async function ContractorView({
 }) {
   const dispatcher = canDispatch(org.my_role);
   const won = request.awarded_contractor_id === org.id;
-  const [quote, site, invited, insurance, work, mine] = await Promise.all([
+  const [quote, site, invited, insurance, work, mine, customerRating] = await Promise.all([
     getContractorQuote(user.id, request.id, org.id),
     getRequestSite(user.id, request.id),
     isInvited(user.id, request.id, org.id),
     getInsuranceStatus(user.id, org.id),
     won ? loadProject(user.id, request.id) : Promise.resolve(null),
     won ? Promise.resolve([]) : listMySubcontracts(user.id, request.id, org.id),
+    getRequestCustomerRating(user.id, request.id),
   ]);
   if (!won && mine.length) {
-    return <SubcontractorView user={user} org={org} request={request} subcontract={mine[0]} dispatcher={dispatcher} site={site} />;
+    return (
+      <SubcontractorView
+        user={user}
+        org={org}
+        request={request}
+        subcontract={mine[0]}
+        dispatcher={dispatcher}
+        site={site}
+        customerRating={customerRating}
+      />
+    );
   }
   const open = request.status === "open";
   const canQuote = dispatcher && open && quote?.status !== "declined" && quote?.status !== "accepted";
@@ -508,7 +548,7 @@ async function ContractorView({
       </div>
       {/* Phones read the request before the quote form; on a won project the work comes first. */}
       <div className={`space-y-6 ${won ? "" : "-order-1 lg:order-none"}`}>
-        <Details request={request} showCustomer />
+        <Details request={request} showCustomer customerRating={customerRating} />
         {site ? (
           <Card>
             <CardHeader title="Site and contact" />
@@ -642,6 +682,15 @@ async function ContractorProject({
           </CardBody>
         </Card>
       ) : null}
+      <WorkTrust
+        userId={userId}
+        context="project"
+        targetId={request.id}
+        orgId={org.id}
+        finished={request.status === "completed"}
+        engaged={request.status === "awarded" || request.status === "completed"}
+        canAct={dispatcher}
+      />
       <JobThread
         messages={work.messages}
         currentUserId={userId}
@@ -663,6 +712,7 @@ async function SubcontractorView({
   subcontract: sc,
   dispatcher,
   site,
+  customerRating,
 }: {
   user: CurrentUser;
   org: OrganizationWithRole;
@@ -670,6 +720,7 @@ async function SubcontractorView({
   subcontract: Subcontract;
   dispatcher: boolean;
   site: Awaited<ReturnType<typeof getRequestSite>>;
+  customerRating: Rating;
 }) {
   const working = sc.status === "accepted" || sc.status === "completed";
   const [jobs, attendance, events, messages] = await Promise.all([
@@ -768,12 +819,21 @@ async function SubcontractorView({
             placeholder="Start time, access, materials…"
           />
         ) : null}
+        <WorkTrust
+          userId={user.id}
+          context="subcontract"
+          targetId={sc.id}
+          orgId={org.id}
+          finished={sc.status === "completed"}
+          engaged={working || (sc.status === "cancelled" && sc.responded_at !== null)}
+          canAct={dispatcher}
+        />
         {dispatcher && accepted ? (
           <EndSubcontract action={cancelSubcontractAction.bind(null, org.id, request.id, sc.id)} otherName={sc.prime_name} />
         ) : null}
       </div>
       <div className="space-y-6">
-        <Details request={request} showCustomer />
+        <Details request={request} showCustomer customerRating={customerRating} />
         {site ? (
           <Card>
             <CardHeader title="Site and contact" description={`Shared by ${sc.prime_name} for your part of the work.`} />

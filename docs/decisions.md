@@ -384,3 +384,38 @@ project complete only after every live subcontract is completed or ended.
   (Step 5) and is said in the product.
 - **Workers** are unaffected: they apply to the subcontractor's job like any
   other and see that business's name, never the customer's.
+
+## D-028 Two-way, double-blind reviews and staff-closed disputes on every piece of agreed work
+
+Three kinds of work can be reviewed and disputed, each between two sides:
+a project (customer and awarded contractor), a subcontract (prime and
+subcontractor) and a shift (the business and the booked worker).
+
+- **Reviews:** each side writes one review (1–5 stars, text optional
+  except at 1–2 stars) within 14 days of the work finishing. Neither side
+  sees the other's review until both have written one or the window
+  closes, so neither can retaliate. Businesses review through owners,
+  admins and dispatchers; workers review for themselves.
+- **Who sees what:** review text is seen by the author, the subject and
+  staff; there are no public profiles yet. Averages of published, visible
+  reviews show where a choice is made: customers see contractors' ratings
+  in the directory and invite list, primes see subcontractors' ratings,
+  dispatchers see applicants' ratings, and contractors see a customer's
+  rating on its requests.
+- **Moderation:** the subject can reply once and flag a review; staff hide
+  it (it stops counting, and both sides see the reason) or keep it. Staff
+  don't edit reviews.
+- **Disputes:** either side can raise one about agreed work (awarded,
+  accepted or booked) up to 90 days after it finished, with a reason, what
+  happened and what would put it right. The two sides and staff discuss it
+  on its own thread; the opener can withdraw it; staff close it with an
+  outcome (resolved between the sides, upheld, partly upheld, not upheld)
+  and a note both sides see. Project disputes appear in the project
+  history; subcontract and shift disputes stay between their two sides.
+- **Money:** QuickPro doesn't hold or move money yet, so an outcome is a
+  record, and refunds or pay corrections are arranged between the parties.
+  The product says so on every dispute. Payments (Step 5) can act on
+  outcomes later.
+- Enforced in the database: who may review, publication, visibility and
+  every status change go through functions; the tables are not writable by
+  `authenticated`.

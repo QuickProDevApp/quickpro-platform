@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { JobThread } from "@/components/app/job-thread";
 import { ProjectJobs } from "@/components/app/project";
 import { EndSubcontract, SubcontractTerms } from "@/components/app/subcontracts";
+import { WorkTrust } from "@/components/app/work-trust";
 import { uuid } from "@/lib/schemas";
 import { requireMembership } from "@/server/actions/guards";
 import { canDispatch } from "@/server/data/organizations";
@@ -71,6 +72,15 @@ export default async function SubcontractPage({
               placeholder="Start time, access, materials…"
             />
           ) : null}
+          <WorkTrust
+            userId={user.id}
+            context="subcontract"
+            targetId={sc.id}
+            orgId={org.id}
+            finished={sc.status === "completed"}
+            engaged={sc.status === "accepted" || sc.status === "completed" || (sc.status === "cancelled" && sc.responded_at !== null)}
+            canAct={dispatcher}
+          />
         </div>
         {/* Phones read the terms first. */}
         <div className="-order-1 space-y-6 lg:order-none">

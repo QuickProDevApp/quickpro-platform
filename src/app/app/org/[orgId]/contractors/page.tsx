@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { RatingSummary } from "@/components/app/trust";
 import { Badge } from "@/components/ui/badge";
 import { buttonClass, LinkButton } from "@/components/ui/button";
 import { Card, EmptyState } from "@/components/ui/card";
@@ -94,6 +95,9 @@ export default async function ContractorsPage({
                       ]
                         .filter(Boolean)
                         .join(" · ") || "Approved on QuickPro"}
+                    </p>
+                    <p className="mt-0.5">
+                      <RatingSummary rating={c} />
                     </p>
                   </div>
                   {c.insurance_reviewed ? <Badge tone="neutral">Liability certificate reviewed</Badge> : null}

@@ -46,7 +46,8 @@ begin
                     'job_skills', 'job_sites', 'job_applications', 'job_assignments', 'organization_invitations',
                     'notifications', 'job_messages', 'service_requests',
                     'service_request_sites', 'service_request_invitations', 'quotes',
-                    'service_request_events', 'request_messages', 'subcontracts']) t
+                    'service_request_events', 'request_messages', 'subcontracts', 'reviews', 'disputes',
+                    'dispute_messages']) t
   where to_regclass('public.' || t) is null;
   if v_missing is not null then
     raise exception 'Missing tables: %', v_missing;

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JobFacts, SiteFacts } from "@/components/app/job-summary";
 import { JobThread } from "@/components/app/job-thread";
+import { WorkTrust } from "@/components/app/work-trust";
 import { ApplicationStatusBadge, AssignmentStatusBadge, JobStatusBadge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { ActionForm, Field, FormMessage, Input, SubmitButton, Textarea } from "@/components/ui/form";
@@ -116,7 +117,6 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
             </Card>
           ) : null}
 
-
           <Card>
             <CardHeader title="About the job" />
             <CardBody className="space-y-4">
@@ -135,6 +135,17 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
               currentUserId={user.id}
               postAction={postJobMessageAction.bind(null, job.id)}
               description={`Talk to ${job.organization_name ?? "the business"} about this job. Other workers booked on it and QuickPro staff can read this too.`}
+            />
+          ) : null}
+          {job.assignment_id ? (
+            <WorkTrust
+              userId={user.id}
+              context="shift"
+              targetId={job.assignment_id}
+              orgId={null}
+              finished={job.assignment_status === "completed"}
+              engaged={booked || (job.assignment_status === "cancelled" && job.assignment_responded_at !== null)}
+              canAct
             />
           ) : null}
         </div>

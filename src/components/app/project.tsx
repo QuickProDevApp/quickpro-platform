@@ -153,6 +153,8 @@ const EVENT_TONE: Record<string, "ok" | "warn" | "bad" | "info" | "neutral"> = {
   "subcontract.accepted": "info",
   "subcontract.completed": "ok",
   "subcontract.cancelled": "bad",
+  "dispute.opened": "warn",
+  "dispute.resolved": "info",
 };
 
 /** The project's history, newest first. */
