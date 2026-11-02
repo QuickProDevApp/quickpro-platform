@@ -75,6 +75,9 @@ export function AppHeader({
               <Link href="/app/account" className="block rounded-md px-2.5 py-1.5 text-sm text-ink-soft hover:bg-subtle hover:text-ink">
                 Account settings
               </Link>
+              <Link href="/app/support" className="block rounded-md px-2.5 py-1.5 text-sm text-ink-soft hover:bg-subtle hover:text-ink">
+                Help and support
+              </Link>
               <form action="/auth/sign-out" method="post">
                 <button type="submit" className="block w-full rounded-md px-2.5 py-1.5 text-left text-sm text-ink-soft hover:bg-subtle hover:text-ink">
                   Sign out
@@ -125,6 +128,9 @@ export function AppHeader({
             </div>
             <Link href="/app/account" className="flex h-11 items-center rounded-md px-3 text-[15px] text-ink-soft hover:bg-subtle">
               Account settings
+            </Link>
+            <Link href="/app/support" className="flex h-11 items-center rounded-md px-3 text-[15px] text-ink-soft hover:bg-subtle">
+              Help and support
             </Link>
             <form action="/auth/sign-out" method="post">
               <button type="submit" className="flex h-11 w-full items-center rounded-md px-3 text-left text-[15px] text-ink-soft hover:bg-subtle">

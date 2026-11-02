@@ -94,7 +94,9 @@ Card and bank payments only once the legal and operational model is settled
 
 ## Phase 6: Operations, analytics, expansion (module G)
 
-- Support tickets. (Disputes about agreed work shipped with D-028.)
+- Support tickets. Built (D-031): requests from anyone signed in, a staff queue
+  with internal notes, priority and assignment. (Disputes about agreed work
+  shipped with D-028.)
 - Market and category dashboards for staff. Built (D-030): fill rate, time to
   fill, quotes and awards, invoiced and paid, reviews and disputes, coverage
   gaps, by category and town, with charts and a CSV export.
