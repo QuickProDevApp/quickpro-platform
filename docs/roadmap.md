@@ -79,8 +79,13 @@ Still to do: public contractor profiles.
 
 ## Phase 5: Payments and invoicing (module F)
 
-Only once the legal and operational model is settled (who is the merchant of
-record, fee structure, worker pay flows).
+Built first (D-029): invoices between businesses. The awarded contractor
+bills the customer and a subcontractor bills the prime, with line items,
+sales tax, per-business numbering, a printable invoice, and payment recorded
+by the issuer. No money moves through QuickPro yet.
+
+Card and bank payments only once the legal and operational model is settled
+(who is the merchant of record, fee structure, worker pay flows).
 
 - Stripe Connect accounts for contractors, test mode first.
 - Invoices from completed jobs; customer payment; payouts per Stripe's

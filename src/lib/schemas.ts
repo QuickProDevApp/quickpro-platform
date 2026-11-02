@@ -438,3 +438,85 @@ export const moderateReviewSchema = z.object({
   decision: z.enum(["hide", "keep"], "Choose hide or keep."),
   reason: z.string().trim().max(500, "Keep the reason under 500 characters.").default(""),
 });
+
+// Invoices -----------------------------------------------------------------------
+
+export const PAYMENT_METHODS = ["check", "ach", "wire", "card", "cash", "other"] as const;
+
+const isoDate = (message: string) => z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, message);
+
+/** Dollars and cents from a form field, 0 to $1,000,000. */
+const lineMoney = z
+  .string()
+  .trim()
+  .transform((v, ctx) => {
+    const cleaned = v.replace(/[$,\s]/g, "");
+    const n = Number(cleaned);
+    if (cleaned === "" || !Number.isFinite(n) || n < 0 || n > 1_000_000 || Math.round(n * 100) !== Number((n * 100).toFixed(4))) {
+      ctx.addIssue({ code: "custom", message: "Enter each price in dollars, e.g. 1,250.00." });
+      return z.NEVER;
+    }
+    return Math.round(n * 100);
+  });
+
+const lineQuantity = z
+  .string()
+  .trim()
+  .transform((v, ctx) => {
+    const n = Number(v.replace(/,/g, ""));
+    if (v === "" || !Number.isFinite(n) || n <= 0 || n > 100_000 || Math.round(n * 100) !== Number((n * 100).toFixed(4))) {
+      ctx.addIssue({ code: "custom", message: "Quantities must be more than 0, with up to two decimals." });
+      return z.NEVER;
+    }
+    return n;
+  });
+
+export const invoiceDraftSchema = z.object({
+  dueDate: isoDate("Pick a due date."),
+  notes: z.string().trim().max(2000, "Keep the notes under 2,000 characters.").default(""),
+  paymentInstructions: z.string().trim().max(1000, "Keep the payment instructions under 1,000 characters.").default(""),
+  taxRate: z
+    .string()
+    .trim()
+    .default("")
+    .transform((v, ctx) => {
+      if (v === "") return 0;
+      const n = Number(v.replace(/%$/, ""));
+      if (!Number.isFinite(n) || n < 0 || n > 25 || Math.round(n * 1000) !== Number((n * 1000).toFixed(4))) {
+        ctx.addIssue({ code: "custom", message: "Enter a rate from 0 to 25 with up to three decimals, e.g. 8.625." });
+        return z.NEVER;
+      }
+      // Thousandths of a percent: 8.625% is 8625.
+      return Math.round(n * 1000);
+    }),
+  lines: z
+    .array(
+      z.object({
+        description: z.string().trim().min(1, "Describe each line.").max(500, "Keep each line under 500 characters."),
+        quantity: lineQuantity,
+        unit_cents: lineMoney,
+      }),
+    )
+    .min(1, "Add at least one line.")
+    .max(50, "An invoice can have up to 50 lines."),
+});
+
+/** Reads the repeated line fields; rows left completely blank are ignored. */
+export function invoiceLinesFrom(formData: FormData) {
+  const descriptions = formData.getAll("lineDescription").map(String);
+  const quantities = formData.getAll("lineQuantity").map(String);
+  const units = formData.getAll("lineUnit").map(String);
+  return descriptions
+    .map((description, i) => ({ description, quantity: quantities[i] ?? "", unit_cents: units[i] ?? "" }))
+    .filter((l) => l.description.trim() !== "" || l.quantity.trim() !== "" || l.unit_cents.trim() !== "");
+}
+
+export const invoicePaymentSchema = z.object({
+  paidOn: isoDate("Enter the date the payment arrived."),
+  method: z.enum(PAYMENT_METHODS, "Choose how it was paid."),
+  reference: z.string().trim().max(200, "Keep the reference under 200 characters.").default(""),
+});
+
+export const invoiceVoidSchema = z.object({
+  reason: z.string().trim().max(1000, "Keep the reason under 1,000 characters.").default(""),
+});

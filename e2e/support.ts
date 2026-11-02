@@ -369,3 +369,30 @@ export async function seedFinishedProject(o: {
     await sql.end();
   }
 }
+
+/** An accepted subcontract on an awarded project, through the real workflow functions. */
+export async function seedSubcontract(o: {
+  requestId: string;
+  primeOwnerId: string;
+  subId: string;
+  subOwnerId: string;
+  scope: string;
+  amountCents: number | null;
+}) {
+  const sql = platformSql();
+  const as = <T>(userId: string, fn: (tx: TransactionSql) => Promise<T>) =>
+    sql.begin(async (tx) => {
+      await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: userId, role: "authenticated" })}, true)`;
+      await tx`set local role authenticated`;
+      return fn(tx);
+    }) as Promise<T>;
+  try {
+    const [{ id }] = await as(o.primeOwnerId, (tx) => tx<{ id: string }[]>`
+      select public.offer_subcontract(${o.requestId}, ${o.subId}, ${o.scope}, ${o.amountCents}) as id
+    `);
+    await as(o.subOwnerId, (tx) => tx`select public.respond_to_subcontract(${id}, true, null)`);
+    return id;
+  } finally {
+    await sql.end();
+  }
+}

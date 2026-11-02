@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { JobThread } from "@/components/app/job-thread";
 import { ProjectJobs } from "@/components/app/project";
 import { EndSubcontract, SubcontractTerms } from "@/components/app/subcontracts";
+import { WorkInvoicesSection } from "@/components/app/work-invoices";
 import { WorkTrust } from "@/components/app/work-trust";
 import { uuid } from "@/lib/schemas";
 import { requireMembership } from "@/server/actions/guards";
@@ -70,6 +71,17 @@ export default async function SubcontractPage({
               }
               description={`Between your team and ${sc.sub_name}. ${request.customer_name} doesn't see this thread.`}
               placeholder="Start time, access, materials…"
+            />
+          ) : null}
+          {sc.status === "accepted" || sc.status === "completed" ? (
+            <WorkInvoicesSection
+              userId={user.id}
+              context="subcontract"
+              targetId={sc.id}
+              orgId={org.id}
+              issuerOrgId={sc.sub_id}
+              issuerName={sc.sub_name}
+              canAct={dispatcher}
             />
           ) : null}
           <WorkTrust
