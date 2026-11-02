@@ -318,3 +318,18 @@ same rule as job sites.
 - **Not yet:** no money moves. Invoices, fees and payments are Step 5;
   reviews and disputes are Step 4. Request threads (customer and contractor
   messaging) are not built; the awarded contractor gets the site contact.
+
+## D-025 A marketing site built from the real product
+
+The public homepage shows screens captured from the running app with
+example data (`.review/marketing.mts` seeds a clean database and writes
+`public/marketing/*.webp`), labelled as such. Claims are limited to what the
+platform enforces today; planned checks (ratings, identity and background
+checks, payments, email and text alerts) are listed separately as not yet
+available. No testimonials, logos, metrics or pricing until they are real.
+
+- **Identity:** a "Q" mark with a signal-orange tail; orange is a marketing
+  accent for marks and small highlights only (text uses `signal-ink`), never
+  a status color in the app. Ink, white and warm off-white (`paper`) carry
+  the pages.
+- **Cost:** product screens must be recaptured when the app's look changes.

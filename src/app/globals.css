@@ -25,6 +25,13 @@
   --color-brand-strong: #1a3fa6;
   --color-brand-soft: #eef2fd;
 
+  /* Marketing accent: signal orange, for marks and small highlights only.
+     signal-ink is the text-safe shade (4.5:1 on white). */
+  --color-signal: #ef6a32;
+  --color-signal-ink: #b9461a;
+  --color-signal-soft: #fdf1eb;
+  --color-paper: #fbfaf8;
+
   --color-ok: #067647;
   --color-ok-soft: #ecfdf3;
   --color-warn: #b54708;
@@ -69,4 +76,37 @@ body {
 
 summary::-webkit-details-marker {
   display: none;
+}
+
+/* Marketing: content fades up once as it enters the viewport. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+      transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  [data-reveal="shown"] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes qp-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [class*="animate-"] {
+    animation: none !important;
+  }
 }
