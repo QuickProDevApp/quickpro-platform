@@ -56,3 +56,17 @@ titles 15px semibold, body 14px, secondary 13px, figures `tabular`.
 Run the visual review at 1440px and Pixel 7 for every screen the phase
 touched (signed out, contractor, worker, staff) and fix spacing, alignment,
 overflow and hierarchy issues before opening the pull request.
+
+## Public site
+
+- Pages under `src/app/page.tsx` and `src/app/(site)/` use
+  `components/marketing/*`: `SiteHeader`, `SiteFooter`, `ScreenFrame`,
+  `PhoneFrame`, `Reveal`, `FeatureTabs`, `HowItWorks`.
+- Background `paper` (#fbfaf8) alternating with `surface`; one dark `ink`
+  band (For workers). Section rhythm: eyebrow (signal square + label),
+  heading 32/44px at -0.03em, body 17px.
+- Product screens only, from `.review/marketing.mts`, with the caption
+  "shown with example data". On phones `ScreenFrame` crops to the top-left
+  at a readable scale instead of shrinking the whole screen.
+- Motion: one fade-up per element on first view, disabled under
+  `prefers-reduced-motion`; content is visible without JavaScript.
