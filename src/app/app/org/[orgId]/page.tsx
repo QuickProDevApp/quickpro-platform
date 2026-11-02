@@ -1,5 +1,6 @@
 import { ReadinessList } from "@/components/app/readiness";
 import { StatusBanner } from "@/components/app/status-banner";
+import { OrgSubcontractList } from "@/components/app/subcontracts";
 import { DocumentStatusBadge, RequestStatusBadge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
@@ -33,6 +34,7 @@ import {
   listCustomerRequests,
   type ServiceRequest,
 } from "@/server/data/requests";
+import { listOrgSubcontracts } from "@/server/data/subcontracts";
 import { submitOrganizationAction } from "./actions";
 
 export default async function OrganizationOverview({ params }: { params: Promise<{ orgId: string }> }) {
@@ -52,12 +54,14 @@ export default async function OrganizationOverview({ params }: { params: Promise
     operating ? listOrganizationJobs(user.id, org.id, "upcoming") : [],
   ]);
   const customerOperating = !isContractor && org.status === "approved";
-  const [requests, openToQuote, won] = await Promise.all([
+  const [requests, openToQuote, won, subcontracts] = await Promise.all([
     customerOperating ? listCustomerRequests(user.id, org.id, "active") : Promise.resolve([]),
     operating ? countOpenRequestsForContractor(user.id, org.id) : Promise.resolve(0),
     operating ? listContractorRequests(user.id, org.id, "awarded") : Promise.resolve([]),
+    operating ? listOrgSubcontracts(user.id, org.id, "sub") : Promise.resolve([]),
   ]);
   const activeProjects = won.filter((r) => r.status === "awarded");
+  const liveSubcontracts = subcontracts.filter((s) => s.status === "offered" || s.status === "accepted");
   const canSubmit = manager && (org.status === "draft" || org.status === "rejected");
   const ready = readiness.every((i) => i.done);
   const subject = isContractor ? "business registration" : "organization registration";
@@ -101,6 +105,15 @@ export default async function OrganizationOverview({ params }: { params: Promise
                 Review and quote
               </Link>
             </FormMessage>
+          ) : null}
+          {liveSubcontracts.length ? (
+            <Card>
+              <CardHeader
+                title="Subcontracts"
+                description={subcontractSummaryLine(liveSubcontracts.filter((s) => s.status === "offered").length)}
+              />
+              <OrgSubcontractList orgId={org.id} items={liveSubcontracts} />
+            </Card>
           ) : null}
           {operating && activeProjects.length ? (
             <ContractorProjectsPanel orgId={org.id} projects={activeProjects} />
@@ -423,6 +436,12 @@ function CustomerRequestsPanel({
 }
 
 /** Work this contractor won and is still delivering. */
+function subcontractSummaryLine(offers: number) {
+  return offers
+    ? `Work other contractors are handing to your business. ${offers} ${offers === 1 ? "offer is" : "offers are"} waiting for your answer.`
+    : "Work other contractors handed to your business.";
+}
+
 function ContractorProjectsPanel({ orgId, projects }: { orgId: string; projects: ServiceRequest[] }) {
   const base = `/app/org/${orgId}/requests`;
   return (

@@ -37,9 +37,9 @@ export async function createJobAction(orgId: string, requestId: string | null, _
   let jobId: string;
   try {
     const { user, org } = await requireDispatcher(orgId);
-    // The database also refuses a project this business did not win.
+    // The database refuses a project this business neither won nor accepted a subcontract on.
     const project = requestId === null ? null : uuid.safeParse(requestId).success ? await getRequest(user.id, requestId) : null;
-    if (requestId !== null && (!project || project.awarded_contractor_id !== org.id)) throw new UserFacingError("Project not found.");
+    if (requestId !== null && (!project || project.status !== "awarded")) throw new UserFacingError("Project not found.");
     const parsed = jobSchema.safeParse(formObject(formData));
     if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
     jobId = await createJob(user.id, org.id, parsed.data, skillIds(formData), project?.id ?? null);

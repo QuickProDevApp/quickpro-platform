@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { FilterLinks } from "@/components/app/filter-links";
+import { OrgSubcontractList } from "@/components/app/subcontracts";
 import { Badge, QuoteStatusBadge, RequestStatusBadge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/button";
 import { Card, EmptyState } from "@/components/ui/card";
@@ -15,6 +16,7 @@ import {
   type ContractorRequestFilter,
   type CustomerRequestFilter,
 } from "@/server/data/requests";
+import { listOrgSubcontracts } from "@/server/data/subcontracts";
 import type { CurrentUser } from "@/server/auth/session";
 
 export const metadata: Metadata = { title: "Requests" };
@@ -74,7 +76,11 @@ async function CustomerRequests({ user, org, show }: { user: CurrentUser; org: O
             <ul className="divide-y divide-line md:hidden">
               {requests.map((r) => (
                 <li key={r.id}>
-                  <Link href={`${base}/${r.id}`} className="block px-4 py-3.5 active:bg-subtle" data-testid="request-row">
+                  <Link
+                    href={`${base}/${r.id}`}
+                    className="block px-4 py-3.5 active:bg-subtle"
+                    data-testid="request-row"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <p className="min-w-0 font-medium text-ink">{r.title}</p>
                       <RequestStatusBadge status={r.status} workReported={!!r.work_completed_at} />
@@ -83,7 +89,9 @@ async function CustomerRequests({ user, org, show }: { user: CurrentUser; org: O
                       {r.category_name} · {r.area_name} · {formatDateRange(r.preferred_start, r.preferred_end)}
                     </p>
                     <p className="tabular mt-1.5 text-[13px] text-ink-soft">
-                      {r.quote_count === 0 ? "No quotes yet" : `${r.quote_count} ${r.quote_count === 1 ? "quote" : "quotes"} · from ${formatCents(r.lowest_quote_cents)}`}
+                      {r.quote_count === 0
+                        ? "No quotes yet"
+                        : `${r.quote_count} ${r.quote_count === 1 ? "quote" : "quotes"} · from ${formatCents(r.lowest_quote_cents)}`}
                     </p>
                   </Link>
                 </li>
@@ -108,15 +116,23 @@ async function CustomerRequests({ user, org, show }: { user: CurrentUser; org: O
                           {r.category_name} · {r.area_name}
                         </p>
                       </Td>
-                      <Td className="whitespace-nowrap text-ink">{formatDateRange(r.preferred_start, r.preferred_end)}</Td>
+                      <Td className="whitespace-nowrap text-ink">
+                        {formatDateRange(r.preferred_start, r.preferred_end)}
+                      </Td>
                       <Td className="tabular whitespace-nowrap text-ink-soft">
-                        {formatBudget(r.budget_min_cents, r.budget_max_cents) ?? <span className="text-faint">Not given</span>}
+                        {formatBudget(r.budget_min_cents, r.budget_max_cents) ?? (
+                          <span className="text-faint">Not given</span>
+                        )}
                       </Td>
                       <Td align="right" className="tabular text-ink">
                         {r.quote_count}
                       </Td>
                       <Td align="right" className="tabular whitespace-nowrap text-ink">
-                        {r.lowest_quote_cents != null ? formatCents(r.lowest_quote_cents) : <span className="text-faint">—</span>}
+                        {r.lowest_quote_cents != null ? (
+                          formatCents(r.lowest_quote_cents)
+                        ) : (
+                          <span className="text-faint">—</span>
+                        )}
                       </Td>
                       <Td>
                         <RequestStatusBadge status={r.status} workReported={!!r.work_completed_at} />
@@ -133,20 +149,28 @@ async function CustomerRequests({ user, org, show }: { user: CurrentUser; org: O
   );
 }
 
-async function ContractorRequests({ user, org, show }: { user: CurrentUser; org: OrganizationWithRole; show?: string }) {
+async function ContractorRequests({
+  user,
+  org,
+  show,
+}: {
+  user: CurrentUser;
+  org: OrganizationWithRole;
+  show?: string;
+}) {
+  const subs = show === "subcontracts";
   const filter: ContractorRequestFilter = show === "quoted" || show === "awarded" ? show : "open";
-  const [requests, insurance] = await Promise.all([
-    org.status === "approved" ? listContractorRequests(user.id, org.id, filter) : Promise.resolve([]),
+  const [requests, insurance, subcontracts] = await Promise.all([
+    org.status === "approved" && !subs ? listContractorRequests(user.id, org.id, filter) : Promise.resolve([]),
     getInsuranceStatus(user.id, org.id),
+    subs ? listOrgSubcontracts(user.id, org.id, "sub") : Promise.resolve([]),
   ]);
   const base = `/app/org/${org.id}/requests`;
 
   return (
     <div className="space-y-4">
       {org.status !== "approved" ? (
-        <FormMessage tone="info">
-          Customer requests appear here once QuickPro staff approve your business.
-        </FormMessage>
+        <FormMessage tone="info">Customer requests appear here once QuickPro staff approve your business.</FormMessage>
       ) : insurance !== "current" ? (
         <FormMessage tone="bad">
           Quoting needs a current general liability certificate reviewed by QuickPro staff. Upload your renewal on the
@@ -156,96 +180,135 @@ async function ContractorRequests({ user, org, show }: { user: CurrentUser; org:
       <FilterLinks
         basePath={base}
         param="show"
-        current={filter === "open" ? undefined : filter}
+        current={subs ? "subcontracts" : filter === "open" ? undefined : filter}
         options={[
           { value: undefined, label: "To quote" },
           { value: "quoted", label: "Quoted" },
           { value: "awarded", label: "Won" },
+          { value: "subcontracts", label: "Subcontracts" },
         ]}
       />
-      <Card>
-        {requests.length === 0 ? (
-          <div className="p-4 sm:p-5">
-            <EmptyState title={filter === "open" ? "No open requests for you right now" : filter === "quoted" ? "No quotes yet" : "No awarded work yet"}>
-              {filter === "open" ? (
-                <>
-                  Requests show up when a customer asks for a{" "}
-                  <Link href={`/app/org/${org.id}/services`} className="text-brand hover:underline">
-                    service and town you list
-                  </Link>
-                  , or invites you to quote.
-                </>
-              ) : null}
-            </EmptyState>
-          </div>
-        ) : (
-          <>
-            <ul className="divide-y divide-line md:hidden">
-              {requests.map((r) => (
-                <li key={r.id}>
-                  <Link href={`${base}/${r.id}`} className="block px-4 py-3.5 active:bg-subtle" data-testid="request-row">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="min-w-0 font-medium text-ink">{r.title}</p>
-                      {r.my_quote_status && filter !== "open" ? <QuoteStatusBadge status={r.my_quote_status} /> : r.invited ? <Badge tone="info">Invited</Badge> : null}
-                    </div>
-                    <p className="mt-0.5 text-[13px] text-muted">
-                      {r.customer_name} · {r.area_name}
-                    </p>
-                    <p className="tabular mt-1.5 text-[13px] text-ink-soft">
-                      {formatDateRange(r.preferred_start, r.preferred_end)}
-                      {filter !== "open" && r.my_quote_cents != null ? ` · Your quote ${formatCents(r.my_quote_cents)}` : ""}
-                      {filter === "open" && formatBudget(r.budget_min_cents, r.budget_max_cents)
-                        ? ` · Budget ${formatBudget(r.budget_min_cents, r.budget_max_cents)}`
-                        : ""}
-                    </p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <div className="hidden md:block">
-              <Table label="Requests">
-                <THead>
-                  <Th>Request</Th>
-                  <Th>Customer</Th>
-                  <Th>Preferred dates</Th>
-                  {filter === "open" ? <Th>Budget</Th> : <Th align="right">Your quote</Th>}
-                  <Th>{filter === "open" ? "" : "Status"}</Th>
-                </THead>
-                <TBody>
-                  {requests.map((r) => (
-                    <Tr key={r.id} testId="request-row">
-                      <Td>
-                        <RowLink href={`${base}/${r.id}`}>{r.title}</RowLink>
-                        <p className="text-[13px] text-muted">
-                          {r.category_name} · {r.area_name}
-                        </p>
-                      </Td>
-                      <Td className="text-ink-soft">{r.customer_name}</Td>
-                      <Td className="whitespace-nowrap text-ink">{formatDateRange(r.preferred_start, r.preferred_end)}</Td>
-                      {filter === "open" ? (
-                        <Td className="tabular whitespace-nowrap text-ink-soft">
-                          {formatBudget(r.budget_min_cents, r.budget_max_cents) ?? <span className="text-faint">Not given</span>}
-                        </Td>
-                      ) : (
-                        <Td align="right" className="tabular whitespace-nowrap text-ink">
-                          {formatCents(r.my_quote_cents)}
-                        </Td>
-                      )}
-                      <Td>
-                        {filter === "open" ? (
-                          r.invited ? <Badge tone="info">Invited</Badge> : null
-                        ) : r.my_quote_status ? (
-                          <QuoteStatusBadge status={r.my_quote_status} />
-                        ) : null}
-                      </Td>
-                    </Tr>
-                  ))}
-                </TBody>
-              </Table>
+      {subs ? (
+        <Card>
+          {subcontracts.length === 0 ? (
+            <div className="p-4 sm:p-5">
+              <EmptyState title="No subcontracts yet">
+                When a contractor that won a project offers your business part of the work, it shows up here.
+              </EmptyState>
             </div>
-          </>
-        )}
-      </Card>
+          ) : (
+            <OrgSubcontractList orgId={org.id} items={subcontracts} />
+          )}
+        </Card>
+      ) : (
+        <Card>
+          {requests.length === 0 ? (
+            <div className="p-4 sm:p-5">
+              <EmptyState
+                title={
+                  filter === "open"
+                    ? "No open requests for you right now"
+                    : filter === "quoted"
+                      ? "No quotes yet"
+                      : "No awarded work yet"
+                }
+              >
+                {filter === "open" ? (
+                  <>
+                    Requests show up when a customer asks for a{" "}
+                    <Link href={`/app/org/${org.id}/services`} className="text-brand hover:underline">
+                      service and town you list
+                    </Link>
+                    , or invites you to quote.
+                  </>
+                ) : null}
+              </EmptyState>
+            </div>
+          ) : (
+            <>
+              <ul className="divide-y divide-line md:hidden">
+                {requests.map((r) => (
+                  <li key={r.id}>
+                    <Link
+                      href={`${base}/${r.id}`}
+                      className="block px-4 py-3.5 active:bg-subtle"
+                      data-testid="request-row"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="min-w-0 font-medium text-ink">{r.title}</p>
+                        {r.my_quote_status && filter !== "open" ? (
+                          <QuoteStatusBadge status={r.my_quote_status} />
+                        ) : r.invited ? (
+                          <Badge tone="info">Invited</Badge>
+                        ) : null}
+                      </div>
+                      <p className="mt-0.5 text-[13px] text-muted">
+                        {r.customer_name} · {r.area_name}
+                      </p>
+                      <p className="tabular mt-1.5 text-[13px] text-ink-soft">
+                        {formatDateRange(r.preferred_start, r.preferred_end)}
+                        {filter !== "open" && r.my_quote_cents != null
+                          ? ` · Your quote ${formatCents(r.my_quote_cents)}`
+                          : ""}
+                        {filter === "open" && formatBudget(r.budget_min_cents, r.budget_max_cents)
+                          ? ` · Budget ${formatBudget(r.budget_min_cents, r.budget_max_cents)}`
+                          : ""}
+                      </p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden md:block">
+                <Table label="Requests">
+                  <THead>
+                    <Th>Request</Th>
+                    <Th>Customer</Th>
+                    <Th>Preferred dates</Th>
+                    {filter === "open" ? <Th>Budget</Th> : <Th align="right">Your quote</Th>}
+                    <Th>{filter === "open" ? "" : "Status"}</Th>
+                  </THead>
+                  <TBody>
+                    {requests.map((r) => (
+                      <Tr key={r.id} testId="request-row">
+                        <Td>
+                          <RowLink href={`${base}/${r.id}`}>{r.title}</RowLink>
+                          <p className="text-[13px] text-muted">
+                            {r.category_name} · {r.area_name}
+                          </p>
+                        </Td>
+                        <Td className="text-ink-soft">{r.customer_name}</Td>
+                        <Td className="whitespace-nowrap text-ink">
+                          {formatDateRange(r.preferred_start, r.preferred_end)}
+                        </Td>
+                        {filter === "open" ? (
+                          <Td className="tabular whitespace-nowrap text-ink-soft">
+                            {formatBudget(r.budget_min_cents, r.budget_max_cents) ?? (
+                              <span className="text-faint">Not given</span>
+                            )}
+                          </Td>
+                        ) : (
+                          <Td align="right" className="tabular whitespace-nowrap text-ink">
+                            {formatCents(r.my_quote_cents)}
+                          </Td>
+                        )}
+                        <Td>
+                          {filter === "open" ? (
+                            r.invited ? (
+                              <Badge tone="info">Invited</Badge>
+                            ) : null
+                          ) : r.my_quote_status ? (
+                            <QuoteStatusBadge status={r.my_quote_status} />
+                          ) : null}
+                        </Td>
+                      </Tr>
+                    ))}
+                  </TBody>
+                </Table>
+              </div>
+            </>
+          )}
+        </Card>
+      )}
     </div>
   );
 }

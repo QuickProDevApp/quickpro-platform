@@ -370,3 +370,21 @@ export type QuoteInput = z.infer<typeof quoteSchema>;
 export const completionNoteSchema = z.object({
   note: z.string().trim().max(1000, "Keep the note under 1,000 characters.").default(""),
 });
+
+export const subcontractOfferSchema = z.object({
+  subId: uuid,
+  scope: z
+    .string()
+    .trim()
+    .min(10, "Describe the part of the work you're handing over in a sentence or two.")
+    .max(2000, "Keep the scope under 2,000 characters."),
+  /** Optional: the price the two businesses agreed, in cents. */
+  amount: amount("Enter the agreed price in dollars, e.g. 850, or leave it blank.", true),
+});
+
+export type SubcontractOfferInput = z.infer<typeof subcontractOfferSchema>;
+
+export const subcontractResponseSchema = z.object({
+  decision: z.enum(["accept", "decline"], "Choose accept or decline."),
+  note: z.string().trim().max(1000, "Keep the note under 1,000 characters.").default(""),
+});

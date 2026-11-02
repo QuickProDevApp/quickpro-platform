@@ -357,3 +357,30 @@ or the quote.
 - **Requirements:** requests carry an optional requirements field (badges,
   hours, certifications) that contractors see before quoting.
 - **Not yet:** invoices and payments (Step 5), reviews and disputes (Step 4).
+
+## D-027 The awarded contractor can subcontract part of a project to another approved contractor
+
+"Subcontractor" here means a business, not a worker: the contractor that
+won a project (the prime) offers part of it, a written scope and an
+optional agreed price, to another approved contractor in the same market
+with a current, reviewed general liability certificate. The subcontractor
+accepts or declines. Once accepted it sees the project details and site,
+schedules and staffs its own jobs for the project through the normal job
+workflow, and reports its part complete. The prime reports the whole
+project complete only after every live subcontract is completed or ended.
+
+- **Visibility:** the customer sees which businesses are on the project,
+  their scope, jobs and attendance, never the subcontract price. The prime
+  sees its subcontracts, prices and the subcontractors' jobs (not their
+  job pages). A subcontractor sees only its own jobs, its own part of the
+  history, and its own thread with the prime: not the customer's award
+  price, other crews, or the customer–prime thread. Enforced in the
+  database (`project_subcontracts`, `request_jobs`, event and message
+  policies), not just the screens.
+- **Ending:** either business can end a subcontract with a reason, once the
+  subcontractor has no open jobs on the project.
+- **Money:** the agreed price is a record between the two businesses.
+  QuickPro does not invoice or pay subcontracts; that waits for payments
+  (Step 5) and is said in the product.
+- **Workers** are unaffected: they apply to the subcontractor's job like any
+  other and see that business's name, never the customer's.

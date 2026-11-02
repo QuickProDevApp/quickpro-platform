@@ -9,6 +9,7 @@ import { getMarketMinPay, listEngagementTypes } from "@/server/data/jobs";
 import { canDispatch, getInsuranceStatus } from "@/server/data/organizations";
 import { listCategories, listServiceAreas, listSkills } from "@/server/data/reference";
 import { getRequest, getRequestSite } from "@/server/data/requests";
+import { listProjectSubcontracts } from "@/server/data/subcontracts";
 import { createJobAction } from "../actions";
 
 export const metadata: Metadata = { title: "Post a job" };
@@ -30,16 +31,22 @@ export default async function NewJobPage({
     );
   }
 
-  // Scheduling a job for a project this business won.
+  // Scheduling a job for a project this business won, or its accepted part of one as a subcontractor.
   const requestParam = (await searchParams).request;
   const request = requestParam && uuid.safeParse(requestParam).success ? await getRequest(user.id, requestParam) : null;
-  if (requestParam && (!request || request.awarded_contractor_id !== org.id)) notFound();
+  const subcontract =
+    request && request.awarded_contractor_id !== org.id
+      ? (await listProjectSubcontracts(user.id, request.id)).find((s) => s.sub_id === org.id && s.status === "accepted")
+      : undefined;
+  if (requestParam && (!request || (request.awarded_contractor_id !== org.id && !subcontract))) notFound();
   if (request && (request.status !== "awarded" || request.work_completed_at)) {
     return (
       <FormMessage tone="info">
-        {request.status === "awarded"
-          ? "You reported this project complete. The customer can send it back if more work is needed."
-          : `This project is ${request.status}. New jobs can't be added to it.`}
+        {request.status !== "awarded"
+          ? `This project is ${request.status}. New jobs can't be added to it.`
+          : subcontract
+            ? "The project was reported complete. New jobs can't be added unless the customer sends it back."
+            : "You reported this project complete. The customer can send it back if more work is needed."}
       </FormMessage>
     );
   }
@@ -70,7 +77,7 @@ export default async function NewJobPage({
         </Link>
       ) : null}
       <h2 className="mb-4 text-lg font-semibold text-ink">
-        {request ? "Schedule a job for this project" : "Post a job"}
+        {subcontract ? "Schedule a job for your part" : request ? "Schedule a job for this project" : "Post a job"}
       </h2>
       <JobForm
         action={createJobAction.bind(null, org.id, request?.id ?? null)}
@@ -81,7 +88,13 @@ export default async function NewJobPage({
         minPayCents={minPay}
         submitLabel={request ? "Schedule job" : "Post job"}
         intro={
-          request ? (
+          subcontract ? (
+            <FormMessage tone="info">
+              Filled in from your subcontract with {subcontract.prime_name}. Workers see the job, your business name and
+              the town, never the customer&apos;s name or the subcontract price. {subcontract.prime_name} and the
+              customer see this job&apos;s staffing and attendance on the project.
+            </FormMessage>
+          ) : request ? (
             <FormMessage tone="info">
               Filled in from {request.customer_name}&apos;s request. Workers see the job, your business name and the
               town, never the customer&apos;s name or your quote. The customer sees this job&apos;s staffing and
@@ -93,7 +106,7 @@ export default async function NewJobPage({
           request
             ? {
                 title: request.title,
-                description: request.description,
+                description: subcontract ? subcontract.scope : request.description,
                 category_id: request.category_id,
                 service_area_id: request.service_area_id,
                 local_date: request.preferred_start,

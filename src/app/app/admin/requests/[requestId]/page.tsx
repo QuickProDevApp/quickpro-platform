@@ -12,6 +12,8 @@ import { uuid } from "@/lib/schemas";
 import { requireAdmin } from "@/server/auth/session";
 import { JobThread } from "@/components/app/job-thread";
 import { ProjectJobs, ProjectTimeline } from "@/components/app/project";
+import { PrimeSubcontracts } from "@/components/app/subcontracts";
+import { listProjectSubcontracts } from "@/server/data/subcontracts";
 import {
   getProjectThread,
   getRequest,
@@ -32,13 +34,14 @@ export default async function AdminRequestPage({ params }: { params: Promise<{ r
   const request = await getRequest(admin.id, requestId);
   if (!request) notFound();
   const project = request.awarded_contractor_id !== null;
-  const [site, quotes, jobs, attendance, events, messages] = await Promise.all([
+  const [site, quotes, jobs, attendance, events, messages, subcontracts] = await Promise.all([
     getRequestSite(admin.id, request.id),
     listRequestQuotes(admin.id, request.id),
     project ? listProjectJobs(admin.id, request.id) : Promise.resolve([]),
     project ? listProjectAttendance(admin.id, request.id) : Promise.resolve([]),
     listProjectEvents(admin.id, request.id),
     project ? getProjectThread(admin.id, request.id) : Promise.resolve([]),
+    project ? listProjectSubcontracts(admin.id, request.id) : Promise.resolve([]),
   ]);
   const live = request.status === "open" || request.status === "awarded";
 
@@ -72,7 +75,17 @@ export default async function AdminRequestPage({ params }: { params: Promise<{ r
               jobs={jobs}
               attendance={attendance}
               jobHref={(id) => `/app/admin/jobs/${id}`}
+              primeId={request.awarded_contractor_id}
               emptyText="The awarded contractor hasn't scheduled any jobs for this project."
+            />
+          ) : null}
+          {subcontracts.length ? (
+            <PrimeSubcontracts
+              subcontracts={subcontracts}
+              href={(s) => `/app/admin/organizations/${s.sub_id}`}
+              directory={[]}
+              categoryName={request.category_name}
+              description="Parts of the project the awarded contractor handed to other approved contractors. Amounts are visible to the two businesses and staff, never the customer."
             />
           ) : null}
           <Card>
