@@ -23,8 +23,8 @@ const audiences = [
   },
   {
     label: "Property and facility managers",
-    title: "Request service, coming next",
-    body: "Register your property or organization now. Service requests and quotes open to Suffolk County customers next.",
+    title: "Request service and compare quotes",
+    body: "Describe the work once. Reviewed contractors who serve your town send prices, and you choose who gets the job.",
     cta: { href: "/sign-up?as=customer", label: "Register a property" },
   },
 ];

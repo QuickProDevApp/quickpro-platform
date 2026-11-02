@@ -53,8 +53,8 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
         <Card className={`flex flex-col p-5 ${highlight("customer")}`}>
           <h2 className="font-semibold">Register a property or organization</h2>
           <p className="mt-1 text-sm text-muted">
-            For property managers, facilities and businesses that need commercial services. Service requests open to
-            approved customers in a later release.
+            For property managers, facilities and businesses that need commercial services. Once approved, post
+            requests and compare quotes from reviewed local contractors.
           </p>
           <OrganizationForm kind="customer" markets={markets} label="Organization name" cta="Register organization" />
         </Card>

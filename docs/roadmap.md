@@ -57,6 +57,11 @@ Not built yet:
 
 ## Phase 4: Customer requests and quotes (modules A, B)
 
+Built in Step 3 (D-024): requests with private sites, matching by category
+and town, invitations from the contractor directory, private quotes with
+revise and withdraw, award, cancel, complete, staff oversight. Still to do:
+reviews, public contractor profiles, request messaging.
+
 - Customers submit job requests (scope, site, schedule, budget).
 - Matching to approved contractors by category and area; staff can route.
 - Contractors quote; customers compare and book; booking becomes a job.

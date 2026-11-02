@@ -1,11 +1,19 @@
 import { ReadinessList } from "@/components/app/readiness";
 import { StatusBanner } from "@/components/app/status-banner";
-import { DocumentStatusBadge } from "@/components/ui/badge";
+import { DocumentStatusBadge, RequestStatusBadge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
-import { ActionForm, SubmitButton } from "@/components/ui/form";
+import { ActionForm, FormMessage, SubmitButton } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
-import { DOCUMENT_TYPE_LABEL, INSURANCE_STATUS_LABEL, formatDate, shiftParts, type InsuranceStatus } from "@/lib/labels";
+import {
+  DOCUMENT_TYPE_LABEL,
+  INSURANCE_STATUS_LABEL,
+  formatCents,
+  formatDate,
+  formatDateRange,
+  shiftParts,
+  type InsuranceStatus,
+} from "@/lib/labels";
 import { requireMembership } from "@/server/actions/guards";
 import { listOrganizationJobs, type Job } from "@/server/data/jobs";
 import Link from "next/link";
@@ -19,6 +27,7 @@ import {
   getOrganizationReadiness,
 } from "@/server/data/organizations";
 import { listCategories, listServiceAreas } from "@/server/data/reference";
+import { countOpenRequestsForContractor, listCustomerRequests, type ServiceRequest } from "@/server/data/requests";
 import { submitOrganizationAction } from "./actions";
 
 export default async function OrganizationOverview({ params }: { params: Promise<{ orgId: string }> }) {
@@ -36,6 +45,11 @@ export default async function OrganizationOverview({ params }: { params: Promise
     isContractor ? listServiceAreas(user.id, org.market_id) : [],
     isContractor ? getInsuranceStatus(user.id, org.id) : null,
     operating ? listOrganizationJobs(user.id, org.id, "upcoming") : [],
+  ]);
+  const customerOperating = !isContractor && org.status === "approved";
+  const [requests, openToQuote] = await Promise.all([
+    customerOperating ? listCustomerRequests(user.id, org.id, "active") : Promise.resolve([]),
+    operating ? countOpenRequestsForContractor(user.id, org.id) : Promise.resolve(0),
   ]);
   const canSubmit = manager && (org.status === "draft" || org.status === "rejected");
   const ready = readiness.every((i) => i.done);
@@ -71,15 +85,25 @@ export default async function OrganizationOverview({ params }: { params: Promise
             </Card>
           ) : null}
 
+          {operating && openToQuote > 0 ? (
+            <FormMessage tone="info">
+              {openToQuote} customer {openToQuote === 1 ? "request matches" : "requests match"} your services and towns.{" "}
+              <Link href={`/app/org/${org.id}/requests`} className="font-medium text-brand hover:underline">
+                Review and quote
+              </Link>
+            </FormMessage>
+          ) : null}
           {operating ? (
             <Operations orgId={org.id} jobs={upcoming} canPost={canDispatch(org.my_role)} now={new Date().getTime()} />
+          ) : customerOperating ? (
+            <CustomerRequestsPanel orgId={org.id} requests={requests} canPost={canDispatch(org.my_role)} />
           ) : isContractor ? (
             <Card>
               <CardHeader title="What's next" />
               <CardBody className="text-sm text-ink-soft">
                 <p>
-                  Once approved, your business can post jobs for approved local workers to apply to, and QuickPro staff
-                  can match workers to them by hand.
+                  Once approved, your business can quote on customer requests for the services and towns you list,
+                  and post jobs for approved local workers to apply to.
                 </p>
               </CardBody>
             </Card>
@@ -88,9 +112,8 @@ export default async function OrganizationOverview({ params }: { params: Promise
               <CardHeader title="What's next" />
               <CardBody className="text-sm text-ink-soft">
                 <p>
-                  Service requests are not open to customers yet. Once your organization is approved, QuickPro staff can
-                  take your requests directly and route them to approved local contractors. We will contact you at{" "}
-                  {org.email ?? "your organization email"}.
+                  Once QuickPro staff approve your organization, you can post service requests, invite approved local
+                  contractors to quote, and compare their prices side by side.
                 </p>
               </CardBody>
             </Card>
@@ -285,6 +308,48 @@ function Operations({ orgId, jobs, canPost, now }: { orgId: string; jobs: Job[];
           </Link>
         </div>
       ) : null}
+    </Card>
+  );
+}
+
+function CustomerRequestsPanel({ orgId, requests, canPost }: { orgId: string; requests: ServiceRequest[]; canPost: boolean }) {
+  const base = `/app/org/${orgId}/requests`;
+  const waiting = requests.reduce((n, r) => n + (r.status === "open" ? r.quote_count : 0), 0);
+  return (
+    <Card>
+      <CardHeader
+        title="Service requests"
+        description={
+          requests.length
+            ? `${requests.length} active · ${waiting} ${waiting === 1 ? "quote" : "quotes"} waiting for your decision`
+            : undefined
+        }
+        action={canPost ? <LinkButton href={`${base}/new`} size="sm">Request service</LinkButton> : null}
+      />
+      {requests.length === 0 ? (
+        <CardBody>
+          <EmptyState title="No active requests">
+            Describe the work and approved contractors who serve your town can send you quotes.
+          </EmptyState>
+        </CardBody>
+      ) : (
+        <ul className="divide-y divide-line">
+          {requests.slice(0, 6).map((r) => (
+            <li key={r.id}>
+              <Link href={`${base}/${r.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-subtle/60 sm:px-5">
+                <span className="min-w-0">
+                  <span className="block truncate font-medium text-ink">{r.title}</span>
+                  <span className="block text-[13px] text-muted">
+                    {formatDateRange(r.preferred_start, r.preferred_end)} ·{" "}
+                    {r.quote_count === 0 ? "No quotes yet" : `${r.quote_count} ${r.quote_count === 1 ? "quote" : "quotes"}, from ${formatCents(r.lowest_quote_cents)}`}
+                  </span>
+                </span>
+                <RequestStatusBadge status={r.status} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </Card>
   );
 }

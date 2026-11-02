@@ -289,3 +289,79 @@ export const hideMessageSchema = z.object({
   messageId: uuid,
   reason: z.string().trim().min(1, "Add a short reason.").max(500),
 });
+
+const optionalDate = z
+  .string()
+  .trim()
+  .transform((v) => (v === "" ? null : v))
+  .nullable()
+  .default(null)
+  .refine((v) => v === null || /^\d{4}-\d{2}-\d{2}$/.test(v), "Pick a date.");
+
+/** Whole or decimal dollars up to $1,000,000; blank is "not set" when optional. */
+const amount = (message: string, optional: boolean) =>
+  z
+    .string()
+    .trim()
+    .default("")
+    .transform((v, ctx) => {
+      const cleaned = v.replace(/[$,\s]/g, "");
+      if (cleaned === "") {
+        if (optional) return null;
+        ctx.addIssue({ code: "custom", message });
+        return z.NEVER;
+      }
+      const n = Number(cleaned);
+      if (!Number.isFinite(n) || n < 1 || n > 1_000_000) {
+        ctx.addIssue({ code: "custom", message });
+        return z.NEVER;
+      }
+      return Math.round(n * 100);
+    });
+
+export const serviceRequestSchema = z
+  .object({
+    title: z.string().trim().min(3, "Give the request a short title.").max(120),
+    description: z
+      .string()
+      .trim()
+      .min(10, "Describe the work in a sentence or two: what, how big, how often.")
+      .max(4000),
+    categoryId: uuid,
+    serviceAreaId: uuid,
+    preferredStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a start date."),
+    preferredEnd: optionalDate,
+    budgetMin: amount("Enter a dollar amount, e.g. 2,500.", true),
+    budgetMax: amount("Enter a dollar amount, e.g. 4,000.", true),
+    addressLine1: z.string().trim().min(3, "Enter the street address.").max(200),
+    city: z.string().trim().min(2, "Enter the city or hamlet.").max(80),
+    postalCode: z
+      .string()
+      .trim()
+      .regex(/^[0-9]{5}(-[0-9]{4})?$/, "Enter a 5-digit ZIP code."),
+    accessNotes: z.string().trim().max(1000).default(""),
+    contactName: z.string().trim().min(2, "Who should the contractor contact?").max(120),
+    contactPhone: z
+      .string()
+      .trim()
+      .regex(/^\+?[0-9 ().-]{7,20}$/, "Enter a valid phone number."),
+  })
+  .refine((v) => v.preferredEnd === null || v.preferredEnd >= v.preferredStart, {
+    path: ["preferredEnd"],
+    message: "The end date must be on or after the start date.",
+  })
+  .refine((v) => v.budgetMin === null || v.budgetMax === null || v.budgetMax >= v.budgetMin, {
+    path: ["budgetMax"],
+    message: "The top of the range must be at least the bottom.",
+  });
+
+export type ServiceRequestInput = z.infer<typeof serviceRequestSchema>;
+
+export const quoteSchema = z.object({
+  amount: amount("Enter the total price in dollars, e.g. 3,200.", false).pipe(z.number()),
+  scope: z.string().trim().min(10, "Describe what the price includes in a sentence or two.").max(4000),
+  estimatedStart: optionalDate,
+  validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick the last day this price is good for."),
+});
+
+export type QuoteInput = z.infer<typeof quoteSchema>;

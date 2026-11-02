@@ -185,3 +185,36 @@ export function shiftParts(startsAt: Date, endsAt: Date): { day: string; time: s
       : `${timeFormat.format(startsAt)} – ${dayFormat.format(endsAt)} ${timeFormat.format(endsAt)}`,
   };
 }
+
+export type RequestStatus = "open" | "awarded" | "completed" | "cancelled";
+export type QuoteStatus = "submitted" | "withdrawn" | "accepted" | "declined";
+
+export const REQUEST_STATUS_LABEL: Record<RequestStatus, string> = {
+  open: "Taking quotes",
+  awarded: "Awarded",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
+
+export const QUOTE_STATUS_LABEL: Record<QuoteStatus, string> = {
+  submitted: "Waiting for customer",
+  withdrawn: "Withdrawn",
+  accepted: "Accepted",
+  declined: "Not accepted",
+};
+
+/** "$2,000 – $4,000", "Up to $4,000", "From $2,000" or null when no budget was given. */
+export function formatBudget(minCents: number | null, maxCents: number | null): string | null {
+  const whole = (c: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: c % 100 === 0 ? 0 : 2 }).format(c / 100);
+  if (minCents != null && maxCents != null) return minCents === maxCents ? whole(minCents) : `${whole(minCents)} – ${whole(maxCents)}`;
+  if (maxCents != null) return `Up to ${whole(maxCents)}`;
+  if (minCents != null) return `From ${whole(minCents)}`;
+  return null;
+}
+
+/** Preferred dates: "Nov 16, 2026" or "Nov 16 – Nov 20, 2026". */
+export function formatDateRange(start: string, end: string | null): string {
+  if (!end || end === start) return formatDate(start);
+  return `${formatDate(start)} – ${formatDate(end)}`;
+}

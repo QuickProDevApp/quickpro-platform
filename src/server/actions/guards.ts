@@ -35,3 +35,21 @@ export async function requireDispatcher(orgId: unknown): Promise<{ user: Current
   }
   return { user, org };
 }
+
+/** For request and quote actions: an owner, admin or dispatcher of an org of the given kind. */
+export async function requireOrgDispatcher(
+  orgId: unknown,
+  kind: "contractor" | "customer",
+): Promise<{ user: CurrentUser; org: OrganizationWithRole }> {
+  const user = await requireUser();
+  const parsed = uuid.safeParse(orgId);
+  const org = parsed.success ? await getMyOrganization(user.id, parsed.data) : null;
+  if (!org || org.kind !== kind || !canDispatch(org.my_role)) {
+    throw new UserFacingError(
+      kind === "customer"
+        ? "You don't have permission to manage service requests for this organization."
+        : "You don't have permission to quote for this business.",
+    );
+  }
+  return { user, org };
+}

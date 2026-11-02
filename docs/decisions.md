@@ -299,3 +299,22 @@ staff without deleting it (the audit log keeps it).
 small radii, borders instead of shadows, tables for comparable lists) and
 the components that implement them. New screens use those components
 rather than one-off styles.
+
+## D-024 Customers request work; contractors quote privately; the customer awards one
+
+An approved customer posts a service request (category, town, dates,
+optional budget). Approved contractors that list that category and town,
+or that the customer invited, can see it and quote. Each contractor sees
+only its own quote; the customer sees all of them. Accepting a quote awards
+the request and declines the others. The street address and on-site contact
+are shared only with the customer, staff and the awarded contractor, the
+same rule as job sites.
+
+- **Why:** customers get comparable prices without contractors bidding
+  against each other's numbers, and addresses are not spread to every
+  contractor in a town.
+- **Quoting needs the same standing as staffing:** an approved contractor
+  with a reviewed, unexpired general liability certificate.
+- **Not yet:** no money moves. Invoices, fees and payments are Step 5;
+  reviews and disputes are Step 4. Request threads (customer and contractor
+  messaging) are not built; the awarded contractor gets the site contact.

@@ -27,7 +27,7 @@ export function SiteFacts({ site }: { site: JobSite }) {
   );
 }
 
-function Fact({ label, value, detail }: { label: string; value: string; detail?: string }) {
+export function Fact({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
     <div className="grid grid-cols-[6.5rem_1fr] gap-x-3 py-2.5 first:pt-0 last:pb-0">
       <dt className="text-[13px] text-muted">{label}</dt>
