@@ -7,6 +7,7 @@ import { QuoteList } from "@/components/app/quote-list";
 import { RequestFacts, RequestSiteFacts } from "@/components/app/request-summary";
 import { EndSubcontract, PrimeSubcontracts, ProjectBusinesses, SubcontractTerms } from "@/components/app/subcontracts";
 import { RatingSummary } from "@/components/app/trust";
+import { WorkInvoicesSection } from "@/components/app/work-invoices";
 import { WorkTrust } from "@/components/app/work-trust";
 import { Badge, QuoteStatusBadge, RequestStatusBadge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/button";
@@ -236,6 +237,15 @@ async function CustomerView({
               attendance={work.attendance}
               primeId={request.awarded_contractor_id}
               emptyText={`${awarded.contractor_name} schedules the crew here. You'll see each job, who's booked, and when they check in and out.`}
+            />
+            <WorkInvoicesSection
+              userId={user.id}
+              context="project"
+              targetId={request.id}
+              orgId={org.id}
+              issuerOrgId={awarded.contractor_id}
+              issuerName={awarded.contractor_name}
+              canAct={dispatcher}
             />
             <WorkTrust
               userId={user.id}
@@ -682,6 +692,15 @@ async function ContractorProject({
           </CardBody>
         </Card>
       ) : null}
+      <WorkInvoicesSection
+        userId={userId}
+        context="project"
+        targetId={request.id}
+        orgId={org.id}
+        issuerOrgId={org.id}
+        issuerName={org.name}
+        canAct={dispatcher && request.status !== "cancelled"}
+      />
       <WorkTrust
         userId={userId}
         context="project"
@@ -817,6 +836,17 @@ async function SubcontractorView({
             }
             description={`Between your team and ${sc.prime_name}. ${request.customer_name} doesn't see this thread.`}
             placeholder="Start time, access, materials…"
+          />
+        ) : null}
+        {working ? (
+          <WorkInvoicesSection
+            userId={user.id}
+            context="subcontract"
+            targetId={sc.id}
+            orgId={org.id}
+            issuerOrgId={org.id}
+            issuerName={org.name}
+            canAct={dispatcher}
           />
         ) : null}
         <WorkTrust

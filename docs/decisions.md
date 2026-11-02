@@ -419,3 +419,30 @@ subcontractor) and a shift (the business and the booked worker).
 - Enforced in the database: who may review, publication, visibility and
   every status change go through functions; the tables are not writable by
   `authenticated`.
+
+## D-029 Invoices between businesses before payments
+
+The business that does the work bills the business it works for: the
+awarded contractor invoices the customer, and a subcontractor invoices the
+prime. Workers are never invoiced or paid here (D-009); their pay stays with
+the business that engages them.
+
+- **Lifecycle:** a draft, private to the issuer's team and prefilled with
+  what is left of the agreed price (the accepted quote or the subcontract
+  amount), is edited and then issued. Issuing gives it the next number in
+  the issuer's own sequence (INV-0001…) and freezes it. The issuer marks it
+  paid (date, method, reference) when the money arrives, or voids it with a
+  reason the other business sees. Drafts are discarded by voiding, so
+  nothing is deleted.
+- **Money:** QuickPro doesn't collect, hold or move payments. Every invoice
+  and the payer's view say to pay the issuer directly. Card and bank
+  payments wait for the merchant-of-record and fee decisions (Phase 5).
+- **Totals** are worked out in the database from the line items and the tax
+  rate, never taken from the browser. Sales tax is a rate the issuer enters
+  (in thousandths of a percent, so Suffolk's 8.625% is exact); QuickPro
+  doesn't decide what is taxable.
+- **Visibility:** the customer never sees subcontract invoices; staff see
+  issued invoices only; drafts stay with the issuer. Enforced by row level
+  security and the functions.
+- **Delivery:** the recipient gets a QuickPro notification. Email isn't sent
+  yet, so the invoice prints cleanly (or saves as PDF) from the browser.
