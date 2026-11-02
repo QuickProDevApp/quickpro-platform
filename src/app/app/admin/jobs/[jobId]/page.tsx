@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JobPeople } from "@/components/app/job-people";
 import { JobFacts, SiteFacts } from "@/components/app/job-summary";
+import { JobThread } from "@/components/app/job-thread";
 import { JobStatusBadge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
 import { ActionForm, FormMessage, Input, SubmitButton } from "@/components/ui/form";
@@ -10,6 +11,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { uuid } from "@/lib/schemas";
 import { requireAdmin } from "@/server/auth/session";
 import { getJob, getJobSite, listJobPeople, listMatchCandidates } from "@/server/data/jobs";
+import { getJobThread } from "@/server/data/messages";
+import { hideJobMessageAction, postJobMessageAction } from "@/app/app/messages/actions";
 import { staffCancelAssignmentAction, staffCancelJobAction, staffOfferAction } from "../actions";
 
 export const metadata: Metadata = { title: "Job" };
@@ -23,10 +26,11 @@ export default async function AdminJobPage({ params }: { params: Promise<{ jobId
   const now = new Date();
   const canOffer = job.status === "open" && job.starts_at > now;
   const live = job.status === "open" || job.status === "filled";
-  const [site, people, candidates] = await Promise.all([
+  const [site, people, candidates, messages] = await Promise.all([
     getJobSite(admin.id, job.id),
     listJobPeople(admin.id, job.id),
     canOffer ? listMatchCandidates(admin.id, job.id) : Promise.resolve([]),
+    getJobThread(admin.id, job.id),
   ]);
   const involved = new Set(people.map((p) => p.worker_user_id));
 
@@ -88,10 +92,18 @@ export default async function AdminJobPage({ params }: { params: Promise<{ jobId
           ) : null}
           <JobPeople
             people={people}
+            skillsRequested={job.skill_names.length}
             canOffer={canOffer}
             canChange={live && job.ends_at > now}
             offerAction={staffOfferAction.bind(null, job.id)}
             cancelAction={staffCancelAssignmentAction.bind(null, job.id)}
+          />
+          <JobThread
+            messages={messages}
+            currentUserId={admin.id}
+            postAction={postJobMessageAction.bind(null, job.id)}
+            hideAction={hideJobMessageAction}
+            description="The business and its workers see what you post here, labelled as QuickPro staff. Hidden messages stay visible to staff."
           />
         </div>
         <div className="space-y-6">
@@ -99,7 +111,7 @@ export default async function AdminJobPage({ params }: { params: Promise<{ jobId
             <CardHeader title="Details" />
             <CardBody className="space-y-4">
               <JobFacts job={job} />
-              {job.description ? <p className="text-sm whitespace-pre-line text-ink-soft">{job.description}</p> : null}
+              {job.description ? <p className="border-t border-line pt-4 text-sm whitespace-pre-line text-ink-soft">{job.description}</p> : null}
             </CardBody>
           </Card>
           {site ? (

@@ -17,7 +17,7 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
   const next = as && intro[as] ? `/app/onboarding?as=${as}` : safeNextPath(requested);
   return (
     <>
-      <h1 className="text-xl font-semibold">Create your QuickPro account</h1>
+      <h1 className="text-[22px] leading-7 font-semibold tracking-[-0.015em]">Create your QuickPro account</h1>
       <p className="mt-1 text-sm text-muted">{(as && intro[as]) || "One account works for businesses, workers and customers."}</p>
       <ActionForm action={signUp} className="mt-6 space-y-4">
         <input type="hidden" name="next" value={next} />

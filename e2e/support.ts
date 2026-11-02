@@ -179,3 +179,32 @@ export async function latestEmailLink(email: string, marker: string): Promise<st
   }
   throw new Error(`No email with a ${marker} link arrived for ${email}`);
 }
+
+/** An open job posted by `ownerId`, starting `days` from now at 07:00 New York time, set up directly in the database. */
+export async function seedOpenJob(ownerId: string, orgId: string, title: string, days = 3) {
+  const sql = platformSql();
+  try {
+    return await sql.begin(async (tx) => {
+      await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: ownerId, role: "authenticated" })}, true)`;
+      const start = `${newYorkDate(days)} 07:00`;
+      const [job] = await tx<{ id: string }[]>`
+        insert into public.jobs (organization_id, title, description, category_id, service_area_id, starts_at, ends_at,
+                                 headcount, pay_rate_cents, engagement_type_id, created_by)
+        select ${orgId}, ${title}, 'Strip and wax the lobby.', c.id, a.id,
+               (${start}::timestamp at time zone 'America/New_York'),
+               (${start}::timestamp at time zone 'America/New_York') + interval '8 hours',
+               1, 2400, e.id, ${ownerId}
+        from public.service_categories c, public.service_areas a, public.engagement_types e
+        where c.slug = 'commercial-cleaning' and a.slug = 'islip' and e.slug = 'contractor-employee'
+        returning id
+      `;
+      await tx`
+        insert into public.job_sites (job_id, address_line1, city, postal_code, contact_name, contact_phone)
+        values (${job.id}, '100 Carleton Ave', 'Central Islip', '11722', 'Sam', '631-555-0177')
+      `;
+      return job.id;
+    });
+  } finally {
+    await sql.end();
+  }
+}

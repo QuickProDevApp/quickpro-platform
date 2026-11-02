@@ -9,7 +9,7 @@ export default async function CheckEmailPage({ searchParams }: { searchParams: P
   const { email } = await searchParams;
   return (
     <>
-      <h1 className="text-xl font-semibold">Check your email</h1>
+      <h1 className="text-[22px] leading-7 font-semibold tracking-[-0.015em]">Check your email</h1>
       <p className="mt-2 text-sm text-muted">
         We sent a confirmation link to {email ? <strong className="text-ink">{email}</strong> : "your email address"}.
         Open it on this device to finish creating your account.

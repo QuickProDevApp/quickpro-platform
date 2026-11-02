@@ -13,7 +13,7 @@ export default async function ResetPasswordPage() {
   if (!allowed) {
     return (
       <>
-        <h1 className="text-xl font-semibold">This link has expired</h1>
+        <h1 className="text-[22px] leading-7 font-semibold tracking-[-0.015em]">This link has expired</h1>
         <div className="mt-4">
           <FormMessage tone="bad">Password reset links work once, in the browser that asked for them, for a limited time.</FormMessage>
         </div>
@@ -27,7 +27,7 @@ export default async function ResetPasswordPage() {
   }
   return (
     <>
-      <h1 className="text-xl font-semibold">Choose a new password</h1>
+      <h1 className="text-[22px] leading-7 font-semibold tracking-[-0.015em]">Choose a new password</h1>
       <p className="mt-2 text-sm text-muted">For {user.email}. Use at least 10 characters.</p>
       <ActionForm action={setNewPassword} className="mt-6 space-y-4">
         <Field name="password" label="New password">

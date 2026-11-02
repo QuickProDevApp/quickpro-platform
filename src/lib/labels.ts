@@ -174,3 +174,14 @@ export const ORG_ROLE_DESCRIPTION: Record<OrgRole, string> = {
   dispatcher: "Post and staff jobs, see bookings.",
   member: "Can see the business and its jobs.",
 };
+
+/** Shift parts for tables: "Mon, Nov 2" and "7:00 AM – 3:00 PM". */
+export function shiftParts(startsAt: Date, endsAt: Date): { day: string; time: string } {
+  const sameDay = dayFormat.format(startsAt) === dayFormat.format(endsAt);
+  return {
+    day: dayFormat.format(startsAt),
+    time: sameDay
+      ? `${timeFormat.format(startsAt)} – ${timeFormat.format(endsAt)}`
+      : `${timeFormat.format(startsAt)} – ${dayFormat.format(endsAt)} ${timeFormat.format(endsAt)}`,
+  };
+}

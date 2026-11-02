@@ -280,3 +280,12 @@ export const memberRoleSchema = z.object({
   userId: uuid,
   role: z.enum(["owner", "admin", "dispatcher", "member"], "Choose a role."),
 });
+
+export const messageSchema = z.object({
+  body: z.string().trim().min(1, "Write a message first.").max(2000, "Keep messages under 2,000 characters."),
+});
+
+export const hideMessageSchema = z.object({
+  messageId: uuid,
+  reason: z.string().trim().min(1, "Add a short reason.").max(500),
+});

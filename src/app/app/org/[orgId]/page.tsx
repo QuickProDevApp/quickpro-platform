@@ -5,8 +5,11 @@ import { LinkButton } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
 import { ActionForm, SubmitButton } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
-import { DOCUMENT_TYPE_LABEL, INSURANCE_STATUS_LABEL, formatDate, type InsuranceStatus } from "@/lib/labels";
+import { DOCUMENT_TYPE_LABEL, INSURANCE_STATUS_LABEL, formatDate, shiftParts, type InsuranceStatus } from "@/lib/labels";
 import { requireMembership } from "@/server/actions/guards";
+import { listOrganizationJobs, type Job } from "@/server/data/jobs";
+import Link from "next/link";
+import { JobStatusBadge } from "@/components/ui/badge";
 import { listDocuments } from "@/server/data/documents";
 import {
   canDispatch,
@@ -24,13 +27,15 @@ export default async function OrganizationOverview({ params }: { params: Promise
   const manager = canManage(org.my_role);
   const isContractor = org.kind === "contractor";
 
-  const [readiness, documents, caps, categories, areas, insurance] = await Promise.all([
+  const operating = isContractor && org.status === "approved";
+  const [readiness, documents, caps, categories, areas, insurance, upcoming] = await Promise.all([
     getOrganizationReadiness(user.id, org),
     listDocuments(user.id, { kind: "org", orgId: org.id }),
     isContractor ? getContractorCapabilities(user.id, org.id) : null,
     isContractor ? listCategories(user.id) : [],
     isContractor ? listServiceAreas(user.id, org.market_id) : [],
     isContractor ? getInsuranceStatus(user.id, org.id) : null,
+    operating ? listOrganizationJobs(user.id, org.id, "upcoming") : [],
   ]);
   const canSubmit = manager && (org.status === "draft" || org.status === "rejected");
   const ready = readiness.every((i) => i.done);
@@ -66,32 +71,16 @@ export default async function OrganizationOverview({ params }: { params: Promise
             </Card>
           ) : null}
 
-          {isContractor ? (
+          {operating ? (
+            <Operations orgId={org.id} jobs={upcoming} canPost={canDispatch(org.my_role)} now={new Date().getTime()} />
+          ) : isContractor ? (
             <Card>
               <CardHeader title="What's next" />
-              <CardBody className="space-y-2 text-sm text-ink-soft">
-                {org.status === "approved" ? (
-                  <>
-                    <p>
-                      Post a job when you need extra hands: approved local workers can find it and apply, and you choose
-                      who to offer it to. QuickPro staff can also match workers to your jobs by hand.
-                    </p>
-                    {canDispatch(org.my_role) ? (
-                      <LinkButton href={`/app/org/${org.id}/jobs/new`} size="sm">
-                        Post a job
-                      </LinkButton>
-                    ) : null}
-                    <p>
-                      Posting and offering jobs needs a current general liability certificate reviewed by staff, so keep
-                      your insurance up to date.
-                    </p>
-                  </>
-                ) : (
-                  <p>
-                    Once approved, your business can post jobs for approved local workers to apply to, and QuickPro staff
-                    can match workers to them by hand.
-                  </p>
-                )}
+              <CardBody className="text-sm text-ink-soft">
+                <p>
+                  Once approved, your business can post jobs for approved local workers to apply to, and QuickPro staff
+                  can match workers to them by hand.
+                </p>
               </CardBody>
             </Card>
           ) : (
@@ -152,11 +141,11 @@ export default async function OrganizationOverview({ params }: { params: Promise
                 <ul className="space-y-3">
                   {documents.slice(0, 5).map((d) => (
                     <li key={d.id} className="text-sm">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="font-medium text-ink">{DOCUMENT_TYPE_LABEL[d.doc_type]}</span>
+                      <p className="font-medium text-ink">{DOCUMENT_TYPE_LABEL[d.doc_type]}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
                         <DocumentStatusBadge status={d.status} expiresOn={d.expires_on} />
+                        {d.expires_on ? <span className="text-xs text-muted">Expires {formatDate(d.expires_on)}</span> : null}
                       </div>
-                      {d.expires_on ? <p className="text-xs text-muted">Expires {formatDate(d.expires_on)}</p> : null}
                     </li>
                   ))}
                 </ul>
@@ -202,10 +191,100 @@ function TagList({ items, empty }: { items: string[]; empty: string }) {
   return (
     <ul className="flex flex-wrap gap-1.5">
       {items.map((i) => (
-        <li key={i} className="rounded-md bg-canvas px-2 py-1 text-xs text-ink-soft">
+        <li key={i} className="rounded-md bg-subtle px-2 py-1 text-xs text-ink-soft ring-1 ring-inset ring-line">
           {i}
         </li>
       ))}
     </ul>
+  );
+}
+
+const DAY = 86_400_000;
+
+/** What the dispatcher needs to act on, then the next jobs on the calendar. */
+function Operations({ orgId, jobs, canPost, now }: { orgId: string; jobs: Job[]; canPost: boolean; now: number }) {
+  const base = `/app/org/${orgId}/jobs`;
+  const unfilledSoon = jobs.filter((j) => j.status === "open" && j.starts_at.getTime() - now < 2 * DAY);
+  const withApplicants = jobs.filter((j) => j.applicant_count > 0);
+  const awaiting = jobs.filter((j) => j.offered_count > 0);
+  const attention = [
+    { label: "Open jobs starting within 48 hours", jobs: unfilledSoon },
+    { label: "Jobs with new applicants", jobs: withApplicants },
+    { label: "Jobs with offers waiting for an answer", jobs: awaiting },
+  ].filter((a) => a.jobs.length > 0);
+  const next = jobs.slice(0, 6);
+
+  return (
+    <Card>
+      <CardHeader
+        title="Operations"
+        description={`${jobs.length} upcoming ${jobs.length === 1 ? "job" : "jobs"}`}
+        action={canPost ? <LinkButton href={`${base}/new`} size="sm">Post a job</LinkButton> : null}
+      />
+      {attention.length ? (
+        <div className="border-b border-line px-4 py-3 sm:px-5">
+          <p className="text-xs font-medium text-muted">Needs attention</p>
+          <ul className="mt-2 space-y-1.5">
+            {attention.map((a) => (
+              <li key={a.label} className="flex items-start gap-2 text-sm">
+                <span className="tabular inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded bg-navy px-1 text-xs font-semibold text-white">
+                  {a.jobs.length}
+                </span>
+                <span className="text-ink">
+                  {a.label}:{" "}
+                  {a.jobs.slice(0, 3).map((j, i) => (
+                    <span key={j.id}>
+                      {i > 0 ? ", " : ""}
+                      <Link href={`${base}/${j.id}`} className="text-brand hover:underline">
+                        {j.title}
+                      </Link>
+                    </span>
+                  ))}
+                  {a.jobs.length > 3 ? ` and ${a.jobs.length - 3} more` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {next.length === 0 ? (
+        <div className="p-4 sm:p-5">
+          <EmptyState title="No upcoming jobs">Post a job when you need extra hands. Approved local workers can find it and apply.</EmptyState>
+        </div>
+      ) : (
+        <ul className="divide-y divide-line">
+          {next.map((j) => {
+            const when = shiftParts(j.starts_at, j.ends_at);
+            return (
+              <li key={j.id}>
+                <Link href={`${base}/${j.id}`} className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-subtle/60 sm:px-5">
+                  <div className="w-16 shrink-0 text-[13px] leading-5">
+                    <p className="font-medium text-ink">{when.day.split(", ")[0]}</p>
+                    <p className="text-muted">{when.day.split(", ")[1]}</p>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-ink">{j.title}</p>
+                    <p className="truncate text-[13px] text-muted">
+                      {when.time} · {j.area_name}
+                    </p>
+                  </div>
+                  <p className="tabular hidden text-[13px] text-ink-soft sm:block">
+                    {j.accepted_count}/{j.headcount} booked
+                  </p>
+                  <JobStatusBadge job={j} />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {jobs.length > next.length ? (
+        <div className="border-t border-line px-4 py-2.5 sm:px-5">
+          <Link href={base} className="text-sm font-medium text-brand hover:underline">
+            All {jobs.length} upcoming jobs
+          </Link>
+        </div>
+      ) : null}
+    </Card>
   );
 }

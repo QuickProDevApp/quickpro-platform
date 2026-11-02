@@ -272,3 +272,30 @@ the current one.
   one.
 - **Cost:** Supabase's default reset email uses PKCE, so the link works only
   in the browser that asked for it. The page says so.
+
+## D-021 Notifications are written by database triggers, in the app only
+
+Applications, offers, bookings, staff review decisions and accepted
+invitations notify the people affected through triggers on those tables, so
+every path that changes them (contractor, worker or staff) notifies the
+same way. Nobody is notified about their own action. Job messages keep one
+unread notification per person per job, updated with the latest message.
+Notifications are shown in the app only.
+
+- **Why:** one place for the rules, impossible to forget in a new action.
+- **Cost:** email and SMS need a provider and are a later step; they will
+  read from the same table.
+
+## D-022 Job threads are shared by the business, booked or offered workers, and staff
+
+Each job has one thread. Applicants who were not offered the job cannot see
+it, and a worker whose booking is cancelled loses access. Message text is
+read through `job_thread()` so staff can hide a message from everyone but
+staff without deleting it (the audit log keeps it).
+
+## D-023 A written design standard with shared tokens and components
+
+`docs/design.md` sets the visual rules (neutral surfaces, navy primary,
+small radii, borders instead of shadows, tables for comparable lists) and
+the components that implement them. New screens use those components
+rather than one-off styles.
