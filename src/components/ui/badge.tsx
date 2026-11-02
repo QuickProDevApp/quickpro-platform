@@ -2,12 +2,16 @@ import {
   APPLICATION_STATUS_LABEL,
   ASSIGNMENT_STATUS_LABEL,
   DOCUMENT_STATUS_LABEL,
+  QUOTE_STATUS_LABEL,
+  REQUEST_STATUS_LABEL,
   REVIEW_STATUS_LABEL,
   jobPhase,
   type ApplicationStatus,
   type AssignmentStatus,
   type DocumentStatus,
   type JobStatus,
+  type QuoteStatus,
+  type RequestStatus,
   type ReviewStatus,
 } from "@/lib/labels";
 
@@ -90,4 +94,17 @@ const applicationTone: Record<ApplicationStatus, Tone> = {
 
 export function ApplicationStatusBadge({ status }: { status: ApplicationStatus }) {
   return <Badge dot tone={applicationTone[status]}>{APPLICATION_STATUS_LABEL[status]}</Badge>;
+}
+
+const requestTone: Record<RequestStatus, Tone> = { open: "info", awarded: "ok", completed: "neutral", cancelled: "bad" };
+
+export function RequestStatusBadge({ status }: { status: RequestStatus }) {
+  return <Badge dot tone={requestTone[status]}>{REQUEST_STATUS_LABEL[status]}</Badge>;
+}
+
+const quoteTone: Record<QuoteStatus, Tone> = { submitted: "info", accepted: "ok", declined: "neutral", withdrawn: "neutral" };
+
+export function QuoteStatusBadge({ status, expired = false }: { status: QuoteStatus; expired?: boolean }) {
+  if (status === "submitted" && expired) return <Badge dot tone="warn">Expired</Badge>;
+  return <Badge dot tone={quoteTone[status]}>{QUOTE_STATUS_LABEL[status]}</Badge>;
 }

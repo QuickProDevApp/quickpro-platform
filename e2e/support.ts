@@ -208,3 +208,31 @@ export async function seedOpenJob(ownerId: string, orgId: string, title: string,
     await sql.end();
   }
 }
+
+/** An approved customer organization with an address in Islip. */
+export async function seedApprovedCustomer(ownerId: string, name: string) {
+  const sql = platformSql();
+  try {
+    const [org] = await sql<{ id: string }[]>`
+      insert into public.organizations (kind, name, phone, email, address_line1, city, postal_code, market_id, status, created_by, submitted_at, reviewed_at)
+      select 'customer', ${name}, '631-555-0123', 'pm@e2e.quickpro.test', '200 Carleton Ave', 'Islip', '11751', m.id, 'approved', ${ownerId}, now(), now()
+      from public.markets m where m.slug = 'suffolk-county-ny'
+      returning id
+    `;
+    await sql`insert into public.organization_members (organization_id, user_id, role) values (${org.id}, ${ownerId}, 'owner')`;
+    return org.id;
+  } finally {
+    await sql.end();
+  }
+}
+
+/** Lists a service category and town for a contractor. */
+export async function seedContractorCoverage(orgId: string, categorySlug: string, townSlug: string) {
+  const sql = platformSql();
+  try {
+    await sql`insert into public.contractor_services (organization_id, category_id) select ${orgId}, id from public.service_categories where slug = ${categorySlug}`;
+    await sql`insert into public.contractor_service_areas (organization_id, service_area_id) select ${orgId}, id from public.service_areas where slug = ${townSlug}`;
+  } finally {
+    await sql.end();
+  }
+}

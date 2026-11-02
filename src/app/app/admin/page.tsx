@@ -5,14 +5,20 @@ import { PageHeader } from "@/components/ui/page-header";
 import { requireAdmin } from "@/server/auth/session";
 import { getAdminOverview } from "@/server/data/admin";
 import { getJobCountsForAdmin } from "@/server/data/jobs";
+import { getRequestCountsForAdmin } from "@/server/data/requests";
 
 export const metadata: Metadata = { title: "Staff overview" };
 
 export default async function AdminOverviewPage() {
   const admin = await requireAdmin();
-  const [o, jobs] = await Promise.all([getAdminOverview(admin.id), getJobCountsForAdmin(admin.id)]);
+  const [o, jobs, requests] = await Promise.all([
+    getAdminOverview(admin.id),
+    getJobCountsForAdmin(admin.id),
+    getRequestCountsForAdmin(admin.id),
+  ]);
   const queues = [
     { label: "Open jobs starting within 48 hours, not filled", value: jobs.unfilled_soon, href: "/app/admin/jobs" },
+    { label: "Service requests open 3+ days without a quote", value: requests.unquoted_stale, href: "/app/admin/requests" },
     { label: "Organizations awaiting review", value: o.pending_organizations, href: "/app/admin/organizations?status=pending_review" },
     { label: "Workers awaiting review", value: o.pending_workers, href: "/app/admin/workers?status=pending_review" },
     { label: "Documents awaiting review", value: o.pending_documents, href: "/app/admin/documents?status=pending" },
@@ -30,6 +36,8 @@ export default async function AdminOverviewPage() {
     { label: "Open jobs, not started", value: jobs.open_jobs, href: "/app/admin/jobs?show=open" },
     { label: "Filled jobs, not started", value: jobs.filled_upcoming, href: "/app/admin/jobs?show=filled" },
     { label: "Jobs completed in the last 30 days", value: jobs.completed_30d, href: "/app/admin/jobs?show=completed" },
+    { label: "Service requests taking quotes", value: requests.open_requests, href: "/app/admin/requests?show=open" },
+    { label: "Service requests awarded, not complete", value: requests.awarded_requests, href: "/app/admin/requests?show=awarded" },
   ];
   return (
     <>

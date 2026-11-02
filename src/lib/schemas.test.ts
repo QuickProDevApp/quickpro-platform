@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  quoteSchema,
+  serviceRequestSchema,
   availabilitySchema,
   documentReviewSchema,
   organizationProfileSchema,
@@ -87,5 +89,40 @@ describe("formatting", () => {
     expect(formatTime("18:30:00")).toBe("6:30 PM");
     expect(formatTime("00:15")).toBe("12:15 AM");
     expect(formatDate("2027-06-30")).toBe("Jun 30, 2027");
+  });
+});
+
+describe("service request and quote forms", () => {
+  const base = {
+    title: "Nightly cleaning",
+    description: "Three floors, five nights a week.",
+    categoryId: "6f1c1d0e-8a37-4f43-9c4a-0f6a4e0b7c11",
+    serviceAreaId: "6f1c1d0e-8a37-4f43-9c4a-0f6a4e0b7c12",
+    preferredStart: "2026-12-01",
+    preferredEnd: "",
+    budgetMin: "",
+    budgetMax: "$4,000",
+    addressLine1: "200 Carleton Ave",
+    city: "Central Islip",
+    postalCode: "11722",
+    contactName: "Pat Manager",
+    contactPhone: "631-555-0199",
+  };
+
+  it("reads dollar amounts with symbols and commas, and blanks as not set", () => {
+    const parsed = serviceRequestSchema.parse(base);
+    expect(parsed).toMatchObject({ budgetMin: null, budgetMax: 400000, preferredEnd: null });
+  });
+
+  it("rejects an end before the start and a budget range that runs backwards", () => {
+    const result = serviceRequestSchema.safeParse({ ...base, preferredEnd: "2026-11-30", budgetMin: "5000" });
+    expect(result.success).toBe(false);
+    const paths = result.error!.issues.map((i) => i.path.join("."));
+    expect(paths).toEqual(expect.arrayContaining(["preferredEnd", "budgetMax"]));
+  });
+
+  it("requires a quote price", () => {
+    expect(quoteSchema.safeParse({ amount: "", scope: "All three floors nightly.", validUntil: "2026-12-01" }).success).toBe(false);
+    expect(quoteSchema.parse({ amount: "3,200.50", scope: "All three floors nightly.", validUntil: "2026-12-01" }).amount).toBe(320050);
   });
 });
