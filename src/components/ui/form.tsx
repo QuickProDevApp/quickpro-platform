@@ -23,8 +23,13 @@ type Action = (state: FormState, formData: FormData) => Promise<FormState>;
  * A form bound to a server action with useActionState. Shows the action's
  * message and makes field errors available to <Field>.
  *
- * Submits from onSubmit rather than the action prop so React does not reset
- * the fields after a failed validation.
+ * Submits from onSubmit rather than through the action prop so React does
+ * not reset the fields after a failed validation. The action prop is still
+ * set so a submit before the page's JavaScript has loaded posts to the
+ * server action (and re-renders with its result) instead of falling back to
+ * a GET that drops the request and puts the fields, passwords included, in
+ * the URL. Once hydrated, onSubmit prevents that default and React only
+ * tracks the pending state.
  */
 export function ActionForm({
   action,
@@ -53,7 +58,7 @@ export function ActionForm({
   }
 
   return (
-    <form ref={ref} onSubmit={onSubmit} className={className} noValidate>
+    <form ref={ref} action={formAction} onSubmit={onSubmit} className={className} noValidate>
       <PendingContext value={pending}>
         <ErrorsContext value={state.fieldErrors}>
           {state.message && (!state.ok || successMessage) ? (
