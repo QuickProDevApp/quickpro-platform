@@ -657,3 +657,37 @@ functions return null.
 
 Migration `20261112000100_availability_matching` only adds functions; it
 deletes and drops nothing. Travel distance is still not used.
+
+## D-038 Timesheets: hours approved by the business, for its own payroll
+
+Check-in and check-out were recorded but never turned into hours anyone
+could pay from. Each booked shift that has ended (or where the worker
+checked out) now has a timesheet:
+
+- **Business (owners, admins, dispatchers):** a Timesheets page by week,
+  with what needs approval first. Approve the recorded hours in one tap, or
+  adjust the start, end and unpaid break. A change of more than five
+  minutes from the worker's own check-in or check-out, or a shift with no
+  check-in, needs a note the worker sees. Times must be within 12 hours of
+  the scheduled shift, at most 24 hours long and not in the future. Members
+  can see the page; only dispatchers approve. Approved hours for the week
+  export as CSV for the business's payroll.
+- **Worker:** a Timesheets page with approved hours and an estimate of gross
+  pay at the job's rate, before taxes. For 30 days after approval they can
+  question the hours with a note; the business's dispatchers are told and
+  approve again. Their question stays on record.
+- **Data:** `timesheets` keeps one row per shift, with the pay rate copied
+  at approval. It's written only by `approve_timesheet` and
+  `query_timesheet`, with an audit trigger. Workers see their own rows,
+  business members theirs, and staff all of them.
+
+Honesty: QuickPro doesn't run payroll or move money. The pages say pay is
+an estimate of gross pay and that the business pays through its own
+payroll, consistent with D-009 (the business that engages the worker is
+the employer of record or arranges the engagement).
+
+Migration `20261113000100_timesheets` adds a type, a table and functions;
+it deletes and drops nothing.
+
+- **Not yet:** overtime rules, payroll provider integrations, and the
+  worker signing off on hours (they question them instead).

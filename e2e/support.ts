@@ -476,3 +476,33 @@ export async function seedBookedShift(ownerId: string, workerId: string, jobId: 
     await sql.end();
   }
 }
+
+/**
+ * Turns a booked shift into one that has finished: the job ran from
+ * `startedMinutesAgo` until an hour ago, and the worker checked in and out
+ * at the given offsets from the scheduled start and end (minutes).
+ */
+export async function finishShift(jobId: string, assignmentId: string, o: { startedMinutesAgo?: number; inLate?: number; outLate?: number } = {}) {
+  const sql = platformSql();
+  const started = o.startedMinutesAgo ?? 540;
+  try {
+    await sql.begin(async (tx) => {
+      await tx`set local session_replication_role = replica`;
+      await tx`
+        update public.jobs
+           set starts_at = date_trunc('minute', now()) - make_interval(mins => ${started}),
+               ends_at = date_trunc('minute', now()) - interval '60 minutes'
+         where id = ${jobId}
+      `;
+      await tx`
+        update public.job_assignments a
+           set checked_in_at = j.starts_at + make_interval(mins => ${o.inLate ?? 0}),
+               checked_out_at = j.ends_at + make_interval(mins => ${o.outLate ?? 0})
+          from public.jobs j
+         where j.id = a.job_id and a.id = ${assignmentId}
+      `;
+    });
+  } finally {
+    await sql.end();
+  }
+}

@@ -21,6 +21,7 @@ export default async function OrganizationLayout({
       ? [
           { href: `${base}/jobs`, label: "Jobs" },
           { href: `${base}/schedule`, label: "Schedule" },
+          { href: `${base}/timesheets`, label: "Timesheets" },
           { href: `${base}/requests`, label: "Requests" },
           { href: `${base}/services`, label: "Services & areas" },
         ]
