@@ -520,3 +520,27 @@ links to the customer sign-up to request a quote.
 - **Not yet:** photos, custom contact forms, search engine sitemaps, and
   inviting a profile's business to quote straight from the page (a customer
   signs up and invites it from the directory in the app).
+
+## D-033 Week schedules for contractors and workers
+
+Contractors get Schedule (next to Jobs) and workers get Schedule (next to My
+jobs): a Sunday-to-Saturday week in New York time, with the week in the
+address (`?week=YYYY-MM-DD`) so it can be bookmarked or shared within the
+business. Phones show a list of days with empty days folded to one line;
+wide screens show seven columns.
+
+- **Contractor:** every job starting that week except cancelled ones, with
+  booked/needed, the booked people's names, offers out and applicants. Jobs
+  still short of people are amber, or red within 48 hours of the start. A
+  summary counts jobs, shifts filled, shifts still to staff and crew hours.
+- **Worker:** their booked and worked shifts and offers still waiting for an
+  answer (an offer drops off once the shift starts or fills), their usual
+  availability on each day, and hours and estimated pay at posted rates
+  before taxes.
+- **Calendar file:** workers can download their booked shifts for the next
+  90 days as an .ics file with site addresses (readable to them once booked).
+  It's a one-time download, signed in, not a subscription URL: a feed link
+  that works without signing in would need a revocable secret token, which
+  can come later.
+- No database change. The pages read through row level security and the
+  existing `job_people` function, which only the business and staff can call.

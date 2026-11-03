@@ -95,7 +95,7 @@ test("staff see the job and its crew, and outsiders cannot open it", async ({ br
   const ownerContext = await browser.newContext({ ...testInfo.project.use });
   const contractor = await ownerContext.newPage();
   await signIn(contractor, owner.email, `/app/org/${orgId}/jobs/new`);
-  const title = `Spring cleanup ${testInfo.project.name}`;
+  const title = `Spring cleanup ${testInfo.project.name} ${Math.random().toString(36).slice(2, 7)}`;
   await contractor.getByLabel("Job title").fill(title);
   await contractor.getByLabel("Category").selectOption({ label: "Landscaping" });
   await contractor.getByLabel("Town").selectOption({ label: "Southampton" });

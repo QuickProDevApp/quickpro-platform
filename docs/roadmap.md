@@ -53,7 +53,9 @@ Not built yet:
 - Day-of: check-in/check-out with timestamps, notes and photos as proof of
   completion (private storage, same file rules as Phase 1).
 - Messaging threads per job and per shift, with staff moderation.
-- Calendar views for contractors and workers.
+- Calendar views for contractors and workers. Built (D-033): week schedules
+  for both, with crew and unfilled shifts, availability, and a calendar file
+  of booked shifts.
 
 ## Phase 4: Customer requests and quotes (modules A, B)
 
