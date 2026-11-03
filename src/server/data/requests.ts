@@ -324,6 +324,16 @@ export function listProjectAttendance(userId: string, requestId: string) {
   return withUser(userId, (tx) => tx<ProjectAttendance[]>`select * from public.request_attendance(${requestId})`);
 }
 
+export type ProjectChecklistItem = { job_id: string; item_id: string; label: string; done_at: Date | null };
+
+/** Checklist items for each job on the project: labels and done state only (D-036). */
+export function listProjectChecklists(userId: string, requestId: string) {
+  return withUser(
+    userId,
+    (tx) => tx<ProjectChecklistItem[]>`select * from public.request_job_checklists(${requestId})`,
+  );
+}
+
 /** The project's history, oldest first. */
 export function listProjectEvents(userId: string, requestId: string) {
   return withUser(userId, (tx) => tx<ProjectEvent[]>`

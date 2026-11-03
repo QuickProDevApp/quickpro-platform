@@ -188,7 +188,7 @@ export async function latestEmailLink(email: string, marker: string): Promise<st
 }
 
 /** An open job posted by `ownerId`, starting `days` from now at 07:00 New York time, set up directly in the database. */
-export async function seedOpenJob(ownerId: string, orgId: string, title: string, days = 3) {
+export async function seedOpenJob(ownerId: string, orgId: string, title: string, days = 3, requestId: string | null = null) {
   const sql = platformSql();
   try {
     return await sql.begin(async (tx) => {
@@ -196,11 +196,11 @@ export async function seedOpenJob(ownerId: string, orgId: string, title: string,
       const start = `${newYorkDate(days)} 07:00`;
       const [job] = await tx<{ id: string }[]>`
         insert into public.jobs (organization_id, title, description, category_id, service_area_id, starts_at, ends_at,
-                                 headcount, pay_rate_cents, engagement_type_id, created_by)
+                                 headcount, pay_rate_cents, engagement_type_id, created_by, service_request_id)
         select ${orgId}, ${title}, 'Strip and wax the lobby.', c.id, a.id,
                (${start}::timestamp at time zone 'America/New_York'),
                (${start}::timestamp at time zone 'America/New_York') + interval '8 hours',
-               1, 2400, e.id, ${ownerId}
+               1, 2400, e.id, ${ownerId}, ${requestId}
         from public.service_categories c, public.service_areas a, public.engagement_types e
         where c.slug = 'commercial-cleaning' and a.slug = 'islip' and e.slug = 'contractor-employee'
         returning id

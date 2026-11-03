@@ -2,7 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JobThread } from "@/components/app/job-thread";
-import { ProjectJobs, ProjectNotice, ProjectProgress, ProjectTimeline, projectStages } from "@/components/app/project";
+import {
+  ProjectJobs,
+  ProjectNotice,
+  ProjectPhotos,
+  ProjectProgress,
+  ProjectTimeline,
+  projectStages,
+} from "@/components/app/project";
+import { listSharedProjectPhotos } from "@/server/data/job-photos";
 import { QuoteList } from "@/components/app/quote-list";
 import { RequestFacts, RequestSiteFacts } from "@/components/app/request-summary";
 import { EndSubcontract, PrimeSubcontracts, ProjectBusinesses, SubcontractTerms } from "@/components/app/subcontracts";
@@ -28,6 +36,7 @@ import {
   isInvited,
   listInvitedContractorIds,
   listProjectAttendance,
+  listProjectChecklists,
   listProjectEvents,
   listProjectJobs,
   listRequestQuotes,
@@ -236,8 +245,10 @@ async function CustomerView({
               jobs={work.jobs}
               attendance={work.attendance}
               primeId={request.awarded_contractor_id}
+              checklists={work.checklists}
               emptyText={`${awarded.contractor_name} schedules the crew here. You'll see each job, who's booked, and when they check in and out.`}
             />
+            {work.jobs.length ? <ProjectPhotos photos={work.photos} contractorName={awarded.contractor_name} /> : null}
             <WorkInvoicesSection
               userId={user.id}
               context="project"
@@ -581,14 +592,16 @@ type ProjectData = Awaited<ReturnType<typeof loadProject>>;
 
 /** Everything the customer and the awarded contractor see about an awarded project. */
 async function loadProject(userId: string, requestId: string) {
-  const [jobs, attendance, events, messages, subcontracts] = await Promise.all([
+  const [jobs, attendance, events, messages, subcontracts, checklists, photos] = await Promise.all([
     listProjectJobs(userId, requestId),
     listProjectAttendance(userId, requestId),
     listProjectEvents(userId, requestId),
     getProjectThread(userId, requestId),
     listProjectSubcontracts(userId, requestId),
+    listProjectChecklists(userId, requestId),
+    listSharedProjectPhotos(userId, requestId),
   ]);
-  return { jobs, attendance, events, messages, subcontracts };
+  return { jobs, attendance, events, messages, subcontracts, checklists, photos };
 }
 
 function ProjectStatus({ request, work }: { request: ServiceRequest; work: ProjectData }) {
@@ -647,6 +660,7 @@ async function ContractorProject({
         jobs={work.jobs}
         attendance={work.attendance}
         primeId={org.id}
+        checklists={work.checklists}
         jobHref={(id) => (work.jobs.find((j) => j.id === id)?.organization_id === org.id ? `/app/org/${org.id}/jobs/${id}` : undefined)}
         action={
           canSchedule ? (
@@ -657,6 +671,14 @@ async function ContractorProject({
         }
         emptyText="Schedule a job to staff this project. Each job is posted to approved workers, and you choose who to offer it to."
       />
+      {work.jobs.length ? (
+        <ProjectPhotos
+          photos={work.photos}
+          contractorName={org.name}
+          description={`What ${request.customer_name} sees. Share photos from each job's page.`}
+          emptyText={`Nothing shared with ${request.customer_name} yet. Open a job and choose “Share with customer” on a photo.`}
+        />
+      ) : null}
       {work.subcontracts.length || canSchedule ? (
         <PrimeSubcontracts
           subcontracts={work.subcontracts}

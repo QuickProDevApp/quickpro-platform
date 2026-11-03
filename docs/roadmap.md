@@ -55,7 +55,9 @@ Not built yet:
 - Day-of: check-in/check-out with timestamps, notes and photos as proof of
   completion (private storage, same file rules as Phase 1).
   Photos built (D-035): the checked-in crew and dispatchers add JPEG or PNG
-  photos to a job, optionally for a checklist item.
+  photos to a job, optionally for a checklist item. Customers follow the
+  work (D-036): the awarded contractor shares chosen photos to the project
+  page, and the customer sees each job's checklist progress.
 - Messaging threads per job and per shift, with staff moderation.
 - Calendar views for contractors and workers. Built (D-033): week schedules
   for both, with crew and unfilled shifts, availability, and a calendar file

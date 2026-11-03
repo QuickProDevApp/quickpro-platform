@@ -5,10 +5,10 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/server/auth/session";
-import { hideJobPhoto, uploadJobPhoto } from "@/server/data/job-photos";
+import { hideJobPhoto, shareJobPhoto, uploadJobPhoto } from "@/server/data/job-photos";
 import { toUserMessage, UserFacingError } from "@/server/errors";
 import { MAX_DOCUMENT_BYTES } from "@/server/files/validate";
-import { fieldErrorsOf, formObject, jobPhotoSchema, uuid, type FormState } from "@/lib/schemas";
+import { fieldErrorsOf, formObject, jobPhotoSchema, sharePhotoSchema, uuid, type FormState } from "@/lib/schemas";
 
 export async function uploadJobPhotoAction(jobId: string, _: FormState, formData: FormData): Promise<FormState> {
   try {
@@ -39,6 +39,20 @@ export async function hideJobPhotoAction(_: FormState, formData: FormData): Prom
     const photoId = uuid.safeParse(formData.get("photoId"));
     if (!photoId.success) throw new UserFacingError("Photo not found.");
     await hideJobPhoto(user.id, photoId.data);
+  } catch (error) {
+    return { ok: false, message: toUserMessage(error) };
+  }
+  revalidatePath("/app", "layout");
+  return { ok: true };
+}
+
+/** Share a photo with the project's customer, or stop sharing it (D-036). */
+export async function shareJobPhotoAction(_: FormState, formData: FormData): Promise<FormState> {
+  try {
+    const user = await requireUser();
+    const parsed = sharePhotoSchema.safeParse(formObject(formData));
+    if (!parsed.success) throw new UserFacingError("Photo not found.");
+    await shareJobPhoto(user.id, parsed.data.photoId, parsed.data.shared);
   } catch (error) {
     return { ok: false, message: toUserMessage(error) };
   }

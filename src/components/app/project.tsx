@@ -2,7 +2,14 @@ import Link from "next/link";
 import { Badge, JobStatusBadge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
 import { formatDateTime, formatShift } from "@/lib/labels";
-import type { ProjectAttendance, ProjectEvent, ProjectJob, ServiceRequest } from "@/server/data/requests";
+import type { SharedJobPhoto } from "@/server/data/job-photos";
+import type {
+  ProjectAttendance,
+  ProjectChecklistItem,
+  ProjectEvent,
+  ProjectJob,
+  ServiceRequest,
+} from "@/server/data/requests";
 
 const clock = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
 
@@ -55,8 +62,11 @@ export function ProjectJobs({
   action,
   emptyText,
   primeId,
+  checklists,
 }: {
   jobs: ProjectJob[];
+  /** Each job's checklist, labels and done state only (D-036). */
+  checklists?: ProjectChecklistItem[];
   /** The awarded contractor: jobs run by anyone else (subcontractors) are labelled with their business. */
   primeId?: string | null;
   attendance: ProjectAttendance[];
@@ -83,6 +93,7 @@ export function ProjectJobs({
         <ul className="divide-y divide-line">
           {jobs.map((j) => {
             const crew = attendance.filter((a) => a.job_id === j.id);
+            const items = checklists?.filter((c) => c.job_id === j.id) ?? [];
             const href = jobHref?.(j.id);
             return (
               <li key={j.id} className="px-4 py-3.5 sm:px-5" data-testid="project-job">
@@ -134,11 +145,155 @@ export function ProjectJobs({
                     </tbody>
                   </table>
                 ) : null}
+                {items.length ? <JobChecklistProgress title={j.title} items={items} /> : null}
               </li>
             );
           })}
         </ul>
       )}
+    </Card>
+  );
+}
+
+function Tick({ done }: { done: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={`mt-px flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border ${
+        done ? "border-ok bg-ok text-white" : "border-line-strong bg-surface"
+      }`}
+    >
+      {done ? (
+        <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.4">
+          <path d="M3.5 8.5l3 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ) : null}
+    </span>
+  );
+}
+
+/** A job's checklist as the customer sees it: progress, then the items on demand. */
+function JobChecklistProgress({ title, items }: { title: string; items: ProjectChecklistItem[] }) {
+  const done = items.filter((i) => i.done_at).length;
+  const pct = Math.round((done / items.length) * 100);
+  return (
+    <details
+      className="group mt-2.5 rounded-md border border-line/80 bg-subtle/50"
+      data-testid="project-checklist"
+      data-done={done}
+      data-total={items.length}
+    >
+      <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-2 text-[13px] [&::-webkit-details-marker]:hidden">
+        <span className="font-medium text-ink">Checklist</span>
+        <span
+          className="h-1.5 min-w-12 flex-1 overflow-hidden rounded-full bg-line"
+          role="progressbar"
+          aria-label={`Checklist progress for ${title}`}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={pct}
+        >
+          <span className="block h-full rounded-full bg-ok" style={{ width: `${pct}%` }} />
+        </span>
+        <span className="tabular shrink-0 text-ink-soft">
+          {done} of {items.length} done
+        </span>
+        <svg
+          viewBox="0 0 16 16"
+          aria-hidden
+          className="h-3.5 w-3.5 shrink-0 text-muted transition-transform group-open:rotate-180"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        >
+          <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </summary>
+      <ul className="space-y-1.5 border-t border-line/80 px-3 py-2.5">
+        {items.map((i) => (
+          <li key={i.item_id} className="flex items-start gap-2 text-[13px]">
+            <Tick done={!!i.done_at} />
+            <span className="sr-only">{i.done_at ? "Done:" : "Not done:"}</span>
+            <span className={i.done_at ? "text-muted line-through decoration-line-strong" : "text-ink"}>{i.label}</span>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
+const photoDate = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: "America/New_York",
+});
+
+/** Photos the contractor shared from the site, newest first. */
+export function ProjectPhotos({
+  photos,
+  contractorName,
+  description,
+  emptyText,
+}: {
+  photos: SharedJobPhoto[];
+  contractorName: string;
+  description?: string;
+  emptyText?: string;
+}) {
+  const ordered = [...photos].reverse();
+  return (
+    <Card>
+      <CardHeader
+        title="Photos from the site"
+        description={description ?? `${contractorName} chooses which photos to share with you.`}
+        action={
+          photos.length ? (
+            <span className="tabular text-[13px] font-medium text-ink-soft">
+              {photos.length} {photos.length === 1 ? "photo" : "photos"}
+            </span>
+          ) : null
+        }
+      />
+      <CardBody>
+        {ordered.length ? (
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {ordered.map((p) => {
+              const label = p.caption ?? p.checklist_label ?? p.job_title;
+              return (
+                <li key={p.id} className="min-w-0" data-testid="project-photo">
+                  <a
+                    href={`/api/job-photos/${p.id}`}
+                    target="_blank"
+                    rel="noopener"
+                    className="block overflow-hidden rounded-md border border-line bg-subtle focus-visible:outline-2 focus-visible:outline-brand"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- private files served by an authorized route */}
+                    <img
+                      src={`/api/job-photos/${p.id}`}
+                      alt={label}
+                      loading="lazy"
+                      className="aspect-square w-full object-cover"
+                    />
+                  </a>
+                  <div className="mt-1.5 space-y-0.5 text-xs">
+                    {p.caption ? <p className="line-clamp-2 text-ink">{p.caption}</p> : null}
+                    {p.checklist_label ? <p className="line-clamp-1 text-ink-soft">For: {p.checklist_label}</p> : null}
+                    <p className="line-clamp-1 text-muted">
+                      {p.job_title} · {photoDate.format(p.created_at)}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <EmptyState title="No photos shared yet">
+            {emptyText ?? `When ${contractorName} shares photos of the work, they appear here.`}
+          </EmptyState>
+        )}
+      </CardBody>
     </Card>
   );
 }
