@@ -589,5 +589,39 @@ the file's bytes, not its name), at most 10 MB.
   one) or a dispatcher (while the job is open) can take it off the job. The
   row and file stay, visible to QuickPro staff only; nothing is deleted.
 - **Not yet:** thumbnails (the grid loads the full image, fine for phone
-  photos but heavier than needed), video, and sharing photos with the
-  customer on the project page.
+  photos but heavier than needed) and video. Sharing with the customer was
+  added in D-036.
+
+## D-036 Customers see shared photos and checklist progress
+
+A customer following an awarded project now sees the work itself, not only
+who checked in. Two things are added to the customer's project page:
+
+- **Shared photos:** job photos stay private to the business and the booked
+  crew (D-035) until one of the awarded contractor's owners, admins or
+  dispatchers chooses "Share with customer" on it. Sharing is a database
+  function (`share_job_photo`); the new `shared_at`/`shared_by` columns
+  are not writable by clients, and new photos always start unshared. The
+  contractor can stop sharing at any time, and taking a photo off the job
+  also takes it off the customer's page. The customer sees the caption, the
+  checklist item, the job and the date, never who took it. The file is
+  served by the same `/api/job-photos/<id>` route, which now also accepts a
+  shared photo for anyone who can see the project (`shared_job_photo_file`).
+  The customer's dispatchers get one notification per job at most every six
+  hours, so sharing a batch of photos doesn't flood them.
+- **Checklist progress:** each job on the project shows "N of M done" with
+  the items on demand (labels and done state only; no names or notes). It
+  has the same reach as the project's job list: the customer, the awarded
+  contractor and staff see every job; a subcontractor sees its own.
+
+Only the awarded contractor can share, and only on jobs it runs. A
+subcontractor's photos are not shared with the prime's customer in this
+version, because the subcontractor's relationship is with the prime; the
+prime and the subcontractor can exchange photos in their own thread.
+
+The contractor's project page shows what the customer sees, so there is no
+guessing about what was shared. Migration `20261111000100_shared_job_photos`
+adds two nullable columns and functions; it deletes and drops nothing.
+
+- **Not yet:** letting a subcontractor share through the prime, and the
+  customer commenting on a specific photo (they can use the project thread).

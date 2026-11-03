@@ -582,6 +582,11 @@ export const checklistDoneSchema = z.object({
 });
 
 // Job photos (D-035).
+export const sharePhotoSchema = z.object({
+  photoId: uuid,
+  shared: z.enum(["true", "false"]).transform((v) => v === "true"),
+});
+
 export const jobPhotoSchema = z.object({
   caption: z
     .string()

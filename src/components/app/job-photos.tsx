@@ -29,6 +29,8 @@ export function JobPhotos({
   checklist,
   uploadAction,
   hideAction,
+  shareWith,
+  shareAction,
 }: {
   photos: JobPhoto[];
   viewer: "business" | "crew";
@@ -41,14 +43,21 @@ export function JobPhotos({
   checklist: ChecklistItem[];
   uploadAction: Action;
   hideAction: Action;
+  /** The customer's name when this viewer can share photos to the project page (D-036). */
+  shareWith?: string | null;
+  shareAction?: Action;
 }) {
+  const sharing = viewer === "business" && !!shareWith && !!shareAction;
+  const sharedCount = photos.filter((p) => p.shared_at).length;
   return (
     <Card>
       <CardHeader
         title="Photos"
         description={
           viewer === "business"
-            ? "Proof of the work, from the crew on site or your team. Only your business, the booked crew and QuickPro staff can see them."
+            ? sharing
+              ? `Proof of the work, from the crew on site or your team. ${shareWith} sees only the photos you share; ${sharedCount} shared so far.`
+              : "Proof of the work, from the crew on site or your team. Only your business, the booked crew and QuickPro staff can see them."
             : "Photos of your work for the business. Only the business, the booked crew and QuickPro staff can see them."
         }
         action={
@@ -67,13 +76,18 @@ export function JobPhotos({
               const who = mine ? "You" : viewer === "business" ? (p.uploaded_by_name ?? "Someone") : null;
               const label = p.caption ?? p.checklist_label ?? "Job photo";
               return (
-                <li key={p.id} className="min-w-0" data-testid="job-photo">
+                <li key={p.id} className="min-w-0" data-testid="job-photo" data-shared={!!p.shared_at}>
                   <a
                     href={`/api/job-photos/${p.id}`}
                     target="_blank"
                     rel="noopener"
-                    className="block overflow-hidden rounded-md border border-line bg-subtle focus-visible:outline-2 focus-visible:outline-brand"
+                    className="relative block overflow-hidden rounded-md border border-line bg-subtle focus-visible:outline-2 focus-visible:outline-brand"
                   >
+                    {sharing && p.shared_at ? (
+                      <span className="absolute top-1.5 left-1.5 rounded-full bg-surface/95 px-2 py-0.5 text-[11px] font-medium text-ok shadow-sm ring-1 ring-line">
+                        Shared
+                      </span>
+                    ) : null}
                     {/* eslint-disable-next-line @next/next/no-img-element -- private files served by an authorized route */}
                     <img
                       src={`/api/job-photos/${p.id}`}
@@ -90,18 +104,33 @@ export function JobPhotos({
                       {timeFormat.format(p.created_at)}
                     </p>
                   </div>
-                  {canManage || (mine && canAdd) ? (
-                    <ActionForm action={hideAction} className="mt-1" successMessage={false}>
-                      <input type="hidden" name="photoId" value={p.id} />
-                      <button
-                        type="submit"
-                        className="text-xs font-medium text-muted hover:text-bad"
-                        aria-label={`Remove photo: ${label}`}
-                      >
-                        Remove
-                      </button>
-                    </ActionForm>
-                  ) : null}
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    {sharing && shareAction ? (
+                      <ActionForm action={shareAction} className="min-w-0" successMessage={false}>
+                        <input type="hidden" name="photoId" value={p.id} />
+                        <input type="hidden" name="shared" value={p.shared_at ? "false" : "true"} />
+                        <button
+                          type="submit"
+                          className={`text-xs font-medium ${p.shared_at ? "text-muted hover:text-ink" : "text-brand hover:underline"}`}
+                          aria-label={p.shared_at ? `Stop sharing: ${label}` : `Share with customer: ${label}`}
+                        >
+                          {p.shared_at ? "Stop sharing" : "Share with customer"}
+                        </button>
+                      </ActionForm>
+                    ) : null}
+                    {canManage || (mine && canAdd) ? (
+                      <ActionForm action={hideAction} className="min-w-0" successMessage={false}>
+                        <input type="hidden" name="photoId" value={p.id} />
+                        <button
+                          type="submit"
+                          className="text-xs font-medium text-muted hover:text-bad"
+                          aria-label={`Remove photo: ${label}`}
+                        >
+                          Remove
+                        </button>
+                      </ActionForm>
+                    ) : null}
+                  </div>
                 </li>
               );
             })}
