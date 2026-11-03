@@ -549,3 +549,18 @@ export const supportUpdateSchema = z.object({
   priority: z.enum(SUPPORT_PRIORITIES, "Choose a priority."),
   assignedTo: z.union([uuid, z.literal("")]).default(""),
 });
+
+// Public contractor profiles (D-032) ---------------------------------------
+
+export const publicProfileSchema = z.object({
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(3, "Choose a page address of 3 to 60 letters or numbers.")
+    .max(60, "Choose a page address of 3 to 60 letters or numbers."),
+  intent: z.enum(["publish", "unpublish", "save"], "Choose what to do."),
+});
+
+/** Public directory filters: slugs, or nothing. */
+export const publicSlug = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/).max(60);

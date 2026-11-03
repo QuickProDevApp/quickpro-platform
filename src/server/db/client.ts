@@ -1,7 +1,7 @@
 import "server-only";
 import postgres, { type Sql } from "postgres";
 import { env } from "@/server/env";
-import { runAsUser, type Tx } from "./rls";
+import { runAsAnon, runAsUser, type Tx } from "./rls";
 
 const globalForDb = globalThis as unknown as { quickproSql?: Sql };
 
@@ -25,6 +25,15 @@ function sql(): Sql {
  */
 export function withUser<T>(userId: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
   return runAsUser(sql(), userId, fn);
+}
+
+/**
+ * For public pages only: runs as the anonymous role, which can read reference
+ * data and call the read-only public functions (public contractor profiles)
+ * and nothing else. Never use it for anything a signed-in user does.
+ */
+export function withAnon<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
+  return runAsAnon(sql(), fn);
 }
 
 export type { Tx };

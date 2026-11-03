@@ -69,7 +69,8 @@ reports its part complete. Then (D-028): two-way, double-blind reviews of
 every finished project, subcontract and shift, with ratings in directories
 and applicant lists, replies, flags and staff moderation; and disputes about
 agreed work, discussed by both sides and staff and closed with an outcome.
-Still to do: public contractor profiles.
+Then (D-032): opt-in public contractor profiles and a public directory at
+/contractors, for approved businesses only.
 
 - Customers submit job requests (scope, site, schedule, budget).
 - Matching to approved contractors by category and area; staff can route.

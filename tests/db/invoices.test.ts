@@ -113,12 +113,12 @@ describe("invoices", () => {
 
     // The customer can't mark it paid; the contractor records the payment.
     await expect(
-      asUser(p.customer.owner, (tx) => tx`select public.record_invoice_payment(${id}, current_date, 'check', '1042')`),
+      asUser(p.customer.owner, (tx) => tx`select public.record_invoice_payment(${id}, (now() at time zone 'America/New_York')::date, 'check', '1042')`),
     ).rejects.toThrow(/Invoice not found/);
     await expect(
-      asUser(p.primeOwner, (tx) => tx`select public.record_invoice_payment(${id}, current_date + 3, 'check', '1042')`),
+      asUser(p.primeOwner, (tx) => tx`select public.record_invoice_payment(${id}, (now() at time zone 'America/New_York')::date + 3, 'check', '1042')`),
     ).rejects.toThrow(/not in the future/);
-    await asUser(p.primeOwner, (tx) => tx`select public.record_invoice_payment(${id}, current_date, 'check', 'Check 1042')`);
+    await asUser(p.primeOwner, (tx) => tx`select public.record_invoice_payment(${id}, (now() at time zone 'America/New_York')::date, 'check', 'Check 1042')`);
     expect((await get(p.customer.owner, id)).status).toBe("paid");
     expect(await kinds(p.customer.owner)).toContain("invoice.paid");
     await expect(asUser(p.primeOwner, (tx) => tx`select public.void_invoice(${id}, 'oops')`)).rejects.toThrow(/paid or voided/);

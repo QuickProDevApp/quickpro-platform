@@ -131,6 +131,9 @@ Three layers, each sufficient to stop the common mistakes of the others:
    policies built on `auth.uid()`, `app.is_admin()`, `app.is_org_member()` and
    `app.can_manage_org()`. A query that forgets a `where` clause still returns
    only rows the user may see.
+   The one exception is `withAnon(fn)`, used only by the public contractor
+   pages (D-032): it switches to the `anon` role, which can read no tables and
+   can only call a few read-only functions that return fields safe for anyone.
 3. **Column grants and workflow functions.** The API roles get explicit,
    column-level `insert`/`update` grants. Review fields (`status`,
    `reviewed_by`, `review_notes`, ...) are never granted, so they change only
