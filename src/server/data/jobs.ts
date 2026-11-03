@@ -210,10 +210,19 @@ export type JobPerson = {
   checked_in_at: Date | null;
   checked_out_at: Date | null;
   phone: string | null;
+  /** Whether the shift sits inside the worker's weekly availability (D-037). */
+  fits_availability: boolean | null;
+  /** Whether the worker has accepted another job that overlaps this one. */
+  booked_elsewhere: boolean | null;
 };
 
 export function listJobPeople(userId: string, jobId: string) {
-  return withUser(userId, (tx) => tx<JobPerson[]>`select * from public.job_people(${jobId})`);
+  return withUser(userId, (tx) => tx<JobPerson[]>`
+    select p.*,
+           app.job_fits_availability(p.worker_user_id, ${jobId}) as fits_availability,
+           app.booked_elsewhere(p.worker_user_id, ${jobId}) as booked_elsewhere
+    from public.job_people(${jobId}) p
+  `);
 }
 
 // ---------------------------------------------------------------------------
@@ -231,6 +240,10 @@ export type WorkerJob = Job & {
   assignment_responded_at: Date | null;
   checked_in_at: Date | null;
   checked_out_at: Date | null;
+  /** The shift sits inside the worker's weekly availability (D-037). */
+  fits_availability: boolean;
+  /** The worker has accepted another job at an overlapping time. */
+  booked_elsewhere: boolean;
 };
 
 function workerColumns(tx: Tx, userId: string) {
@@ -241,7 +254,9 @@ function workerColumns(tx: Tx, userId: string) {
       where js.job_id = j.id and ws.user_id = ${userId}) as matching_skills,
     ap.id as application_id, ap.status as application_status,
     asg.id as assignment_id, asg.status as assignment_status, asg.responded_at as assignment_responded_at,
-    asg.checked_in_at, asg.checked_out_at
+    asg.checked_in_at, asg.checked_out_at,
+    coalesce(app.job_fits_availability(${userId}, j.id), false) as fits_availability,
+    coalesce(app.booked_elsewhere(${userId}, j.id), false) as booked_elsewhere
   `;
 }
 
@@ -252,15 +267,19 @@ function workerJoins(tx: Tx, userId: string) {
   `;
 }
 
-/** Open jobs that have not started. `local` limits them to the worker's home and preferred towns. */
-export function listOpenJobsForWorker(userId: string, scope: "local" | "all") {
+/**
+ * Open jobs that have not started. `local` limits them to the worker's home
+ * and preferred towns; `fitOnly` to shifts inside their availability that
+ * don't clash with a booked shift.
+ */
+export function listOpenJobsForWorker(userId: string, scope: "local" | "all", fitOnly = false) {
   return withUser(userId, (tx) => tx<WorkerJob[]>`
     select * from (
       select ${jobColumns(tx)}, ${workerColumns(tx, userId)}
       from ${jobFrom(tx)} ${workerJoins(tx, userId)}
       where j.status = 'open' and j.starts_at > now()
     ) jobs
-    where ${scope} = 'all' or in_my_areas
+    where (${scope} = 'all' or in_my_areas) and (not ${fitOnly} or (fits_availability and not booked_elsewhere))
     order by starts_at
     limit 200
   `);
@@ -384,6 +403,8 @@ export type MatchCandidate = {
   in_area: boolean;
   matching_skills: number;
   already_involved: boolean;
+  fits_availability: boolean;
+  booked_elsewhere: boolean;
 };
 
 /** Approved workers ranked for a job, for staff matching by hand. */
@@ -394,13 +415,15 @@ export function listMatchCandidates(adminId: string, jobId: string) {
             or exists (select 1 from public.worker_service_areas wa where wa.user_id = w.user_id and wa.service_area_id = j.service_area_id)) as in_area,
            (select count(*)::int from public.worker_skills ws join public.job_skills js on js.skill_id = ws.skill_id
              where ws.user_id = w.user_id and js.job_id = j.id) as matching_skills,
-           exists (select 1 from public.job_assignments x where x.job_id = j.id and x.worker_user_id = w.user_id) as already_involved
+           exists (select 1 from public.job_assignments x where x.job_id = j.id and x.worker_user_id = w.user_id) as already_involved,
+           coalesce(app.job_fits_availability(w.user_id, j.id), false) as fits_availability,
+           coalesce(app.booked_elsewhere(w.user_id, j.id), false) as booked_elsewhere
     from public.jobs j
     cross join public.worker_profiles w
     join public.profiles p on p.id = w.user_id
     left join public.service_areas ha on ha.id = w.home_service_area_id
     where j.id = ${jobId} and w.status = 'approved'
-    order by in_area desc, matching_skills desc, p.full_name
+    order by in_area desc, booked_elsewhere asc, fits_availability desc, matching_skills desc, p.full_name
     limit 50
   `);
 }

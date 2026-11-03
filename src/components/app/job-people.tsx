@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AvailabilityFit } from "@/components/app/availability-fit";
 import { RatingSummary } from "@/components/app/trust";
 import { ApplicationStatusBadge, AssignmentStatusBadge } from "@/components/ui/badge";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -214,6 +215,11 @@ function PersonRow({
           .filter(Boolean)
           .join(" · ")}
       </p>
+      {!p.assignment_status || p.assignment_status === "offered" ? (
+        <div className="flex flex-wrap gap-1.5" data-testid="availability-fit">
+          <AvailabilityFit fits={p.fits_availability} bookedElsewhere={p.booked_elsewhere} whose="their" />
+        </div>
+      ) : null}
       {children}
     </li>
   );

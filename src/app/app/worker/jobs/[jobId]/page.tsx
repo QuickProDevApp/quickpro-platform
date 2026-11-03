@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AvailabilityFit } from "@/components/app/availability-fit";
 import { JobChecklist } from "@/components/app/job-checklist";
 import { JobPhotos } from "@/components/app/job-photos";
 import { JobFacts, SiteFacts } from "@/components/app/job-summary";
@@ -216,7 +217,23 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
                 title="Apply"
                 description="The business sees your name, headline, skills and home town. Your phone number is shared only if you accept an offer."
               />
-              <CardBody>
+              <CardBody className="space-y-4">
+                <div className="space-y-1.5" data-testid="job-fit">
+                  <AvailabilityFit fits={job.fits_availability} bookedElsewhere={job.booked_elsewhere} whose="your" />
+                  {job.booked_elsewhere ? (
+                    <p className="text-[13px] text-muted">
+                      You can still apply, but you can&apos;t accept an offer for two shifts at the same time.
+                    </p>
+                  ) : !job.fits_availability ? (
+                    <p className="text-[13px] text-muted">
+                      You can still apply. Your weekly hours are on your{" "}
+                      <Link href="/app/worker/profile" className="font-medium text-brand hover:underline">
+                        profile
+                      </Link>
+                      .
+                    </p>
+                  ) : null}
+                </div>
                 <ActionForm action={applyAction.bind(null, job.id)}>
                   <Field name="note" label="Note to the business (optional)">
                     <Textarea

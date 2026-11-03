@@ -625,3 +625,35 @@ adds two nullable columns and functions; it deletes and drops nothing.
 
 - **Not yet:** letting a subcontractor share through the prime, and the
   customer commenting on a specific photo (they can use the project thread).
+
+## D-037 Availability matching
+
+Workers set weekly availability when they build their profile, but until now
+nothing used it. A shift is now compared with it, in New York time:
+
+- **Fits** when the worker's windows on that weekday cover the whole shift.
+  Windows that touch (07:00-12:00 and 12:00-17:00) count as one. A shift
+  that runs past midnight never fits, because availability is set per day.
+  No availability that day means it doesn't fit.
+- **Booked elsewhere** when the worker has accepted another live job that
+  overlaps, the same rule that already stops them accepting two such offers.
+
+Where it shows:
+
+- **Workers:** each open job on Find work is marked "Within your
+  availability", "Outside your availability" or "Clashes with a shift you
+  booked", and a "Fits my availability" filter hides the rest. The job page
+  says the same above the Apply form. They can still apply to anything.
+- **Businesses:** applicants and offered workers are marked "Within their
+  availability", "Outside their availability" or "Booked on another job
+  then", so an offer isn't sent to someone who can't take it.
+- **Staff matching:** candidates in the job's town come first, then those
+  free at that time and within their hours, then by matching skills.
+
+Privacy: the answers are yes/no. A worker's actual hours stay visible only
+to them and staff. A business can ask only about workers who applied to or
+were offered one of its jobs, and only for that job; for anyone else the
+functions return null.
+
+Migration `20261112000100_availability_matching` only adds functions; it
+deletes and drops nothing. Travel distance is still not used.

@@ -1,10 +1,22 @@
 import Link from "next/link";
+import { AvailabilityFit } from "@/components/app/availability-fit";
 import { ApplicationStatusBadge, AssignmentStatusBadge, JobStatusBadge } from "@/components/ui/badge";
 import { Card, EmptyState } from "@/components/ui/card";
 import { formatCents, formatShift, shiftHours } from "@/lib/labels";
 import type { WorkerJob } from "@/server/data/jobs";
 
-export function WorkerJobList({ jobs, empty, showJobStatus = false }: { jobs: WorkerJob[]; empty: React.ReactNode; showJobStatus?: boolean }) {
+export function WorkerJobList({
+  jobs,
+  empty,
+  showJobStatus = false,
+  showFit = false,
+}: {
+  jobs: WorkerJob[];
+  empty: React.ReactNode;
+  showJobStatus?: boolean;
+  /** Mark whether each open job suits the worker's availability (D-037). */
+  showFit?: boolean;
+}) {
   return (
     <Card>
       {jobs.length === 0 ? (
@@ -30,6 +42,11 @@ export function WorkerJobList({ jobs, empty, showJobStatus = false }: { jobs: Wo
                     {j.in_my_areas ? " · In your towns" : ""}
                     {j.skill_names.length ? ` · ${j.matching_skills}/${j.skill_names.length} skills match` : ""}
                   </p>
+                  {showFit && !j.assignment_status ? (
+                    <div className="mt-1.5" data-testid="job-fit">
+                      <AvailabilityFit fits={j.fits_availability} bookedElsewhere={j.booked_elsewhere} whose="your" />
+                    </div>
+                  ) : null}
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="tabular text-[15px] font-semibold text-ink">{formatCents(j.pay_rate_cents)}</p>
