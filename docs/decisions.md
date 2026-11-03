@@ -494,3 +494,29 @@ overview counts requests waiting on them.
   10 messages a minute.
 - **Not yet:** attachments, email in and out, canned replies, response-time
   targets. Nothing on the page promises a response time.
+
+## D-032 Public contractor profiles
+
+An approved contractor's owners and admins can publish a public profile page
+at /contractors/<address> from the business profile. It is opt-in and off by
+default. Published, approved contractors in open markets are listed in a
+public directory at /contractors, filterable by service and town, which
+links to the customer sign-up to request a quote.
+
+- **What's public:** business name, city, about text, services, towns, years
+  in business, crew size, rating, completed project count, and published
+  reviews from customers and primes. Reviewers are described ("Customer in
+  Islip"), never named. Worker reviews of the business stay inside QuickPro.
+  Whether a current liability certificate has been reviewed by staff is shown
+  as exactly that, not as "insured" or "verified".
+- **What's never public:** phone, email, address, legal name, documents,
+  people, prices and quotes. The anonymous role reads no tables. Signed-out
+  pages call `withAnon`, which can only run `public_contractors`,
+  `public_contractor` and `public_contractor_reviews`. Those are
+  security-definer functions that return only the fields above.
+- **Taking it down:** unpublishing sets `is_published` to false and the page
+  returns 404 straight away. A suspended or no-longer-approved business drops
+  out on its own. Nothing is deleted.
+- **Not yet:** photos, custom contact forms, search engine sitemaps, and
+  inviting a profile's business to quote straight from the page (a customer
+  signs up and invites it from the directory in the app).

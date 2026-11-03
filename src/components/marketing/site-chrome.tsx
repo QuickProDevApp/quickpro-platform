@@ -7,6 +7,7 @@ const nav = [
   { href: "/#businesses", label: "For businesses" },
   { href: "/#workers", label: "For workers" },
   { href: "/#features", label: "Features" },
+  { href: "/contractors", label: "Find contractors" },
 ];
 
 export function SiteHeader() {
@@ -52,6 +53,7 @@ const footer = [
     links: [
       { href: "/sign-up?as=contractor", label: "Register a business" },
       { href: "/sign-up?as=customer", label: "Request service" },
+      { href: "/contractors", label: "Find contractors" },
       { href: "/sign-up?as=worker", label: "Find work" },
     ],
   },

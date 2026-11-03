@@ -423,3 +423,30 @@ export async function seedOpenRequest(o: { customerOwnerId: string; customerId: 
     await sql.end();
   }
 }
+
+/** Both sides of a finished project review each other (so the reviews are shared), through submit_review. */
+export async function seedProjectReviews(o: {
+  requestId: string;
+  customerOwnerId: string;
+  contractorOwnerId: string;
+  customerRating: number;
+  customerBody: string;
+}) {
+  const sql = platformSql();
+  const as = (userId: string, fn: (tx: TransactionSql) => Promise<unknown>) =>
+    sql.begin(async (tx) => {
+      await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: userId, role: "authenticated" })}, true)`;
+      await tx`set local role authenticated`;
+      return fn(tx);
+    });
+  try {
+    await as(o.customerOwnerId, (tx) => tx`
+      select public.submit_review('project'::public.work_context, ${o.requestId}, ${o.customerRating}, ${o.customerBody})
+    `);
+    await as(o.contractorOwnerId, (tx) => tx`
+      select public.submit_review('project'::public.work_context, ${o.requestId}, 5, 'Clear scope and quick answers.')
+    `);
+  } finally {
+    await sql.end();
+  }
+}
