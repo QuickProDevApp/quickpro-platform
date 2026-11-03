@@ -60,6 +60,9 @@ Not built yet:
   photos to a job, optionally for a checklist item. Customers follow the
   work (D-036): the awarded contractor shares chosen photos to the project
   page, and the customer sees each job's checklist progress.
+- Timesheets built (D-038): the business approves each shift's hours (as
+  recorded or adjusted with a note), exports them for payroll, and the
+  worker sees hours and estimated gross pay and can question them.
 - Messaging threads per job and per shift, with staff moderation.
 - Calendar views for contractors and workers. Built (D-033): week schedules
   for both, with crew and unfilled shifts, availability, and a calendar file

@@ -599,3 +599,31 @@ export const jobPhotoSchema = z.object({
     .optional()
     .transform((v) => v || null),
 });
+
+// Timesheets (D-038). Times are New York wall-clock values from datetime-local inputs.
+const localDateTime = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, "Enter a date and time.");
+
+export const approveTimesheetSchema = z.object({
+  assignmentId: uuid,
+  start: localDateTime,
+  end: localDateTime,
+  breakMinutes: z.coerce
+    .number({ message: "Enter the break in minutes." })
+    .int("Enter whole minutes.")
+    .min(0, "The break can't be negative.")
+    .max(600, "The break can be at most 600 minutes.")
+    .default(0),
+  note: z
+    .string()
+    .trim()
+    .max(500, "Keep the note to 500 characters.")
+    .optional()
+    .transform((v) => v || null),
+});
+
+export const queryTimesheetSchema = z.object({
+  assignmentId: uuid,
+  note: z.string().trim().min(5, "Say what's wrong.").max(1000, "Keep it to 1,000 characters."),
+});

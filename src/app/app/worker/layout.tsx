@@ -22,6 +22,7 @@ export default async function WorkerLayout({ children }: { children: React.React
           { href: "/app/worker/jobs", label: "Find work" },
           { href: "/app/worker/my-jobs", label: "My jobs" },
           { href: "/app/worker/schedule", label: "Schedule" },
+          { href: "/app/worker/timesheets", label: "Timesheets" },
           { href: "/app/worker/profile", label: "Profile & skills" },
           { href: "/app/worker/availability", label: "Availability" },
           { href: "/app/worker/documents", label: "Certifications" },
