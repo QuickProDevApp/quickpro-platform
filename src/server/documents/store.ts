@@ -113,7 +113,7 @@ export type ReconcileReport = {
 };
 
 /**
- * Compares storage with qualification_documents. Needs a privileged database
+ * Compares storage with qualification_documents and job_photos. Needs a privileged database
  * connection (it reads every row). Objects with no row that are older than
  * the grace period are removed; younger ones may belong to an upload whose
  * transaction has not committed yet. Rows whose object is missing are
@@ -124,9 +124,12 @@ export async function reconcileStorage(
   storage: FileStorage,
   { graceMinutes = 60, dryRun = false, now = new Date() } = {},
 ): Promise<ReconcileReport> {
-  const objects = [...(await storage.list("org")), ...(await storage.list("worker"))];
+  const objects = [...(await storage.list("org")), ...(await storage.list("worker")), ...(await storage.list("job"))];
+  // Job photos (D-035) share the bucket under job/.
   const rows = await sql<{ id: string; storage_path: string }[]>`
     select id, storage_path from public.qualification_documents
+    union all
+    select id, storage_path from public.job_photos
   `;
   const known = new Set(rows.map((r) => r.storage_path));
   const present = new Set(objects.map((o) => o.path));

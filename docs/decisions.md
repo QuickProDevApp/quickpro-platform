@@ -567,3 +567,27 @@ checked it and when, with an optional short note.
   complete; the business decides.
 - **Not yet:** photo proof of completion (needs private storage for job
   photos), reusable checklist templates, and reordering items.
+
+## D-035 Job photos as proof of work
+
+The booked crew can add photos to a job once they've checked in, until two
+hours after the shift ends; the business's owners, admins and dispatchers
+can add them while the job is open or filled. A photo can have a caption and
+be tied to a checklist item. Up to 40 photos per job, JPEG or PNG (checked by
+the file's bytes, not its name), at most 10 MB.
+
+- **Storage:** the same private Supabase Storage bucket as qualification
+  documents, under `job/<job id>/<photo id>.<ext>`, so there is no new bucket
+  to configure. Rows and files are written together the same way as
+  documents (D-011 and the document store): a failed write leaves neither,
+  and `pnpm storage:reconcile` now also covers `job/`.
+- **Access:** files are served only by `/api/job-photos/<id>` after a row
+  level security check; the business, the booked crew and staff can see
+  them. Applicants and other workers can't. Responses are privately cached
+  for five minutes so the grid doesn't refetch on every visit.
+- **Removing:** the person who added a photo (while they still could add
+  one) or a dispatcher (while the job is open) can take it off the job. The
+  row and file stay, visible to QuickPro staff only; nothing is deleted.
+- **Not yet:** thumbnails (the grid loads the full image, fine for phone
+  photos but heavier than needed), video, and sharing photos with the
+  customer on the project page.

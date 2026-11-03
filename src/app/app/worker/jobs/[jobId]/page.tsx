@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JobChecklist } from "@/components/app/job-checklist";
+import { JobPhotos } from "@/components/app/job-photos";
 import { JobFacts, SiteFacts } from "@/components/app/job-summary";
 import { JobThread } from "@/components/app/job-thread";
 import { WorkTrust } from "@/components/app/work-trust";
@@ -12,6 +13,8 @@ import { formatCents, formatDateTime, formatShift } from "@/lib/labels";
 import { uuid } from "@/lib/schemas";
 import { requireUser } from "@/server/auth/session";
 import { setChecklistItemDoneAction } from "@/server/actions/checklists";
+import { hideJobPhotoAction, uploadJobPhotoAction } from "@/server/actions/job-photos";
+import { listJobPhotos } from "@/server/data/job-photos";
 import { listJobChecklist } from "@/server/data/checklists";
 import { getJobForWorker, getJobSite } from "@/server/data/jobs";
 import { getJobThread } from "@/server/data/messages";
@@ -38,10 +41,11 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
   if (!job || !profile) notFound();
   const booked = job.assignment_status === "accepted" || job.assignment_status === "completed";
   const inThread = booked || job.assignment_status === "offered";
-  const [site, messages, checklist] = await Promise.all([
+  const [site, messages, checklist, photos] = await Promise.all([
     booked ? getJobSite(user.id, job.id) : null,
     inThread ? getJobThread(user.id, job.id) : null,
     booked ? listJobChecklist(user.id, job.id) : [],
+    booked ? listJobPhotos(user.id, job.id) : [],
   ]);
 
   const now = new Date();
@@ -150,6 +154,22 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
                   : "This checklist is closed."
               }
               doneAction={setChecklistItemDoneAction}
+            />
+          ) : null}
+
+          {booked ? (
+            <JobPhotos
+              photos={photos}
+              viewer="crew"
+              currentUserId={user.id}
+              canAdd={canCheck}
+              canManage={false}
+              checklist={checklist}
+              lockedReason={
+                accepted && !job.checked_in_at && jobLive ? "You can add photos once you've checked in." : undefined
+              }
+              uploadAction={uploadJobPhotoAction.bind(null, job.id)}
+              hideAction={hideJobPhotoAction}
             />
           ) : null}
 
