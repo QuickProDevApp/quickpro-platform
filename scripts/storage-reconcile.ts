@@ -1,5 +1,5 @@
 /**
- * Finds and removes storage objects that have no qualification_documents row
+ * Finds and removes storage objects that have no qualification_documents or job_photos row
  * (left behind when a cleanup after a failed upload or delete also failed),
  * and reports rows whose file is missing. Run on a schedule in production.
  *

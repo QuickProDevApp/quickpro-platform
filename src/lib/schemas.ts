@@ -580,3 +580,17 @@ export const checklistDoneSchema = z.object({
     .optional()
     .transform((v) => v || null),
 });
+
+// Job photos (D-035).
+export const jobPhotoSchema = z.object({
+  caption: z
+    .string()
+    .trim()
+    .max(200, "Keep the caption to 200 characters.")
+    .optional()
+    .transform((v) => v || null),
+  checklistItemId: z
+    .union([uuid, z.literal("")])
+    .optional()
+    .transform((v) => v || null),
+});

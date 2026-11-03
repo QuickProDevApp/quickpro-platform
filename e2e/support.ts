@@ -79,6 +79,13 @@ export const samplePdf = {
   ),
 };
 
+/** An 8×8 blue PNG, for photo uploads. */
+export const samplePhoto = {
+  name: "lobby-after.png",
+  mimeType: "image/png",
+  buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEUlEQVR4nGOQizqBFTEMLQkAGBlQATpZBa0AAAAASUVORK5CYII=", "base64"),
+};
+
 /** A confirmed account created through the auth admin API (for flows that do not test sign-up). */
 export async function createConfirmedAccount(name: string, prefix: string) {
   const email = uniqueEmail(prefix);

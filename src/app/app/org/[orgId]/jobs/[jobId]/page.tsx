@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JobChecklist } from "@/components/app/job-checklist";
+import { JobPhotos } from "@/components/app/job-photos";
 import { JobPeople } from "@/components/app/job-people";
 import { JobThread } from "@/components/app/job-thread";
 import { JobFacts, SiteFacts } from "@/components/app/job-summary";
@@ -18,6 +19,8 @@ import {
 } from "@/server/actions/checklists";
 import { requireMembership } from "@/server/actions/guards";
 import { listJobChecklist } from "@/server/data/checklists";
+import { listJobPhotos } from "@/server/data/job-photos";
+import { hideJobPhotoAction, uploadJobPhotoAction } from "@/server/actions/job-photos";
 import { getJob, getJobSite, listJobPeople } from "@/server/data/jobs";
 import { getJobWorkerRatings } from "@/server/data/reviews";
 import { getJobThread } from "@/server/data/messages";
@@ -46,12 +49,13 @@ export default async function OrganizationJobPage({
   const job = await getJob(user.id, jobId);
   if (!job || job.organization_id !== org.id) notFound();
   const dispatcher = canDispatch(org.my_role);
-  const [site, people, messages, ratings, checklist] = await Promise.all([
+  const [site, people, messages, ratings, checklist, photos] = await Promise.all([
     getJobSite(user.id, job.id),
     listJobPeople(user.id, job.id),
     getJobThread(user.id, job.id),
     dispatcher ? getJobWorkerRatings(user.id, job.id) : undefined,
     listJobChecklist(user.id, job.id),
+    listJobPhotos(user.id, job.id),
   ]);
   const posted = (await searchParams).posted === "1";
 
@@ -127,6 +131,16 @@ export default async function OrganizationJobPage({
             addAction={addChecklistItemAction.bind(null, job.id)}
             removeAction={removeChecklistItemAction}
             doneAction={setChecklistItemDoneAction}
+          />
+          <JobPhotos
+            photos={photos}
+            viewer="business"
+            currentUserId={user.id}
+            canAdd={dispatcher && live}
+            canManage={dispatcher && live}
+            checklist={checklist}
+            uploadAction={uploadJobPhotoAction.bind(null, job.id)}
+            hideAction={hideJobPhotoAction}
           />
           <JobThread
             messages={messages}
