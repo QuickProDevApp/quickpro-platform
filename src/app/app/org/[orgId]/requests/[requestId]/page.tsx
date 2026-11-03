@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { emailDeliveryEnabled } from "@/server/email";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JobThread } from "@/components/app/job-thread";
@@ -273,7 +274,7 @@ async function CustomerView({
               postAction={
                 request.status !== "cancelled" ? postProjectMessageAction.bind(null, org.id, request.id) : undefined
               }
-              description={`Between your team and ${awarded.contractor_name}. Both sides get a QuickPro notification; nothing is emailed.`}
+              description={`Between your team and ${awarded.contractor_name}. Both sides get a QuickPro notification${emailDeliveryEnabled() ? " and an email" : ""}.`}
               placeholder="Start date, access, scope questions…"
             />
           </>

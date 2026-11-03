@@ -21,6 +21,18 @@ export function listNotifications(userId: string, limit = 50) {
   `);
 }
 
+/** Whether this person gets notification emails (on unless they turned it off). */
+export async function getEmailNotificationsEnabled(userId: string) {
+  const [row] = await withUser(userId, (tx) => tx<{ on: boolean }[]>`
+    select coalesce((select email_enabled from public.notification_preferences where user_id = ${userId}), true) as on
+  `);
+  return row.on;
+}
+
+export function setEmailNotifications(userId: string, enabled: boolean) {
+  return withUser(userId, (tx) => tx`select public.set_email_notifications(${enabled})`);
+}
+
 export async function unreadNotificationCount(userId: string) {
   const [row] = await withUser(userId, (tx) => tx<{ n: number }[]>`
     select count(*)::int as n from public.notifications where user_id = ${userId} and read_at is null

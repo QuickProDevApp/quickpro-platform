@@ -52,6 +52,10 @@ export const accountSchema = z.object({
   phone,
 });
 
+export const emailNotificationsSchema = z.object({
+  enabled: z.enum(["on", "off"], "Choose on or off.").transform((v) => v === "on"),
+});
+
 export const createOrganizationSchema = z.object({
   kind: z.enum(["contractor", "customer"]),
   name: z.string().trim().min(2, "Enter the business name.").max(120),

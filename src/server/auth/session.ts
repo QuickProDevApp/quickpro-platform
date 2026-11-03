@@ -1,4 +1,5 @@
 import "server-only";
+import { after } from "next/server";
 import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { withUser } from "@/server/db/client";
@@ -37,9 +38,20 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   };
 });
 
+/** Once per request: send queued notification emails after the response. */
+const sendQueuedEmailsAfterResponse = cache(() => {
+  after(async () => {
+    const { deliverEmailsSoon } = await import("@/server/email");
+    await deliverEmailsSoon();
+  });
+});
+
 export async function requireUser(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
+  // Signed-in requests are what create notifications, so each one sends
+  // what is queued once its response is done (D-039).
+  sendQueuedEmailsAfterResponse();
   return user;
 }
 

@@ -47,7 +47,7 @@ begin
                     'notifications', 'job_messages', 'service_requests',
                     'service_request_sites', 'service_request_invitations', 'quotes',
                     'service_request_events', 'request_messages', 'subcontracts', 'reviews', 'disputes',
-                    'dispute_messages', 'invoices', 'invoice_counters', 'support_tickets', 'support_messages', 'contractor_public_profiles', 'job_checklist_items', 'job_photos', 'timesheets']) t
+                    'dispute_messages', 'invoices', 'invoice_counters', 'support_tickets', 'support_messages', 'contractor_public_profiles', 'job_checklist_items', 'job_photos', 'timesheets', 'notification_preferences']) t
   where to_regclass('public.' || t) is null;
   if v_missing is not null then
     raise exception 'Missing tables: %', v_missing;

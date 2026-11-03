@@ -187,6 +187,64 @@ export async function latestEmailLink(email: string, marker: string): Promise<st
   throw new Error(`No email with a ${marker} link arrived for ${email}`);
 }
 
+export type ReceivedEmail = { to: string; subject: string; text: string; html: string };
+
+/**
+ * Waits for a notification email to `email` whose subject contains
+ * `subject`. Reads the local inbox (Mailpit) when EMAIL_DRIVER=smtp, or the
+ * files the log driver writes. Calls the delivery endpoint while waiting,
+ * so the test doesn't depend on another page load sending it.
+ */
+export async function waitForEmail(email: string, subject: string): Promise<ReceivedEmail> {
+  const base = process.env.E2E_MAILBOX_URL ?? "http://127.0.0.1:54324";
+  const site = process.env.E2E_BASE_URL ?? "http://localhost:3000";
+  for (let attempt = 0; attempt < 30; attempt++) {
+    if (process.env.CRON_SECRET) {
+      await fetch(`${site}/api/cron/deliver-emails`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
+      }).catch(() => null);
+    }
+    if (process.env.EMAIL_DRIVER === "log") {
+      const { readdir, readFile } = await import("node:fs/promises");
+      const dir = process.env.EMAIL_LOG_DIR ?? ".data/outbox";
+      const files = (await readdir(dir).catch(() => [] as string[])).sort().reverse();
+      for (const file of files) {
+        const m = JSON.parse(await readFile(`${dir}/${file}`, "utf8")) as ReceivedEmail;
+        if (m.to === email && m.subject.includes(subject)) return m;
+      }
+    } else {
+      const query = encodeURIComponent(`to:"${email}" subject:"${subject}"`);
+      const found = await fetch(`${base}/api/v1/search?query=${query}`).catch(() => null);
+      if (found?.ok) {
+        const { messages } = (await found.json()) as { messages: { ID: string }[] };
+        if (messages?.length) {
+          const m = (await (await fetch(`${base}/api/v1/message/${messages[0].ID}`)).json()) as {
+            Subject: string;
+            Text?: string;
+            HTML?: string;
+          };
+          return { to: email, subject: m.Subject, text: m.Text ?? "", html: m.HTML ?? "" };
+        }
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  throw new Error(`No email "${subject}" arrived for ${email}`);
+}
+
+/** The email state of a person's notifications, newest first. */
+export async function notificationEmailStatus(userId: string) {
+  const sql = platformSql();
+  try {
+    return await sql<{ title: string; email_status: string }[]>`
+      select title, email_status from public.notifications where user_id = ${userId} order by created_at desc
+    `;
+  } finally {
+    await sql.end();
+  }
+}
+
 /** An open job posted by `ownerId`, starting `days` from now at 07:00 New York time, set up directly in the database. */
 export async function seedOpenJob(ownerId: string, orgId: string, title: string, days = 3, requestId: string | null = null) {
   const sql = platformSql();

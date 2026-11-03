@@ -5,7 +5,8 @@ import { requireUser } from "@/server/auth/session";
 import { withUser } from "@/server/db/client";
 import { toUserMessage } from "@/server/errors";
 import { createSupabaseServerClient } from "@/server/auth/supabase";
-import { accountSchema, changePasswordSchema, fieldErrorsOf, formObject, type FormState } from "@/lib/schemas";
+import { setEmailNotifications } from "@/server/data/notifications";
+import { accountSchema, changePasswordSchema, emailNotificationsSchema, fieldErrorsOf, formObject, type FormState } from "@/lib/schemas";
 
 export async function updateAccountAction(_: FormState, formData: FormData): Promise<FormState> {
   const user = await requireUser();
@@ -38,4 +39,18 @@ export async function changePasswordAction(_: FormState, formData: FormData): Pr
     return { ok: false, message: "We couldn't change your password. Please try again." };
   }
   return { ok: true, message: "Password changed." };
+}
+
+/** Turns notification emails on or off for the signed-in person (D-039). */
+export async function emailNotificationsAction(_: FormState, formData: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const parsed = emailNotificationsSchema.safeParse(formObject(formData));
+  if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
+  try {
+    await setEmailNotifications(user.id, parsed.data.enabled);
+  } catch (error) {
+    return { ok: false, message: toUserMessage(error) };
+  }
+  revalidatePath("/app/account");
+  return { ok: true, message: parsed.data.enabled ? "Emails are on." : "Emails are off." };
 }
