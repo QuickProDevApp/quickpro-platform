@@ -544,3 +544,26 @@ wide screens show seven columns.
   can come later.
 - No database change. The pages read through row level security and the
   existing `job_people` function, which only the business and staff can call.
+
+## D-034 Job checklists
+
+A job can have a checklist of what has to be done on site, up to 30 items.
+Owners, admins and dispatchers add and remove items while the job is open or
+filled. The booked crew (workers who accepted the shift) see it on their job
+page and can check items off, or undo, once they've checked in, until two
+hours after the shift ends. Dispatchers can check items off too (for example
+after a walk-through) until the job is marked complete. Each item records who
+checked it and when, with an optional short note.
+
+- **Who sees what:** the business and staff see who checked each item; the
+  crew see "Done by you" or just "Done". Applicants and other workers see
+  nothing.
+- **Notifications:** when the crew check off the last item, the business's
+  dispatchers get an in-app notification, once per job.
+- **Nothing is deleted.** Removing an item marks it removed and keeps the row,
+  so the record of what was asked for stays. Completed and cancelled jobs'
+  checklists are read-only.
+- **Not a gate:** an unfinished checklist doesn't block marking the job
+  complete; the business decides.
+- **Not yet:** photo proof of completion (needs private storage for job
+  photos), reusable checklist templates, and reordering items.

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { JobChecklist } from "@/components/app/job-checklist";
 import { JobPeople } from "@/components/app/job-people";
 import { JobThread } from "@/components/app/job-thread";
 import { JobFacts, SiteFacts } from "@/components/app/job-summary";
@@ -10,7 +11,13 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { ActionForm, FormMessage, Input, SubmitButton } from "@/components/ui/form";
 import { formatDateTime } from "@/lib/labels";
 import { uuid } from "@/lib/schemas";
+import {
+  addChecklistItemAction,
+  removeChecklistItemAction,
+  setChecklistItemDoneAction,
+} from "@/server/actions/checklists";
 import { requireMembership } from "@/server/actions/guards";
+import { listJobChecklist } from "@/server/data/checklists";
 import { getJob, getJobSite, listJobPeople } from "@/server/data/jobs";
 import { getJobWorkerRatings } from "@/server/data/reviews";
 import { getJobThread } from "@/server/data/messages";
@@ -39,11 +46,12 @@ export default async function OrganizationJobPage({
   const job = await getJob(user.id, jobId);
   if (!job || job.organization_id !== org.id) notFound();
   const dispatcher = canDispatch(org.my_role);
-  const [site, people, messages, ratings] = await Promise.all([
+  const [site, people, messages, ratings, checklist] = await Promise.all([
     getJobSite(user.id, job.id),
     listJobPeople(user.id, job.id),
     getJobThread(user.id, job.id),
     dispatcher ? getJobWorkerRatings(user.id, job.id) : undefined,
+    listJobChecklist(user.id, job.id),
   ]);
   const posted = (await searchParams).posted === "1";
 
@@ -58,7 +66,10 @@ export default async function OrganizationJobPage({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           {job.service_request_id ? (
-            <Link href={`/app/org/${org.id}/requests/${job.service_request_id}`} className="text-sm text-muted hover:text-ink">
+            <Link
+              href={`/app/org/${org.id}/requests/${job.service_request_id}`}
+              className="text-sm text-muted hover:text-ink"
+            >
               ← Project: {job.project_title ?? "customer request"}
             </Link>
           ) : (
@@ -71,7 +82,8 @@ export default async function OrganizationJobPage({
             <JobStatusBadge job={job} />
           </div>
           <p className="text-sm text-muted">
-            {job.accepted_count} of {job.headcount} booked · {job.offered_count} offered · {job.applicant_count} new applicants
+            {job.accepted_count} of {job.headcount} booked · {job.offered_count} offered · {job.applicant_count} new
+            applicants
           </p>
         </div>
         {canChange ? (
@@ -88,7 +100,9 @@ export default async function OrganizationJobPage({
         </FormMessage>
       ) : null}
       {job.status === "cancelled" ? <FormMessage tone="bad">Cancelled: {job.cancel_reason}</FormMessage> : null}
-      {job.status === "completed" ? <FormMessage tone="ok">Marked complete {formatDateTime(job.completed_at)}.</FormMessage> : null}
+      {job.status === "completed" ? (
+        <FormMessage tone="ok">Marked complete {formatDateTime(job.completed_at)}.</FormMessage>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
         <div className="space-y-6">
@@ -103,6 +117,17 @@ export default async function OrganizationJobPage({
             ratings={ratings}
             shiftHref={(id) => `/app/org/${org.id}/jobs/${job.id}/shifts/${id}`}
           />
+          <JobChecklist
+            items={checklist}
+            viewer="business"
+            currentUserId={user.id}
+            canEdit={dispatcher && live}
+            canCheck={dispatcher && live}
+            lockedReason={live ? undefined : "The checklist is closed because the job is completed or cancelled."}
+            addAction={addChecklistItemAction.bind(null, job.id)}
+            removeAction={removeChecklistItemAction}
+            doneAction={setChecklistItemDoneAction}
+          />
           <JobThread
             messages={messages}
             currentUserId={user.id}
@@ -115,7 +140,9 @@ export default async function OrganizationJobPage({
             <CardHeader title="Details" />
             <CardBody className="space-y-4">
               <JobFacts job={job} />
-              {job.description ? <p className="border-t border-line pt-4 text-sm whitespace-pre-line text-ink-soft">{job.description}</p> : null}
+              {job.description ? (
+                <p className="border-t border-line pt-4 text-sm whitespace-pre-line text-ink-soft">{job.description}</p>
+              ) : null}
             </CardBody>
           </Card>
           {site ? (
@@ -128,7 +155,10 @@ export default async function OrganizationJobPage({
           ) : null}
           {canComplete ? (
             <Card>
-              <CardHeader title="Finish" description="Marks every booked worker's assignment complete. Unanswered offers lapse." />
+              <CardHeader
+                title="Finish"
+                description="Marks every booked worker's assignment complete. Unanswered offers lapse."
+              />
               <CardBody>
                 <ActionForm action={completeJobAction.bind(null, org.id, job.id)}>
                   <SubmitButton pendingLabel="Saving…">Mark job complete</SubmitButton>
@@ -141,7 +171,13 @@ export default async function OrganizationJobPage({
               <CardHeader title="Cancel job" description="Cancels every offer and booking. Workers see your reason." />
               <CardBody>
                 <ActionForm action={cancelJobAction.bind(null, org.id, job.id)}>
-                  <Input name="reason" placeholder="Reason" aria-label="Reason for cancelling" required maxLength={1000} />
+                  <Input
+                    name="reason"
+                    placeholder="Reason"
+                    aria-label="Reason for cancelling"
+                    required
+                    maxLength={1000}
+                  />
                   <SubmitButton variant="danger" pendingLabel="Cancelling…">
                     Cancel job
                   </SubmitButton>

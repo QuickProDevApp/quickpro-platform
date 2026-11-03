@@ -49,7 +49,9 @@ Not built yet:
 
 ## Phase 3: Job management and crew coordination (modules D, E)
 
-- Contractor jobs: site, schedule, crew, checklist.
+- Contractor jobs: site, schedule, crew, checklist. Checklists built (D-034):
+  the business lists what has to be done and the booked crew check items off
+  after check-in.
 - Day-of: check-in/check-out with timestamps, notes and photos as proof of
   completion (private storage, same file rules as Phase 1).
 - Messaging threads per job and per shift, with staff moderation.

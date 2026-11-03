@@ -564,3 +564,19 @@ export const publicProfileSchema = z.object({
 
 /** Public directory filters: slugs, or nothing. */
 export const publicSlug = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/).max(60);
+
+// Job checklists (D-034).
+export const checklistItemSchema = z.object({
+  label: z.string().trim().min(1, "Describe the item.").max(200, "Keep it to 200 characters."),
+});
+
+export const checklistDoneSchema = z.object({
+  itemId: uuid,
+  done: z.enum(["true", "false"]).transform((v) => v === "true"),
+  note: z
+    .string()
+    .trim()
+    .max(500, "Keep the note to 500 characters.")
+    .optional()
+    .transform((v) => v || null),
+});

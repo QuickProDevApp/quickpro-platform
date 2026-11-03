@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { JobChecklist } from "@/components/app/job-checklist";
 import { JobFacts, SiteFacts } from "@/components/app/job-summary";
 import { JobThread } from "@/components/app/job-thread";
 import { WorkTrust } from "@/components/app/work-trust";
@@ -10,6 +11,8 @@ import { ActionForm, Field, FormMessage, Input, SubmitButton, Textarea } from "@
 import { formatCents, formatDateTime, formatShift } from "@/lib/labels";
 import { uuid } from "@/lib/schemas";
 import { requireUser } from "@/server/auth/session";
+import { setChecklistItemDoneAction } from "@/server/actions/checklists";
+import { listJobChecklist } from "@/server/data/checklists";
 import { getJobForWorker, getJobSite } from "@/server/data/jobs";
 import { getJobThread } from "@/server/data/messages";
 import { postJobMessageAction } from "@/app/app/messages/actions";
@@ -35,21 +38,33 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
   if (!job || !profile) notFound();
   const booked = job.assignment_status === "accepted" || job.assignment_status === "completed";
   const inThread = booked || job.assignment_status === "offered";
-  const [site, messages] = await Promise.all([
+  const [site, messages, checklist] = await Promise.all([
     booked ? getJobSite(user.id, job.id) : null,
     inThread ? getJobThread(user.id, job.id) : null,
+    booked ? listJobChecklist(user.id, job.id) : [],
   ]);
 
   const now = new Date();
   const upcoming = job.status === "open" && job.starts_at > now;
-  const canApply = upcoming && profile.status === "approved" && (!job.application_status || job.application_status === "withdrawn") && !job.assignment_status;
+  const canApply =
+    upcoming &&
+    profile.status === "approved" &&
+    (!job.application_status || job.application_status === "withdrawn") &&
+    !job.assignment_status;
   const accepted = job.assignment_status === "accepted";
-  const checkInOpen = accepted && !job.checked_in_at && now.getTime() >= job.starts_at.getTime() - HOUR && now < job.ends_at;
+  const jobLive = job.status === "open" || job.status === "filled";
+  // The database allows ticking from check-in until two hours after the end.
+  const canCheck = accepted && !!job.checked_in_at && jobLive && now.getTime() <= job.ends_at.getTime() + 2 * HOUR;
+  const checkInOpen =
+    accepted && !job.checked_in_at && now.getTime() >= job.starts_at.getTime() - HOUR && now < job.ends_at;
 
   return (
     <div className="space-y-6">
       <div>
-        <Link href={job.application_status || job.assignment_status ? "/app/worker/my-jobs" : "/app/worker/jobs"} className="text-sm text-muted hover:text-ink">
+        <Link
+          href={job.application_status || job.assignment_status ? "/app/worker/my-jobs" : "/app/worker/jobs"}
+          className="text-sm text-muted hover:text-ink"
+        >
           ← Back
         </Link>
         <div className="mt-1 flex flex-wrap items-center gap-3">
@@ -69,13 +84,18 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
         </p>
       </div>
 
-      {job.status === "cancelled" ? <FormMessage tone="bad">The business cancelled this job: {job.cancel_reason}</FormMessage> : null}
+      {job.status === "cancelled" ? (
+        <FormMessage tone="bad">The business cancelled this job: {job.cancel_reason}</FormMessage>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
         <div className="space-y-6">
           {job.assignment_status === "offered" && upcoming ? (
             <Card>
-              <CardHeader title="You've been offered this job" description="Accepting books you for the whole shift. The address and on-site contact are shared once you accept." />
+              <CardHeader
+                title="You've been offered this job"
+                description="Accepting books you for the whole shift. The address and on-site contact are shared once you accept."
+              />
               <CardBody>
                 <ActionForm action={respondAction} className="flex flex-wrap gap-2">
                   <input type="hidden" name="assignmentId" value={job.assignment_id!} />
@@ -117,14 +137,32 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
             </Card>
           ) : null}
 
+          {booked && checklist.length ? (
+            <JobChecklist
+              items={checklist}
+              viewer="crew"
+              currentUserId={user.id}
+              canEdit={false}
+              canCheck={canCheck}
+              lockedReason={
+                accepted && !job.checked_in_at && jobLive
+                  ? "You can check items off once you've checked in."
+                  : "This checklist is closed."
+              }
+              doneAction={setChecklistItemDoneAction}
+            />
+          ) : null}
+
           <Card>
             <CardHeader title="About the job" />
             <CardBody className="space-y-4">
               <JobFacts job={job} />
-              {job.description ? <p className="border-t border-line pt-4 text-sm whitespace-pre-line text-ink-soft">{job.description}</p> : null}
+              {job.description ? (
+                <p className="border-t border-line pt-4 text-sm whitespace-pre-line text-ink-soft">{job.description}</p>
+              ) : null}
               <p className="text-xs text-muted">
-                {job.organization_name ?? "The business"} engages you directly on the basis above. QuickPro connects you with
-                the business and is not your employer.
+                {job.organization_name ?? "The business"} engages you directly on the basis above. QuickPro connects you
+                with the business and is not your employer.
               </p>
             </CardBody>
           </Card>
@@ -154,11 +192,19 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
         <div className={canApply ? "order-first space-y-6 lg:order-none" : "space-y-6"}>
           {canApply ? (
             <Card>
-              <CardHeader title="Apply" description="The business sees your name, headline, skills and home town. Your phone number is shared only if you accept an offer." />
+              <CardHeader
+                title="Apply"
+                description="The business sees your name, headline, skills and home town. Your phone number is shared only if you accept an offer."
+              />
               <CardBody>
                 <ActionForm action={applyAction.bind(null, job.id)}>
                   <Field name="note" label="Note to the business (optional)">
-                    <Textarea name="note" rows={3} maxLength={1000} placeholder="Relevant experience, equipment you can bring…" />
+                    <Textarea
+                      name="note"
+                      rows={3}
+                      maxLength={1000}
+                      placeholder="Relevant experience, equipment you can bring…"
+                    />
                   </Field>
                   <SubmitButton pendingLabel="Applying…">Apply for this job</SubmitButton>
                 </ActionForm>
@@ -171,7 +217,10 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
 
           {job.application_status === "applied" && !job.assignment_status ? (
             <Card>
-              <CardHeader title="You applied" description="The business will offer you the job if it's a fit. Check My jobs for offers." />
+              <CardHeader
+                title="You applied"
+                description="The business will offer you the job if it's a fit. Check My jobs for offers."
+              />
               <CardBody>
                 <ActionForm action={withdrawAction}>
                   <input type="hidden" name="applicationId" value={job.application_id!} />
@@ -185,11 +234,20 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
 
           {accepted && now < job.ends_at ? (
             <Card>
-              <CardHeader title="Can't make it?" description="Let the business know as early as you can. The spot opens for someone else." />
+              <CardHeader
+                title="Can't make it?"
+                description="Let the business know as early as you can. The spot opens for someone else."
+              />
               <CardBody>
                 <ActionForm action={cancelMyAssignmentAction}>
                   <input type="hidden" name="assignmentId" value={job.assignment_id!} />
-                  <Input name="reason" placeholder="Reason (the business will see it)" aria-label="Reason" required maxLength={1000} />
+                  <Input
+                    name="reason"
+                    placeholder="Reason (the business will see it)"
+                    aria-label="Reason"
+                    required
+                    maxLength={1000}
+                  />
                   <SubmitButton variant="danger" pendingLabel="Cancelling…">
                     Cancel my booking
                   </SubmitButton>
