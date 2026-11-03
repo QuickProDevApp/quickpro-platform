@@ -45,7 +45,9 @@ Not built yet:
 - Notifications: email (and SMS later) for applications, offers and changes,
   through a real provider. Until then the screens say that nothing is sent.
 - Admin metrics beyond counts: fill rate, time to fill. (Built with D-030.)
-- Travel distance and availability matching (towns and skills only for now).
+- Travel distance matching (towns only for now). Availability matching is
+  built (D-037): workers, businesses and staff see whether a shift sits inside
+  the worker's weekly hours and whether it clashes with a booked shift.
 
 ## Phase 3: Job management and crew coordination (modules D, E)
 

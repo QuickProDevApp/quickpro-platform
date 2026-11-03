@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AvailabilityFit } from "@/components/app/availability-fit";
 import { JobPeople } from "@/components/app/job-people";
 import { JobFacts, SiteFacts } from "@/components/app/job-summary";
 import { JobThread } from "@/components/app/job-thread";
@@ -56,7 +57,7 @@ export default async function AdminJobPage({ params }: { params: Promise<{ jobId
             <Card>
               <CardHeader
                 title="Match a worker"
-                description="Approved workers, those in the job's town and with the most matching skills first. The worker still has to accept."
+                description="Approved workers: in the job's town first, then free at that time and within their weekly availability, then by matching skills. The worker still has to accept."
               />
               <CardBody>
                 {candidates.filter((c) => !involved.has(c.user_id)).length === 0 ? (
@@ -76,6 +77,13 @@ export default async function AdminJobPage({ params }: { params: Promise<{ jobId
                                 .filter(Boolean)
                                 .join(" · ")}
                             </p>
+                            <div className="mt-1" data-testid="candidate-fit">
+                              <AvailabilityFit
+                                fits={c.fits_availability}
+                                bookedElsewhere={c.booked_elsewhere}
+                                whose="their"
+                              />
+                            </div>
                           </div>
                           <ActionForm action={staffOfferAction.bind(null, job.id)} className="contents">
                             <input type="hidden" name="workerId" value={c.user_id} />
