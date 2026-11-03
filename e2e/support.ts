@@ -450,3 +450,22 @@ export async function seedProjectReviews(o: {
     await sql.end();
   }
 }
+
+/** The worker applies, the business offers, and the worker accepts, through the workflow functions. Returns the shift id. */
+export async function seedBookedShift(ownerId: string, workerId: string, jobId: string) {
+  const sql = platformSql();
+  const as = <T>(userId: string, fn: (tx: TransactionSql) => Promise<T>) =>
+    sql.begin(async (tx) => {
+      await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: userId, role: "authenticated" })}, true)`;
+      await tx`set local role authenticated`;
+      return fn(tx);
+    }) as Promise<T>;
+  try {
+    await as(workerId, (tx) => tx`select public.apply_to_job(${jobId}, 'Available')`);
+    const [{ id }] = await as(ownerId, (tx) => tx<{ id: string }[]>`select public.offer_job(${jobId}, ${workerId}) as id`);
+    await as(workerId, (tx) => tx`select public.respond_to_offer(${id}, true)`);
+    return id;
+  } finally {
+    await sql.end();
+  }
+}
