@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { emailDeliveryEnabled } from "@/server/email";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JobChecklist } from "@/components/app/job-checklist";
@@ -101,7 +102,8 @@ export default async function OrganizationJobPage({
       {posted ? (
         <FormMessage tone="ok">
           Job posted. Approved workers can now find it and apply. You&apos;ll get a QuickPro notification when someone
-          applies; email and text alerts aren&apos;t available yet.
+          applies{emailDeliveryEnabled() ? ", and an email unless you turned emails off" : ""}. Text alerts aren&apos;t
+          available yet.
         </FormMessage>
       ) : null}
       {job.status === "cancelled" ? <FormMessage tone="bad">Cancelled: {job.cancel_reason}</FormMessage> : null}

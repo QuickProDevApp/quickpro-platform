@@ -203,7 +203,7 @@ export function SupportReplyForm({ action, reopens }: { action: Action; reopens:
 export function StaffSupportReplyForm({ action }: { action: Action }) {
   return (
     <ActionForm action={action} resetOnSuccess>
-      <Field name="body" id="staff-reply" label="Reply" hint="The requester is notified in QuickPro. Nothing is emailed yet.">
+      <Field name="body" id="staff-reply" label="Reply" hint="The requester gets a QuickPro notification.">
         <Textarea id="staff-reply" name="body" rows={4} maxLength={4000} required />
       </Field>
       <Checkbox name="internal" label="Internal note: only QuickPro staff will see it" />

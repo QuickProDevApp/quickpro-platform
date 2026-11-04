@@ -1,6 +1,9 @@
 import "server-only";
 import { z } from "zod";
 
+/** An optional variable; an empty value (as copied from .env.example) counts as unset. */
+const optional = <T extends z.ZodType>(type: T) => z.preprocess((v) => (v === "" ? undefined : v), type.optional());
+
 const schema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(20),
@@ -11,6 +14,14 @@ const schema = z.object({
   FILE_STORAGE_DRIVER: z.enum(["supabase", "local"]).default("supabase"),
   LOCAL_STORAGE_DIR: z.string().default(".data/uploads"),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  // Notification email (D-039). none: queue only; log: write files under
+  // EMAIL_LOG_DIR (development); smtp: send through SMTP_URL.
+  EMAIL_DRIVER: z.enum(["none", "log", "smtp"]).default("none"),
+  SMTP_URL: optional(z.string().regex(/^smtps?:\/\//, "Use smtp:// or smtps://")),
+  EMAIL_FROM: z.string().min(3).default("QuickPro <notifications@quickpro.example>"),
+  EMAIL_LOG_DIR: z.string().default(".data/outbox"),
+  // Lets a scheduler call /api/cron/deliver-emails. At least 32 characters.
+  CRON_SECRET: optional(z.string().min(32)),
 });
 
 export type Env = z.infer<typeof schema>;
@@ -31,6 +42,12 @@ export function env(): Env {
   }
   if (value.FILE_STORAGE_DRIVER === "supabase" && !value.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error("SUPABASE_SERVICE_ROLE_KEY is required when FILE_STORAGE_DRIVER=supabase.");
+  }
+  if (value.EMAIL_DRIVER === "log" && value.NODE_ENV === "production") {
+    throw new Error("EMAIL_DRIVER=log is for development only. Use smtp (or none) in production.");
+  }
+  if (value.EMAIL_DRIVER === "smtp" && !value.SMTP_URL) {
+    throw new Error("SMTP_URL is required when EMAIL_DRIVER=smtp.");
   }
   cached = value;
   return value;

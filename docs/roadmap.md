@@ -42,8 +42,8 @@ Built:
 Not built yet:
 
 - Invitation emails. Invitations are links the inviter sends themselves.
-- Notifications: email (and SMS later) for applications, offers and changes,
-  through a real provider. Until then the screens say that nothing is sent.
+- Notifications by text message (SMS). Email is built (D-039); text needs a
+  paid provider and approval.
 - Admin metrics beyond counts: fill rate, time to fill. (Built with D-030.)
 - Travel distance matching (towns only for now). Availability matching is
   built (D-037): workers, businesses and staff see whether a shift sits inside

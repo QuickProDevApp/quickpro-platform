@@ -25,7 +25,7 @@ const SIDE_LABEL: Record<ThreadMessage["author_side"], string> = {
 
 /**
  * A job's message thread: the business, workers offered or booked, and staff.
- * People get an in-app notification for new messages; nothing is emailed.
+ * People get a notification for new messages, also emailed when email is set up (D-039).
  */
 export function JobThread({
   messages,

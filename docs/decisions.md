@@ -691,3 +691,41 @@ it deletes and drops nothing.
 
 - **Not yet:** overtime rules, payroll provider integrations, and the
   worker signing off on hours (they question them instead).
+
+## D-039 Notification emails through an outbox and a narrow mailer role
+
+Every in-app notification is now also emailed to the person's sign-in
+address, with a link back to the page it's about and a link to turn emails
+off. Nothing about who is notified changed: the database functions that
+already create notifications decide that.
+
+- **Outbox:** `notifications` gains an email state (pending, sending, sent,
+  skipped, failed). A trigger sets new rows to pending, or skipped if the
+  person turned emails off. Emails older than a day when the mailer first
+  sees them are skipped, so connecting a provider later doesn't send a
+  backlog. Failures are retried up to five attempts; a send that crashed is
+  claimed again after ten minutes.
+- **Mailer role:** the app drains the outbox as `quickpro_mailer`, a no-login
+  role the server switches to per transaction (`withMailer`), like it does
+  for `authenticated`. It can only call `app.claim_email_batch` and
+  `app.finish_email`; it can't read tables or use people's functions, and
+  signed-in people can't call those two. Tests cover both sides.
+- **Delivery:** after each signed-in request's response (Next.js `after()`),
+  the server sends what's queued, one drain at a time per process. A
+  scheduler can also call `POST /api/cron/deliver-emails` with
+  `Authorization: Bearer $CRON_SECRET`; without the secret the route is off.
+  `EMAIL_DRIVER` is `none` (default: queue only, screens don't promise
+  email), `log` (development: files under `EMAIL_LOG_DIR`), or `smtp`
+  (`SMTP_URL`, through nodemailer). CI sends real SMTP to the local Supabase
+  inbox and the browser test reads it from there.
+- **Setting:** Account has an email on/off switch (`set_email_notifications`,
+  audited). Turning it off also skips what's still waiting. When no provider
+  is configured the card says QuickPro isn't sending email yet.
+
+Production needs a mail provider (SMTP credentials) before any of this is
+sent, which may cost money, so it isn't configured. Text message alerts
+aren't built: they need a paid SMS provider and approval.
+
+Migration `20261114000100_email_notifications` adds columns, a table, a role
+and functions; it deletes and drops nothing.
+

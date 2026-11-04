@@ -1,7 +1,7 @@
 import "server-only";
 import postgres, { type Sql } from "postgres";
 import { env } from "@/server/env";
-import { runAsAnon, runAsUser, type Tx } from "./rls";
+import { runAsAnon, runAsMailer, runAsUser, type Tx } from "./rls";
 
 const globalForDb = globalThis as unknown as { quickproSql?: Sql };
 
@@ -34,6 +34,14 @@ export function withUser<T>(userId: string, fn: (tx: Tx) => Promise<T>): Promise
  */
 export function withAnon<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
   return runAsAnon(sql(), fn);
+}
+
+/**
+ * For the notification mailer only (src/server/email): runs as a role that
+ * can claim queued emails and record whether they were sent, nothing else.
+ */
+export function withMailer<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
+  return runAsMailer(sql(), fn);
 }
 
 export type { Tx };

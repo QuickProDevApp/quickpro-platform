@@ -3,15 +3,18 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { ActionForm, Field, FormMessage, Input, SubmitButton } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui/page-header";
 import { requireUser } from "@/server/auth/session";
+import { getEmailNotificationsEnabled } from "@/server/data/notifications";
 import { getWorkerProfile } from "@/server/data/workers";
-import { changePasswordAction, updateAccountAction } from "./actions";
+import { emailDeliveryEnabled } from "@/server/email";
+import { changePasswordAction, emailNotificationsAction, updateAccountAction } from "./actions";
 
 export const metadata: Metadata = { title: "Account" };
 
 export default async function AccountPage({ searchParams }: { searchParams: Promise<{ password?: string }> }) {
   const { password } = await searchParams;
   const user = await requireUser();
-  const worker = await getWorkerProfile(user.id);
+  const [worker, emailsOn] = await Promise.all([getWorkerProfile(user.id), getEmailNotificationsEnabled(user.id)]);
+  const delivering = emailDeliveryEnabled();
   return (
     <>
       <PageHeader title="Your account" />
@@ -40,6 +43,39 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             </Field>
             <SubmitButton>Save</SubmitButton>
           </ActionForm>
+        </CardBody>
+      </Card>
+      <Card>
+        <CardHeader
+          title="Email notifications"
+          description="A copy of each QuickPro notification, sent to your sign-in email: offers, bookings, messages, quotes and hours."
+        />
+        <CardBody>
+          <p className="text-sm" data-testid="email-notifications" data-state={emailsOn ? "on" : "off"}>
+            {emailsOn ? (
+              <>
+                <span className="font-semibold text-ink">On.</span> We email {user.email}.
+              </>
+            ) : (
+              <>
+                <span className="font-semibold text-ink">Off.</span> You&apos;ll still see everything under
+                Notifications in QuickPro.
+              </>
+            )}
+          </p>
+          {!delivering ? (
+            <p className="mt-2 text-sm text-muted">
+              QuickPro isn&apos;t sending email yet. Your choice applies once it does; until then notifications are
+              in the app only.
+            </p>
+          ) : null}
+          <ActionForm action={emailNotificationsAction} className="mt-4">
+            <input type="hidden" name="enabled" value={emailsOn ? "off" : "on"} />
+            <SubmitButton variant="secondary" pendingLabel="Saving…">
+              {emailsOn ? "Turn emails off" : "Turn emails on"}
+            </SubmitButton>
+          </ActionForm>
+          <p className="mt-3 text-xs text-muted">Text message alerts are planned, not live yet.</p>
         </CardBody>
       </Card>
       <Card>

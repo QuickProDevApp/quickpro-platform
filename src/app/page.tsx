@@ -74,7 +74,7 @@ const features: Feature[] = [
     label: "Messaging",
     title: "One thread per job",
     body: "Parking, gear, timing: the business, its booked workers and QuickPro staff talk in one place, and nobody else can read it.",
-    points: ["Booked and offered workers only", "In-app notifications for new messages", "Staff can hide a message without deleting the record", "Email and text alerts are planned, not live yet"],
+    points: ["Booked and offered workers only", "In-app notifications for new messages", "Staff can hide a message without deleting the record", "Text message alerts are planned, not live yet"],
     image: { ...shots.thread, alt: "A job's message thread between the business and two booked workers" },
   },
   {
