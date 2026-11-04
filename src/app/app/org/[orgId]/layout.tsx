@@ -30,6 +30,7 @@ export default async function OrganizationLayout({
           { href: `${base}/contractors`, label: "Contractors" },
         ]),
     { href: `${base}/invoices`, label: "Invoices" },
+    ...(org.kind === "contractor" ? [{ href: `${base}/payments`, label: "Card payments" }] : []),
     { href: `${base}/reviews`, label: "Reviews" },
     { href: `${base}/disputes`, label: "Disputes" },
     { href: `${base}/documents`, label: "Documents" },

@@ -44,3 +44,15 @@ export async function runAsMailer<T>(sql: Sql, fn: (tx: Tx) => Promise<T>): Prom
     return fn(tx);
   }) as Promise<T>;
 }
+
+/**
+ * Runs `fn` as the `quickpro_payments` role, which can only call the
+ * functions that record what Stripe reported (D-040).
+ */
+export async function runAsPayments<T>(sql: Sql, fn: (tx: Tx) => Promise<T>): Promise<T> {
+  return sql.begin(async (tx) => {
+    await tx`select set_config('request.jwt.claims', '{}', true)`;
+    await tx`set local role quickpro_payments`;
+    return fn(tx);
+  }) as Promise<T>;
+}

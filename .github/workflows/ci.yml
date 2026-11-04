@@ -71,6 +71,10 @@ jobs:
             echo "SMTP_URL=smtp://127.0.0.1:54325"
             echo "EMAIL_FROM='QuickPro <notifications@quickpro.test>'"
             echo "CRON_SECRET=$(openssl rand -hex 24)"
+            # Card payments run against the local Stripe stand-in (D-040).
+            echo "STRIPE_SECRET_KEY=sk_test_ci_stand_in_key"
+            echo "STRIPE_WEBHOOK_SECRET=whsec_$(openssl rand -hex 24)"
+            echo "STRIPE_API_BASE=http://127.0.0.1:12111"
             echo "STORAGE_TEST_SUPABASE_URL=$API_URL"
             echo "STORAGE_TEST_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
             echo "STORAGE_TEST_ANON_KEY=$ANON_KEY"
@@ -84,10 +88,11 @@ jobs:
         run: |
           set -a && . ./.env.local && set +a
           pnpm start > next.log 2>&1 &
-          npx --yes wait-on@8.0.3 --timeout 60000 http://localhost:3000
+          node e2e/stripe-stand-in.mjs > stripe.log 2>&1 &
+          npx --yes wait-on@8.0.3 --timeout 60000 http://localhost:3000 tcp:127.0.0.1:12111
           pnpm test:e2e
       - if: failure()
-        run: tail -100 next.log || true
+        run: tail -100 next.log stripe.log || true
       - if: failure()
         uses: actions/upload-artifact@v4
         with:

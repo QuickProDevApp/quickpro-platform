@@ -729,3 +729,51 @@ aren't built: they need a paid SMS provider and approval.
 Migration `20261114000100_email_notifications` adds columns, a table, a role
 and functions; it deletes and drops nothing.
 
+## D-040 Card payments on invoices through Stripe Connect, test mode only
+
+Invoices (D-029) can now be paid by card. Asked for in test mode with no
+real charges, so the app refuses live Stripe keys (`sk_live_`/`rk_live_`)
+and ignores live-mode webhook events.
+
+- **Model:** Stripe Connect with Express accounts. A contractor's owners
+  and admins open Stripe's hosted onboarding from **Card payments**; Stripe
+  verifies the business and bank account on its own pages. The payer's
+  owners, admins and dispatchers pay an issued invoice on Stripe Checkout.
+  The charge is a destination charge `on_behalf_of` the contractor, so the
+  contractor is the settlement merchant and gets the money on Stripe's
+  payout schedule. QuickPro never sees card or bank numbers and takes no
+  application fee. Workers are still never paid here (D-009).
+- **Confirmation:** an invoice is marked paid only by a signed Stripe
+  webhook (`checkout.session.completed` with `payment_status = paid`, for the
+  amount that was started), never by the browser coming back. Events are
+  recorded once in `stripe_events`; a redelivery is a no-op. A payment that
+  arrives after the invoice was voided or marked paid leaves the invoice
+  alone and tells the contractor to refund it in Stripe.
+  `account.updated` keeps the connected account's state current.
+- **Database:** `stripe_accounts`, `invoice_card_payments` and
+  `stripe_events`, with RLS, column grants (members see the account's state,
+  not its Stripe id) and audit triggers. The server records what Stripe
+  reported as `quickpro_payments`, a no-login role that can only call
+  `app.payments_save_account`, `app.payments_open_checkout` and
+  `app.payments_handle_event`, like the mailer role in D-039. Who may set up
+  payouts or pay is decided by `payout_setup_account` and
+  `card_payment_target`.
+- **Configuration:** `STRIPE_SECRET_KEY` (test key), `STRIPE_WEBHOOK_SECRET`,
+  optionally `STRIPE_CONNECT_WEBHOOK_SECRET`. Without a key the screens say
+  card payments aren't available and invoices work as before.
+- **Testing:** database tests sign events with Stripe's own signing scheme
+  and check signatures, tampering, live events, idempotency, amounts and
+  permissions. The browser test runs against `e2e/stripe-stand-in.mjs`, a
+  local stand-in that answers the Stripe API calls the app makes and sends
+  signed webhooks; it has not been run against Stripe's real test mode,
+  which needs a Stripe test key and a webhook endpoint in a test-mode
+  Stripe account.
+
+Still to decide before live payments: whether QuickPro charges a fee, who
+bears Stripe's processing fee (with destination charges it falls on the
+platform unless an application fee covers it), ACH, and refunds and
+disputes from inside the app.
+
+Migration `20261115000100_card_payments` adds a type, tables, a role and
+functions; it deletes and drops nothing.
+

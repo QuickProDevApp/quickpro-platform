@@ -4,12 +4,16 @@ import { notFound } from "next/navigation";
 import { InvoiceEditor } from "@/components/app/invoice-editor";
 import { InvoiceDocument, InvoiceStatusBadge, PAYMENT_METHOD_LABEL } from "@/components/app/invoices";
 import { PrintButton } from "@/components/app/print-button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { ActionForm, Field, FormMessage, Input, Select, SubmitButton, Textarea } from "@/components/ui/form";
 import { formatCents, formatDate, formatDateTime } from "@/lib/labels";
 import { PAYMENT_METHODS, uuid } from "@/lib/schemas";
 import { requireMembership } from "@/server/actions/guards";
 import { recordPaymentAction, saveInvoiceAction, voidInvoiceAction } from "@/server/actions/invoices";
+import { payInvoiceByCardAction } from "@/server/actions/payments";
+import { emailDeliveryEnabled } from "@/server/email";
+import { cardPaymentsAvailable, getInvoiceCardInfo } from "@/server/payments";
 import { getInvoice } from "@/server/data/invoices";
 import { canDispatch } from "@/server/data/organizations";
 
@@ -20,7 +24,7 @@ export default async function OrganizationInvoicePage({
   searchParams,
 }: {
   params: Promise<{ orgId: string; invoiceId: string }>;
-  searchParams: Promise<{ issued?: string }>;
+  searchParams: Promise<{ issued?: string; card?: string }>;
 }) {
   const { orgId, invoiceId } = await params;
   const { user, org } = await requireMembership(orgId);
@@ -29,7 +33,10 @@ export default async function OrganizationInvoicePage({
   if (!invoice || (invoice.issuer_org_id !== org.id && invoice.recipient_org_id !== org.id)) notFound();
   const issuer = invoice.issuer_org_id === org.id;
   const dispatcher = canDispatch(org.my_role);
-  const justIssued = (await searchParams).issued === "1" && invoice.status === "issued";
+  const query = await searchParams;
+  const justIssued = query.issued === "1" && invoice.status === "issued";
+  const cardsOn = cardPaymentsAvailable();
+  const card = invoice.status === "draft" ? { accepts: false, payments: [] } : await getInvoiceCardInfo(user.id, invoice.id);
   const workHref =
     invoice.context === "subcontract" && !issuer
       ? `/app/org/${org.id}/requests/${invoice.request_id}/subcontracts/${invoice.subcontract_id}`
@@ -59,9 +66,20 @@ export default async function OrganizationInvoicePage({
 
       {justIssued ? (
         <FormMessage tone="ok">
-          Invoice {invoice.number} issued. {invoice.recipient_name} got a QuickPro notification and can open it now. Email
-          delivery isn&apos;t available yet, so you can also print it or save it as a PDF to send.
+          Invoice {invoice.number} issued. {invoice.recipient_name} got a QuickPro notification
+          {emailDeliveryEnabled() ? " and an email" : ""} and can open it now. You can also print it or save it as a PDF
+          to send.
         </FormMessage>
+      ) : null}
+      {query.card === "done" && !issuer ? (
+        <FormMessage tone={invoice.status === "paid" ? "ok" : "info"}>
+          {invoice.status === "paid"
+            ? "Payment received. Thank you."
+            : "Thanks. Stripe is confirming your payment; the invoice shows as paid as soon as it does. Reload in a moment."}
+        </FormMessage>
+      ) : null}
+      {query.card === "cancelled" && !issuer && invoice.status === "issued" ? (
+        <FormMessage tone="info">Card payment cancelled. Nothing was charged.</FormMessage>
       ) : null}
       {invoice.status === "void" ? (
         <FormMessage tone="info">
@@ -109,19 +127,44 @@ export default async function OrganizationInvoicePage({
                 <CardHeader title="Paid" />
                 <CardBody className="space-y-1 text-sm text-ink-soft">
                   <p>
-                    {formatDate(invoice.paid_on)} by {invoice.payment_method ? PAYMENT_METHOD_LABEL[invoice.payment_method] : "—"}
+                    {formatDate(invoice.paid_on)} by{" "}
+                    {invoice.payment_method === "card" && card.payments.some((p) => p.status === "paid")
+                      ? "card, through Stripe"
+                      : invoice.payment_method
+                        ? PAYMENT_METHOD_LABEL[invoice.payment_method]
+                        : "—"}
                   </p>
                   {invoice.payment_reference ? <p className="text-muted">Reference: {invoice.payment_reference}</p> : null}
                 </CardBody>
               </Card>
             ) : null}
+            {invoice.status === "issued" && !issuer && cardsOn && card.accepts ? (
+              <Card>
+                <CardHeader
+                  title="Pay by card"
+                  description={`On a secure Stripe page. ${invoice.issuer_name} gets the payment; QuickPro never sees your card.`}
+                />
+                <CardBody className="space-y-3">
+                  {dispatcher ? (
+                    <ActionForm action={payInvoiceByCardAction.bind(null, org.id, invoice.id)}>
+                      <SubmitButton pendingLabel="Opening Stripe…">
+                        Pay {formatCents(Number(invoice.total_cents))} by card
+                      </SubmitButton>
+                    </ActionForm>
+                  ) : (
+                    <p className="text-[13px] text-muted">Owners, admins and dispatchers on your team pay invoices.</p>
+                  )}
+                  <p className="text-xs text-muted">Test mode: use a Stripe test card. No real card is charged.</p>
+                </CardBody>
+              </Card>
+            ) : null}
             {invoice.status === "issued" && !issuer ? (
               <Card>
-                <CardHeader title="Paying this invoice" />
+                <CardHeader title={cardsOn && card.accepts ? "Or pay another way" : "Paying this invoice"} />
                 <CardBody className="space-y-2 text-[13px] text-ink-soft">
                   <p>
                     Pay {invoice.issuer_name} directly{invoice.payment_instructions ? " as the invoice describes" : " as you agreed"}.
-                    QuickPro doesn&apos;t process payments yet.
+                    {cardsOn && card.accepts ? "" : cardsOn ? ` ${invoice.issuer_name} doesn't take card payments through QuickPro yet.` : " QuickPro doesn't process payments yet."}
                   </p>
                   <p>{invoice.issuer_name} marks it paid when the money arrives, and you&apos;ll get a notification.</p>
                   <p>
@@ -133,6 +176,38 @@ export default async function OrganizationInvoicePage({
                   </p>
                 </CardBody>
               </Card>
+            ) : null}
+            {card.payments.length > 0 ? (
+              <Card>
+                <CardHeader title="Card payments" />
+                <CardBody>
+                  <ul className="space-y-2 text-[13px]" data-testid="card-payments">
+                    {card.payments.map((p) => (
+                      <li key={p.id} className="flex items-center justify-between gap-3" data-testid="card-payment" data-status={p.status}>
+                        <span className="text-ink-soft">
+                          {formatCents(Number(p.amount_cents))} · {formatDateTime(p.completed_at ?? p.created_at)}
+                        </span>
+                        {p.status === "paid" ? (
+                          <Badge dot tone="ok">Paid</Badge>
+                        ) : p.status === "expired" ? (
+                          <Badge>Not completed</Badge>
+                        ) : (
+                          <Badge dot tone="info">Started</Badge>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </CardBody>
+              </Card>
+            ) : null}
+            {invoice.status === "issued" && issuer && cardsOn && !card.accepts && dispatcher ? (
+              <p className="text-[13px] text-muted">
+                Want to be paid by card?{" "}
+                <Link href={`/app/org/${org.id}/payments`} className="font-medium text-brand hover:underline">
+                  Set up card payments
+                </Link>
+                .
+              </p>
             ) : null}
             {invoice.status === "issued" && issuer && dispatcher ? (
               <>
