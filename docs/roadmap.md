@@ -98,10 +98,12 @@ bills the customer and a subcontractor bills the prime, with line items,
 sales tax, per-business numbering, a printable invoice, and payment recorded
 by the issuer. No money moves through QuickPro yet.
 
-Card and bank payments only once the legal and operational model is settled
-(who is the merchant of record, fee structure, worker pay flows).
+Card payments in Stripe test mode are built (D-040): contractors connect a
+Stripe Express account, and the business they billed pays an issued invoice
+on Stripe Checkout. Live payments wait for approval and the remaining
+decisions (fee, who bears Stripe's processing fee, ACH, refunds in the app).
 
-- Stripe Connect accounts for contractors, test mode first.
+- Stripe Connect accounts for contractors, test mode first. (Built, D-040.)
 - Invoices from completed jobs; customer payment; payouts per Stripe's
   schedule (no "instant payout" claims unless enabled and configured).
 - Webhooks with signature verification and idempotency; ledger tables.

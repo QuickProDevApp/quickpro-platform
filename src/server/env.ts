@@ -22,6 +22,18 @@ const schema = z.object({
   EMAIL_LOG_DIR: z.string().default(".data/outbox"),
   // Lets a scheduler call /api/cron/deliver-emails. At least 32 characters.
   CRON_SECRET: optional(z.string().min(32)),
+  // Card payments through Stripe Connect (D-040). Test-mode keys only: a
+  // live key is refused until card payments are approved for launch.
+  STRIPE_SECRET_KEY: optional(
+    z
+      .string()
+      .refine((v) => !v.startsWith("sk_live_") && !v.startsWith("rk_live_"), "Live Stripe keys aren't allowed yet (D-040).")
+      .refine((v) => /^(sk|rk)_test_[A-Za-z0-9_]{10,}$/.test(v), "Use a Stripe test-mode secret key (sk_test_...)."),
+  ),
+  STRIPE_WEBHOOK_SECRET: optional(z.string().regex(/^whsec_[A-Za-z0-9_]{10,}$/, "Use the endpoint's signing secret (whsec_...).")),
+  STRIPE_CONNECT_WEBHOOK_SECRET: optional(z.string().regex(/^whsec_[A-Za-z0-9_]{10,}$/)),
+  // Tests only: send Stripe API calls to the local stand-in (e2e/stripe-stand-in.mjs).
+  STRIPE_API_BASE: optional(z.string().regex(/^http:\/\/(127\.0\.0\.1|localhost):[0-9]{2,5}$/, "Only a local test address.")),
 });
 
 export type Env = z.infer<typeof schema>;
@@ -48,6 +60,9 @@ export function env(): Env {
   }
   if (value.EMAIL_DRIVER === "smtp" && !value.SMTP_URL) {
     throw new Error("SMTP_URL is required when EMAIL_DRIVER=smtp.");
+  }
+  if (value.STRIPE_SECRET_KEY && !value.STRIPE_WEBHOOK_SECRET) {
+    throw new Error("STRIPE_WEBHOOK_SECRET is required with STRIPE_SECRET_KEY, or payments would never be confirmed.");
   }
   cached = value;
   return value;

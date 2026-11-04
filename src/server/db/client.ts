@@ -1,7 +1,7 @@
 import "server-only";
 import postgres, { type Sql } from "postgres";
 import { env } from "@/server/env";
-import { runAsAnon, runAsMailer, runAsUser, type Tx } from "./rls";
+import { runAsAnon, runAsMailer, runAsPayments, runAsUser, type Tx } from "./rls";
 
 const globalForDb = globalThis as unknown as { quickproSql?: Sql };
 
@@ -42,6 +42,11 @@ export function withAnon<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
  */
 export function withMailer<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
   return runAsMailer(sql(), fn);
+}
+
+/** For the Stripe integration only (src/server/payments): records what Stripe reported. */
+export function withPayments<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
+  return runAsPayments(sql(), fn);
 }
 
 export type { Tx };

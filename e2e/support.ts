@@ -564,3 +564,19 @@ export async function finishShift(jobId: string, assignmentId: string, o: { star
     await sql.end();
   }
 }
+
+/** Issues the contractor's invoice for an awarded project, through the real database functions. */
+export async function seedIssuedInvoice(contractorOwnerId: string, requestId: string) {
+  const sql = platformSql();
+  try {
+    return await sql.begin(async (tx) => {
+      await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: contractorOwnerId, role: "authenticated" })}, true)`;
+      await tx`set local role authenticated`;
+      const [{ id }] = await tx<{ id: string }[]>`select public.create_invoice('project'::public.work_context, ${requestId}) as id`;
+      await tx`select public.issue_invoice(${id})`;
+      return id;
+    });
+  } finally {
+    await sql.end();
+  }
+}
