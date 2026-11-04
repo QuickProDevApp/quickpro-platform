@@ -69,7 +69,7 @@ jobs:
             echo "FILE_STORAGE_DRIVER=supabase"
             echo "EMAIL_DRIVER=smtp"
             echo "SMTP_URL=smtp://127.0.0.1:54325"
-            echo "EMAIL_FROM=QuickPro <notifications@quickpro.test>"
+            echo "EMAIL_FROM='QuickPro <notifications@quickpro.test>'"
             echo "CRON_SECRET=$(openssl rand -hex 24)"
             echo "STORAGE_TEST_SUPABASE_URL=$API_URL"
             echo "STORAGE_TEST_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
