@@ -13,6 +13,7 @@ import {
 } from "@/components/app/project";
 import { listSharedProjectPhotos } from "@/server/data/job-photos";
 import { QuoteList } from "@/components/app/quote-list";
+import { CustomerQuoteQuestions } from "@/components/app/quote-questions";
 import { RequestFacts, RequestSiteFacts } from "@/components/app/request-summary";
 import { EndSubcontract, PrimeSubcontracts, ProjectBusinesses, SubcontractTerms } from "@/components/app/subcontracts";
 import { RatingSummary } from "@/components/app/trust";
@@ -33,6 +34,7 @@ import {
   getContractorQuote,
   getRequest,
   getProjectThread,
+  getQuoteThread,
   getRequestSite,
   isInvited,
   listInvitedContractorIds,
@@ -40,6 +42,7 @@ import {
   listProjectChecklists,
   listProjectEvents,
   listProjectJobs,
+  listQuoteThreads,
   listRequestQuotes,
   type ServiceRequest,
 } from "@/server/data/requests";
@@ -52,6 +55,7 @@ import {
 } from "@/server/data/subcontracts";
 import {
   acceptQuoteAction,
+  askContractorAction,
   cancelRequestAction,
   cancelSubcontractAction,
   completeSubcontractAction,
@@ -60,6 +64,7 @@ import {
   inviteContractorAction,
   offerSubcontractAction,
   postProjectMessageAction,
+  postQuoteQuestionAction,
   postSubcontractMessageAction,
   reopenWorkAction,
   reportWorkCompleteAction,
@@ -187,13 +192,17 @@ async function CustomerView({
   const dispatcher = canDispatch(org.my_role);
   const open = request.status === "open";
   const project = request.awarded_contractor_id !== null;
-  const [quotes, site, invited, directory, work] = await Promise.all([
+  const [quotes, site, invited, directory, work, threadList] = await Promise.all([
     listRequestQuotes(user.id, request.id),
     getRequestSite(user.id, request.id),
     open && dispatcher ? listInvitedContractorIds(user.id, request.id) : Promise.resolve([]),
     open && dispatcher ? contractorDirectory(user.id, org.id, request.category_id, null) : Promise.resolve([]),
     project ? loadProject(user.id, request.id) : Promise.resolve(null),
+    listQuoteThreads(user.id, request.id),
   ]);
+  const threads = await Promise.all(
+    threadList.slice(0, 30).map(async (t) => ({ ...t, messages: await getQuoteThread(user.id, request.id, t.contractor_id) })),
+  );
   const businesses = work?.subcontracts ?? [];
   const quotedIds = new Set(quotes.filter((q) => q.status !== "withdrawn").map((q) => q.contractor_id));
   const awarded = quotes.find((q) => q.status === "accepted");
@@ -206,6 +215,12 @@ async function CustomerView({
   const ranked = [...directory].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
 
   const reported = request.status === "awarded" && request.work_completed_at !== null;
+  // Contractors the customer can start a thread with: those that quoted or were invited.
+  const inThread = new Set(threads.map((t) => t.contractor_id));
+  const askable = [
+    ...visibleQuotes.filter((q) => q.status === "submitted").map((q) => ({ id: q.contractor_id, name: q.contractor_name })),
+    ...directory.filter((c) => invited.includes(c.id) && !quotedIds.has(c.id)).map((c) => ({ id: c.id, name: c.name })),
+  ].filter((c) => !inThread.has(c.id));
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
@@ -309,6 +324,17 @@ async function CustomerView({
             </p>
           ) : null}
         </Card>
+
+        {open || threads.length ? (
+          <CustomerQuoteQuestions
+            threads={threads}
+            currentUserId={user.id}
+            open={open}
+            replyAction={dispatcher ? (contractorId) => postQuoteQuestionAction.bind(null, org.id, request.id, contractorId) : undefined}
+            askAction={dispatcher ? askContractorAction.bind(null, org.id, request.id) : undefined}
+            askable={askable}
+          />
+        ) : null}
 
         {open && dispatcher ? (
           <Card>
@@ -445,6 +471,7 @@ async function ContractorView({
     );
   }
   const open = request.status === "open";
+  const questions = open || quote ? await getQuoteThread(user.id, request.id, org.id) : [];
   const canQuote = dispatcher && open && quote?.status !== "declined" && quote?.status !== "accepted";
   const now = new Date();
   const today = now.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
@@ -497,6 +524,21 @@ async function ContractorView({
               ) : null}
             </CardBody>
           </Card>
+        ) : null}
+
+        {!won && (open || questions.length) ? (
+          <JobThread
+            title="Questions for the customer"
+            messages={questions}
+            currentUserId={user.id}
+            postAction={dispatcher && open ? postQuoteQuestionAction.bind(null, org.id, request.id, org.id) : undefined}
+            description={
+              open
+                ? `Private between your business and ${request.customer_name}. Other contractors never see this.`
+                : "Closed when the request was awarded or cancelled."
+            }
+            placeholder="Access, hours, scope, materials…"
+          />
         ) : null}
 
         {canQuote ? (
