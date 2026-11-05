@@ -862,3 +862,34 @@ are clearly not real activity.
 - **Still open:** licensed construction photography. The cloud environment
   can't reach image libraries, so photos need to be supplied or the
   environment's network allowance widened.
+
+## D-044 A shareable preview demo, deployed by workflow
+
+The demo has to run on a hosted preview, not only on a laptop, without
+touching production or real money.
+
+- **Where:** the QuickPro Preview Supabase project and a protected Vercel
+  preview, both through the manual workflows (`docs/deployment.md`). Nothing
+  targets production.
+- **Migration guard:** the workflow used to stop on every `delete from`,
+  including the one inside `public.remove_member`, which deletes a single
+  membership only when a signed-in owner, admin or the member calls it, and
+  never the last owner. Instead of loosening the pattern, reviewed lines are
+  listed exactly (`file:line:text`) in
+  `supabase/checks/reviewed-destructive-statements.txt` with the reason in
+  `supabase/checks/README-reviewed.md`; any other match, or an edit to a
+  listed line, still stops the run.
+- **Demo data:** `DEMO_MODE=on` on the preview and the labeled data set
+  (D-043), added only when the database has no demo accounts yet.
+- **Payments:** Stripe test mode only, from a `STRIPE_TEST_SECRET_KEY`
+  secret; the workflow refuses live keys, and the app refuses them too
+  (D-040). Webhooks reach the protected preview with Vercel's bypass
+  parameter in the endpoint URL, which is stored only in the Stripe test-mode
+  dashboard.
+- **Proof on the preview:** the journey tests run against the deployed URL
+  on phone and desktop. The card test pays on Stripe's real Checkout page
+  with the 4242 test card and waits for Stripe's signed webhook to settle
+  the invoice. It checks that payout setup reaches Stripe's hosted
+  onboarding but does not fill that form in; the paying business gets its
+  test-mode account through the Stripe API with Stripe's test identity
+  values.
