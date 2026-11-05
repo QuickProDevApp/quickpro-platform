@@ -22,7 +22,7 @@ export default async function SupportPage({ searchParams }: { searchParams: Prom
         title="Help and support"
         description="Ask QuickPro staff about your account, verification, jobs, projects, invoices or anything else. Staff reply here, and you get a notification in QuickPro."
       />
-      <div className="grid gap-6 lg:grid-cols-[1fr_24rem]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="space-y-4">
           <div className="rounded-lg border border-bad/25 bg-bad-soft px-4 py-3 text-sm text-ink" role="note">
             <strong className="font-semibold text-bad">If someone is hurt or in danger, call 911 first.</strong> Then tell us here under

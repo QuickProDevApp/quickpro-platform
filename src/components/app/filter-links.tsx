@@ -26,7 +26,7 @@ export function FilterLinks({
             href={`${basePath}${qs.size ? `?${qs}` : ""}`}
             aria-current={active ? "page" : undefined}
             className={`shrink-0 rounded-[5px] px-3 py-1.5 text-[13px] font-medium whitespace-nowrap transition-colors ${
-              active ? "bg-surface text-ink shadow-[0_1px_2px_rgba(13,22,38,0.08)] ring-1 ring-line" : "text-muted hover:text-ink"
+              active ? "bg-surface text-ink shadow-[0_1px_2px_rgba(36,43,49,0.08)] ring-1 ring-line" : "text-muted hover:text-ink"
             }`}
           >
             {o.label}

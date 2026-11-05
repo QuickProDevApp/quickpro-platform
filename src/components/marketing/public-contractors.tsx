@@ -20,7 +20,7 @@ export function PublicContractorCard({ contractor: c }: { contractor: PublicCont
   return (
     <Link
       href={`/contractors/${c.slug}`}
-      className="group flex h-full flex-col rounded-xl border border-ink/[0.08] bg-surface p-5 transition-shadow hover:shadow-[0_8px_24px_-12px_rgba(13,22,38,0.25)]"
+      className="group flex h-full flex-col rounded-xl border border-ink/[0.08] bg-surface p-5 transition-shadow hover:shadow-[0_8px_24px_-12px_rgba(36,43,49,0.25)]"
       data-testid="public-contractor"
     >
       <div className="flex items-start justify-between gap-3">

@@ -40,7 +40,7 @@ export default async function AdminSupportTicketPage({ params }: { params: Promi
         }
         description={`Request #${ticket.ref} · ${SUPPORT_TOPIC_LABEL[ticket.topic]} · opened ${formatDateTime(ticket.created_at)}`}
       />
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <Card>
           <CardHeader title="Conversation" description="Internal notes are shown only to staff." />
           <CardBody className="space-y-5">

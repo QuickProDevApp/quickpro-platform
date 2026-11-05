@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Find contractors",
   description:
-    "Commercial cleaning, pressure washing, landscaping and facility service businesses approved by QuickPro staff.",
+    "Construction, skilled-trade and commercial service businesses in Suffolk County, approved by QuickPro staff.",
 };
 
 export default async function PublicContractorsPage({
@@ -29,12 +29,12 @@ export default async function PublicContractorsPage({
   return (
     <div className="space-y-10">
       <div className="max-w-[44rem]">
-        <p className="flex items-center gap-2 text-[13px] font-medium text-signal-ink">
-          <span aria-hidden className="h-[7px] w-[7px] rounded-[2px] bg-signal" />
+        <p className="flex items-center gap-2 text-[12.5px] font-semibold tracking-[0.08em] text-signal-ink uppercase">
+          <span aria-hidden className="h-[7px] w-[7px] bg-signal" />
           Find contractors
         </p>
-        <h1 className="mt-4 text-[34px] leading-[1.08] font-semibold tracking-[-0.03em] text-balance sm:text-[48px]">
-          Commercial service businesses on QuickPro
+        <h1 className="mt-5 font-display text-[36px] leading-[1.08] font-medium tracking-[-0.025em] text-balance sm:text-[50px]">
+          Contractors and trade businesses on QuickPro
         </h1>
         <p className="mt-5 text-[17px] leading-8 text-ink-soft">
           Every business here was reviewed and approved by QuickPro staff and chose to publish its profile. Ratings come
@@ -44,7 +44,7 @@ export default async function PublicContractorsPage({
 
       <form
         method="get"
-        className="flex flex-col gap-3 rounded-xl border border-ink/[0.08] bg-surface p-4 sm:flex-row sm:items-end"
+        className="flex flex-col gap-3 rounded-[6px] border border-ink/[0.1] bg-surface p-4 sm:flex-row sm:items-end"
         role="search"
       >
         <div className="flex-1">
@@ -85,7 +85,7 @@ export default async function PublicContractorsPage({
         </div>
         <button
           type="submit"
-          className="h-11 rounded-md bg-ink px-5 text-[15px] font-medium text-white hover:bg-navy sm:h-10 sm:text-sm"
+          className="h-11 rounded-md bg-ink px-5 text-[15px] font-medium text-white hover:bg-charcoal sm:h-10 sm:text-sm"
         >
           Show contractors
         </button>
@@ -126,7 +126,7 @@ export default async function PublicContractorsPage({
 
 function CustomerCallToAction() {
   return (
-    <section className="rounded-2xl bg-navy px-6 py-8 text-white sm:px-10 sm:py-10">
+    <section className="rounded-2xl bg-charcoal px-6 py-8 text-white sm:px-10 sm:py-10">
       <h2 className="text-[22px] font-semibold tracking-[-0.02em] sm:text-[26px]">
         Need commercial service work done?
       </h2>

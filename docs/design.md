@@ -22,23 +22,35 @@ This standard is mandatory for every screen and every phase.
 
 ## Tokens (`src/app/globals.css`)
 
+Charcoal, warm off-white and slate carry the interface; construction orange
+is the accent and is used sparingly (marks, rules, the active tab, the
+primary call to action on the public site). See D-043.
+
 | Token | Use |
 | --- | --- |
-| `ink`, `ink-soft`, `muted`, `faint` | Text, from primary to placeholder |
-| `canvas`, `surface`, `subtle` | Page background, panels, quiet fills (hover, table headers) |
+| `ink` (#242B31), `ink-soft`, `muted` (#5E6A74), `faint` | Text, from primary to placeholder. `muted` is slate darkened a step to pass 4.5:1 |
+| `canvas` (#F7F6F2), `surface`, `subtle` | Page background, panels, quiet fills (hover, table headers) |
 | `line`, `line-strong` | Borders and dividers, control borders |
-| `navy`, `navy-strong` | Brand and primary buttons, selected state |
-| `brand` | Links, focus rings, "new" counts. Not for buttons |
+| `charcoal`, `charcoal-strong` | App bar, footer, dark bands, primary buttons, selected state |
+| `brand` (#A9531B) | Links, focus rings, "new" counts. Not for buttons |
+| `signal` (#D97835), `signal-ink`, `signal-soft` | The orange accent. Text on `signal` is charcoal (4.6:1), never white |
+| `slate` (#66737D) | Decorative only |
 | `ok`, `warn`, `bad`, `info` (+ `-soft`) | Status only |
 
-Radii are small: 6px controls (`rounded-md`), 8px panels (`rounded-lg`).
-Panels have a 1px border and no shadow; only floating menus have a shadow.
-Type is Geist: page titles 22–24px semibold with tight tracking, section
-titles 15px semibold, body 14px, secondary 13px, figures `tabular`.
+Radii are small and squared-off: 5px controls (`rounded-md`), 7px panels
+(`rounded-lg`), 4px on public-site buttons. Panels have a 1px border and no
+shadow; only floating menus have a shadow. Type: Geist in the app (page
+titles 22–24px semibold, section titles 15px semibold, body 14px, secondary
+13px, figures `tabular`); Source Serif 4 (`font-display`, medium weight)
+for headings on the public site and sign-in pages. On charcoal, wrap the
+area in `.on-dark` so focus rings switch to the light orange.
+
+Two-column page layouts use `grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_<side>]`
+so long content can't push the page sideways on phones.
 
 ## Components
 
-- `ui/button`: `primary` (navy, one per area), `secondary` (outlined),
+- `ui/button`: `primary` (charcoal, one per area), `secondary` (outlined),
   `ghost` (toolbar), `danger` (outlined red; destructive actions sit behind
   a "…" disclosure that asks for a reason or confirmation).
 - `ui/form`: `ActionForm`, `Field`, `Input`, `Select`, `Textarea`,
@@ -62,11 +74,13 @@ overflow and hierarchy issues before opening the pull request.
 - Pages under `src/app/page.tsx` and `src/app/(site)/` use
   `components/marketing/*`: `SiteHeader`, `SiteFooter`, `ScreenFrame`,
   `PhoneFrame`, `Reveal`, `FeatureTabs`, `HowItWorks`.
-- Background `paper` (#fbfaf8) alternating with `surface`; one dark `ink`
-  band (For workers). Section rhythm: eyebrow (signal square + label),
-  heading 32/44px at -0.03em, body 17px.
-- Product screens only, from `.review/marketing.mts`, with the caption
-  "shown with example data". On phones `ScreenFrame` crops to the top-left
+- Background `paper` alternating with `surface`; charcoal for the
+  tradespeople band, the closing call to action and the footer. Section
+  rhythm: eyebrow (orange square + uppercase label), serif heading 34/46px,
+  body 17px.
+- Product screens only, captured from the labeled demo data set
+  (`scripts/demo-seed.mts`, then `.review/marketing-shots.mts`), with the
+  caption saying so. No stock photography until licensed photos are supplied. On phones `ScreenFrame` crops to the top-left
   at a readable scale instead of shrinking the whole screen.
 - Motion: one fade-up per element on first view, disabled under
   `prefers-reduced-motion`; content is visible without JavaScript.

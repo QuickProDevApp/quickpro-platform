@@ -27,7 +27,7 @@ export function ScreenFrame({
 }) {
   return (
     <div
-      className={`overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-[0_1px_2px_rgba(13,22,38,0.04),0_24px_48px_-24px_rgba(13,22,38,0.22)] ${className}`}
+      className={`overflow-hidden rounded-[10px] border border-ink/10 bg-surface shadow-[0_1px_2px_rgba(36,43,49,0.04),0_24px_48px_-24px_rgba(36,43,49,0.22)] ${className}`}
     >
       <div className={zoomOnPhones ? "aspect-[5/4] overflow-hidden sm:aspect-auto" : undefined}>
         <Image
@@ -57,7 +57,7 @@ export function PhoneFrame({
 }) {
   return (
     <div
-      className={`rounded-[34px] bg-ink p-[7px] shadow-[0_30px_60px_-28px_rgba(13,22,38,0.45)] ring-1 ring-ink/80 ${className}`}
+      className={`rounded-[34px] bg-ink p-[7px] shadow-[0_30px_60px_-28px_rgba(36,43,49,0.45)] ring-1 ring-ink/80 ${className}`}
     >
       {/* The top of the screen, at a phone's proportions without the empty space below short lists. */}
       <div className="aspect-[390/640] overflow-hidden rounded-[27px] bg-surface">

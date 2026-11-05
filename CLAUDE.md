@@ -22,6 +22,7 @@ pnpm storage:reconcile   # remove stray storage objects (--dry-run to list)
 pnpm build
 pnpm supabase start | stop | db reset      # local Supabase (Docker)
 pnpm admin:grant you@example.com           # make an account QuickPro staff
+pnpm demo:seed --confirm=<db host>        # labeled demo data (DEMO_MODE=on; never production)
 ```
 
 ## Rules

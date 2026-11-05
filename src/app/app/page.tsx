@@ -61,7 +61,7 @@ function HubCard({ href, title, subtitle, badge }: { href: string; title: string
   return (
     <li>
       <Link href={href} className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-subtle/60 sm:px-5">
-        <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-navy text-sm font-semibold text-white">
+        <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-charcoal text-sm font-semibold text-white">
           {title.charAt(0).toUpperCase()}
         </span>
         <span className="min-w-0 flex-1">

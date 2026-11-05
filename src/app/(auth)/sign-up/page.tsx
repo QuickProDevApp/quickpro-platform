@@ -6,6 +6,12 @@ import { signUp } from "../actions";
 
 export const metadata: Metadata = { title: "Create your account" };
 
+const roles = [
+  { as: "customer", label: "Property owner" },
+  { as: "contractor", label: "Contractor" },
+  { as: "worker", label: "Tradesperson" },
+];
+
 const intro: Record<string, string> = {
   contractor: "Create your account, then register your business.",
   worker: "Create your account, then build your worker profile.",
@@ -17,8 +23,22 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
   const next = as && intro[as] ? `/app/onboarding?as=${as}` : safeNextPath(requested);
   return (
     <>
-      <h1 className="text-[22px] leading-7 font-semibold tracking-[-0.015em]">Create your QuickPro account</h1>
+      <h1 className="font-display text-[30px] leading-9 font-medium tracking-[-0.02em]">Create your QuickPro account</h1>
       <p className="mt-1 text-sm text-muted">{(as && intro[as]) || "One account works for businesses, workers and customers."}</p>
+      <nav aria-label="I'm signing up as" className="mt-5 grid grid-cols-3 gap-1 rounded-[6px] bg-subtle p-1">
+        {roles.map((r) => (
+          <Link
+            key={r.as}
+            href={`/sign-up?as=${r.as}`}
+            aria-current={as === r.as ? "page" : undefined}
+            className={`flex h-9 items-center justify-center rounded-[4px] px-1 text-center text-[13px] leading-4 font-medium transition-colors ${
+              as === r.as ? "bg-surface text-ink shadow-[0_1px_2px_rgba(36,43,49,0.1)] ring-1 ring-line" : "text-muted hover:text-ink"
+            }`}
+          >
+            {r.label}
+          </Link>
+        ))}
+      </nav>
       <ActionForm action={signUp} className="mt-6 space-y-4">
         <input type="hidden" name="next" value={next} />
         <Field name="fullName" label="Full name">

@@ -123,7 +123,7 @@ export function SupportThread({ messages, viewer }: { messages: SupportMessage[]
                 m.internal
                   ? "border border-dashed border-warn/40 bg-warn-soft text-ink"
                   : mine
-                    ? "bg-navy text-white"
+                    ? "bg-charcoal text-white"
                     : "bg-canvas text-ink"
               }`}
             >

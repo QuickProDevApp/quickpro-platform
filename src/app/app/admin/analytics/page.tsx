@@ -44,7 +44,7 @@ export default async function AdminAnalyticsPage({
         actions={
           <a
             href={`/app/admin/analytics/export?${exportQuery}`}
-            className="inline-flex h-9 items-center rounded-md border border-line-strong bg-surface px-3 text-sm font-medium text-ink shadow-[0_1px_2px_rgba(13,22,38,0.05)] hover:bg-subtle"
+            className="inline-flex h-9 items-center rounded-md border border-line-strong bg-surface px-3 text-sm font-medium text-ink shadow-[0_1px_2px_rgba(36,43,49,0.05)] hover:bg-subtle"
             download
           >
             Download CSV

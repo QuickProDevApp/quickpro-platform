@@ -93,7 +93,7 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ jobI
         <FormMessage tone="bad">The business cancelled this job: {job.cancel_reason}</FormMessage>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-6">
           {job.assignment_status === "offered" && upcoming ? (
             <Card>

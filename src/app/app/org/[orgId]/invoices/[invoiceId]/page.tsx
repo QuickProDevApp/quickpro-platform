@@ -89,7 +89,7 @@ export default async function OrganizationInvoicePage({
       ) : null}
 
       {invoice.status === "draft" && issuer ? (
-        <div className="grid gap-6 lg:grid-cols-[1fr_minmax(0,28rem)]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)]">
           <Card>
             <CardHeader title="Edit draft" description={`Only your team sees a draft. ${invoice.recipient_name} sees it once you issue it.`} />
             <CardBody>
@@ -116,7 +116,7 @@ export default async function OrganizationInvoicePage({
           </div>
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <InvoiceDocument invoice={invoice} />
           <div className="space-y-6">
             <div className="flex flex-wrap gap-2">

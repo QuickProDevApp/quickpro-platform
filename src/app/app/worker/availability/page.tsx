@@ -12,7 +12,7 @@ export default async function AvailabilityPage() {
   const user = await requireUser();
   const { availability } = await getWorkerSelections(user.id);
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <Card>
         <CardHeader title="Weekly availability" description="Times are Eastern. Add a window for each part of the week you can usually work." />
         <CardBody>

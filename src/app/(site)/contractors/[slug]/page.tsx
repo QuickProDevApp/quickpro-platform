@@ -75,7 +75,7 @@ export default async function PublicContractorPage({ params }: Params) {
         </p>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-8">
           {c.description ? (
             <section aria-labelledby="about">
@@ -136,7 +136,7 @@ export default async function PublicContractorPage({ params }: Params) {
               </div>
             ))}
           </dl>
-          <div className="rounded-xl bg-navy p-5 text-white">
+          <div className="rounded-xl bg-charcoal p-5 text-white">
             <p className="text-[17px] font-semibold">Want a quote from {c.name}?</p>
             <p className="mt-1.5 text-[14px] leading-6 text-white/75">
               Create a customer account, post your request, and invite {c.name} to quote from the contractor directory.

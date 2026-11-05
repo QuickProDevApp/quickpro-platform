@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "Get started" };
 export default async function OnboardingPage({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   const user = await requireUser();
   const [{ as }, markets, roles] = await Promise.all([searchParams, listActiveMarkets(user.id), getMyRoles(user.id)]);
-  const highlight = (key: string) => (as === key ? "ring-2 ring-brand" : "");
+  const highlight = (key: string) => (as === key ? "ring-2 ring-signal" : "");
 
   return (
     <>
@@ -23,10 +23,10 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
       />
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className={`flex flex-col p-5 ${highlight("contractor")}`}>
-          <h2 className="font-semibold">Register a service business</h2>
+          <h2 className="font-semibold">Register a contracting business</h2>
           <p className="mt-1 text-sm text-muted">
-            For cleaning, pressure washing, landscaping and facility service companies that want help staffing and
-            coordinating commercial work.
+            For general contractors, subcontractors, trade and commercial service businesses that want to quote on
+            projects and staff the work.
           </p>
           <OrganizationForm kind="contractor" markets={markets} label="Business name" cta="Register business" />
         </Card>
@@ -34,8 +34,8 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
         <Card className={`flex flex-col p-5 ${highlight("worker")}`}>
           <h2 className="font-semibold">Create a worker profile</h2>
           <p className="mt-1 text-sm text-muted">
-            For people who want shifts with local service companies. Share your skills, where you can travel and when
-            you are available.
+            For tradespeople and crew who want shifts with local contractors. Share your skills, where you can travel
+            and when you are available.
           </p>
           <div className="mt-auto pt-5">
             {roles.worker ? (
@@ -53,8 +53,8 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
         <Card className={`flex flex-col p-5 ${highlight("customer")}`}>
           <h2 className="font-semibold">Register a property or organization</h2>
           <p className="mt-1 text-sm text-muted">
-            For property managers, facilities and businesses that need commercial services. Once approved, post
-            requests and compare quotes from reviewed local contractors.
+            For property owners, managers and facilities teams. Once approved, post projects and compare quotes from
+            reviewed local contractors.
           </p>
           <OrganizationForm kind="customer" markets={markets} label="Organization name" cta="Register organization" />
         </Card>

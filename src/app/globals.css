@@ -2,55 +2,64 @@
 
 /*
  * QuickPro design tokens. See docs/design.md for how to use them.
- * Restrained palette: ink and neutrals carry the interface; navy is the
- * brand and primary action; blue is reserved for links, focus and "new".
+ * Charcoal, warm off-white and slate carry the interface; construction
+ * orange is the accent, used sparingly. Status colors carry meaning only.
  */
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  --color-canvas: #f7f8fa;
+  --color-canvas: #f7f6f2;
   --color-surface: #ffffff;
-  --color-subtle: #f2f4f7;
-  --color-ink: #0d1626;
-  --color-ink-soft: #364152;
-  --color-muted: #667085;
-  --color-faint: #98a2b3;
-  --color-line: #e7e9ee;
-  --color-line-strong: #d0d5dd;
+  --color-subtle: #f3f2ed;
+  --color-ink: #242b31;
+  --color-ink-soft: #3d464e;
+  /* Slate (#66737d) darkened a step so secondary text passes 4.5:1 on every surface. */
+  --color-muted: #5e6a74;
+  --color-slate: #66737d;
+  --color-faint: #97a0a7;
+  --color-line: #e5e2da;
+  --color-line-strong: #cfcac0;
 
-  --color-navy: #0f2147;
-  --color-navy-strong: #0a1733;
-  --color-brand: #2251d1;
-  --color-brand-strong: #1a3fa6;
-  --color-brand-soft: #eef2fd;
+  --color-charcoal: #242b31;
+  --color-charcoal-strong: #161b1f;
+  /* Links, focus rings and "new" counts: the text-safe shade of the orange. */
+  --color-brand: #a9531b;
+  --color-brand-strong: #8c4314;
+  --color-brand-soft: #fbf0e7;
 
-  /* Marketing accent: signal orange, for marks and small highlights only.
-     signal-ink is the text-safe shade (4.5:1 on white). */
-  --color-signal: #ef6a32;
-  --color-signal-ink: #b9461a;
-  --color-signal-soft: #fdf1eb;
-  --color-paper: #fbfaf8;
+  /* Construction orange, for marks, rules and accents. signal-ink is the
+     text-safe shade (5.3:1 on white); charcoal text on signal is 4.6:1. */
+  --color-signal: #d97835;
+  --color-signal-ink: #a9531b;
+  --color-signal-soft: #fbf0e7;
+  --color-paper: #f7f6f2;
 
-  --color-ok: #067647;
-  --color-ok-soft: #ecfdf3;
-  --color-warn: #b54708;
-  --color-warn-soft: #fffaeb;
-  --color-bad: #c01f13;
-  --color-bad-soft: #fef3f2;
-  --color-info: #2251d1;
-  --color-info-soft: #eef2fd;
+  --color-ok: #1d6b45;
+  --color-ok-soft: #ebf5ee;
+  --color-warn: #a4520b;
+  --color-warn-soft: #fdf4e6;
+  --color-bad: #b42318;
+  --color-bad-soft: #fdf0ee;
+  --color-info: #2f6690;
+  --color-info-soft: #ecf2f7;
 
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 10px;
-  --radius-2xl: 12px;
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 7px;
+  --radius-xl: 9px;
+  --radius-2xl: 11px;
 
   --text-xs: 0.75rem;
   --text-xs--line-height: 1.125rem;
   --text-sm: 0.875rem;
   --text-sm--line-height: 1.375rem;
+}
+
+/* Editorial display face for the public site and sign-in pages. Inline, because
+   its variable is set on those pages' wrappers rather than on <html>. */
+@theme inline {
+  --font-display: var(--font-source-serif), ui-serif, Georgia, serif;
 }
 
 html {
@@ -67,6 +76,11 @@ body {
 :focus-visible {
   outline: 2px solid var(--color-brand);
   outline-offset: 2px;
+}
+
+/* On charcoal (the app bar, dark marketing bands) focus rings use the light orange. */
+.on-dark :focus-visible {
+  outline-color: #e8955a;
 }
 
 /* Figures line up in tables and summaries. */

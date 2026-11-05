@@ -90,7 +90,7 @@ export function ActivityChart({
                 {active === i ? (
                   <span
                     role="tooltip"
-                    className={`pointer-events-none absolute bottom-full z-10 mb-1 w-max max-w-[11rem] rounded-md bg-navy px-2.5 py-1.5 text-xs text-white/80 shadow-lg ${
+                    className={`pointer-events-none absolute bottom-full z-10 mb-1 w-max max-w-[11rem] rounded-md bg-charcoal px-2.5 py-1.5 text-xs text-white/80 shadow-lg ${
                       i < columns.length / 2 ? "left-0" : "right-0"
                     }`}
                   >

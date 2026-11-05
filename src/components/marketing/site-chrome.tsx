@@ -4,9 +4,9 @@ import { MobileMenu } from "./mobile-menu";
 
 const nav = [
   { href: "/#how-it-works", label: "How it works" },
-  { href: "/#businesses", label: "For businesses" },
-  { href: "/#workers", label: "For workers" },
-  { href: "/#features", label: "Features" },
+  { href: "/#customers", label: "Customers" },
+  { href: "/#contractors", label: "Contractors" },
+  { href: "/#workers", label: "Tradespeople" },
   { href: "/contractors", label: "Find contractors" },
 ];
 
@@ -28,7 +28,7 @@ export function SiteHeader() {
           </Link>
           <Link
             href="/sign-up"
-            className="inline-flex h-9 items-center rounded-md bg-ink px-4 text-[14px] font-medium text-white transition-colors hover:bg-navy"
+            className="inline-flex h-9 items-center rounded-[4px] bg-charcoal px-4 text-[14px] font-medium text-white transition-colors hover:bg-charcoal-strong"
           >
             Get started
           </Link>
@@ -43,18 +43,19 @@ const footer = [
   {
     title: "Product",
     links: [
-      { href: "/#features", label: "Features" },
       { href: "/#how-it-works", label: "How it works" },
+      { href: "/#contractors", label: "For contractors" },
+      { href: "/#workers", label: "For tradespeople" },
       { href: "/#trust", label: "Trust and safety" },
     ],
   },
   {
     title: "Get started",
     links: [
-      { href: "/sign-up?as=contractor", label: "Register a business" },
-      { href: "/sign-up?as=customer", label: "Request service" },
+      { href: "/sign-up?as=customer", label: "Post a project" },
+      { href: "/sign-up?as=contractor", label: "Join as a contractor" },
+      { href: "/sign-up?as=worker", label: "Find shift work" },
       { href: "/contractors", label: "Find contractors" },
-      { href: "/sign-up?as=worker", label: "Find work" },
     ],
   },
   {
@@ -77,22 +78,23 @@ const footer = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-ink/[0.08] bg-paper">
+    <footer className="on-dark bg-[#1d2328] text-white">
       <div className="mx-auto max-w-[1200px] px-5 pt-14 pb-10 sm:px-8">
         <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-[1.3fr_repeat(4,1fr)]">
           <div className="col-span-2 max-w-xs md:col-span-1">
-            <Logo />
-            <p className="mt-4 text-[14px] leading-6 text-muted">
-              The marketplace for commercial service work on Long Island, starting in Suffolk County, New York.
+            <Logo inverted />
+            <p className="mt-4 text-[14px] leading-6 text-white/60">
+              The marketplace for commercial construction, skilled trades and the crews behind them, starting in Suffolk County,
+              New York.
             </p>
           </div>
           {footer.map((col) => (
             <div key={col.title}>
-              <p className="text-[13px] font-medium text-ink">{col.title}</p>
+              <p className="text-[13px] font-semibold text-white">{col.title}</p>
               <ul className="mt-3 space-y-2.5">
                 {col.links.map((l) => (
                   <li key={l.href}>
-                    <Link href={l.href} className="text-[14px] text-muted transition-colors hover:text-ink">
+                    <Link href={l.href} className="text-[14px] text-white/60 transition-colors hover:text-white">
                       {l.label}
                     </Link>
                   </li>
@@ -101,7 +103,7 @@ export function SiteFooter() {
             </div>
           ))}
         </div>
-        <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-ink/[0.08] pt-6 text-[13px] text-muted">
+        <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6 text-[13px] text-white/50">
           <span>© {new Date().getFullYear()} QuickPro</span>
           <span>Suffolk County, New York</span>
         </div>
