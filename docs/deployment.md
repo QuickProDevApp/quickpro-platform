@@ -2,19 +2,48 @@
 
 ## Automated (GitHub Actions)
 
-`.github/workflows/vercel-preview.yml` (Actions tab, "Vercel preview deploy")
-does sections 1.4, 1.7 and 2 below for QuickPro Preview (`lwqlhifdxefboanvoooh`):
-it reuses the Vercel project linked to this repository (or creates
-`quickpro-platform`), sets the variables for the **Preview** environment only
-(secrets as Sensitive), requires Vercel Authentication on previews, deploys a
-preview (never production) at `https://quickpro-preview-lwqlhi.vercel.app`,
-points Supabase Auth at it, smoke tests it, and runs `e2e/jobs.spec.ts`
-against it. The test accounts (`@e2e.quickpro.test`) and their data are
-removed afterwards (`pnpm e2e:cleanup`).
+Two manual workflows (Actions tab) put the demo online. Run them from `main`,
+in this order:
 
-It needs a `VERCEL_TOKEN` repository secret (vercel.com/account/settings/tokens),
-plus `VERCEL_TEAM_ID` if the token can see more than one team. Migrations are
-applied separately (`supabase-preview.yml`).
+1. **Supabase preview migrations** (`supabase-preview.yml`): `plan` shows
+   which migrations are pending and changes nothing; `apply` (type the
+   project ref to confirm) applies them to QuickPro Preview
+   (`lwqlhifdxefboanvoooh`) only. It stops on any `drop`, `truncate` or
+   `delete from` line that isn't listed, exactly, in
+   `supabase/checks/reviewed-destructive-statements.txt`; the reason for each
+   listed line is in `supabase/checks/README-reviewed.md`.
+2. **Vercel preview deploy** (`vercel-preview.yml`): reuses the Vercel
+   project linked to this repository (or creates `quickpro-platform`), sets
+   the variables for the **Preview** environment only (secrets as
+   Sensitive), requires Vercel Authentication on previews, deploys a preview
+   (never production) at `https://quickpro-preview-lwqlhi.vercel.app` and
+   points Supabase Auth at it. Then it:
+   - with `demo` on (the default), sets `DEMO_MODE=on` and adds the labeled
+     demo data set once (D-043); the demo logins are in the run summary;
+   - with a `STRIPE_TEST_SECRET_KEY` secret, turns on card payments in Stripe
+     **test mode**: it refuses a live key, registers its own webhook
+     endpoints on the preview (replacing only ones it registered before) and
+     sets the keys for Preview only;
+   - runs the journey tests against the live URL on phone and desktop
+     (public pages, posting, quotes and questions, messages, subcontracts,
+     shifts, timesheets, invoices) and, with Stripe on, a real test-mode
+     card payment (`e2e/preview-card-payment.spec.ts`);
+   - removes the test accounts (`@e2e.quickpro.test`) and their data
+     afterwards (`pnpm e2e:cleanup`). Demo accounts are kept.
+
+Secrets (Settings, Secrets and variables, Actions): `SUPABASE_ACCESS_TOKEN`
+and `SUPABASE_DB_PASSWORD` (already set), `VERCEL_TOKEN`
+(vercel.com/account/settings/tokens), and optionally `VERCEL_TEAM_ID`,
+`STRIPE_TEST_SECRET_KEY` (dashboard.stripe.com/test/apikeys; Connect must be
+enabled on the Stripe account) and `DEMO_PASSWORD`.
+
+The preview asks visitors to sign in to Vercel. To show it to someone outside
+the Vercel team, use a Vercel shareable link for the deployment rather than
+turning protection off.
+
+What the preview does not do yet: notification emails are queued, not sent
+(no SMTP), and Supabase's built-in email only reaches members of the
+Supabase organization, so new sign-ups from outside need custom SMTP.
 
 ## By hand
 

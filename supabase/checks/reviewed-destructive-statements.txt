@@ -1,0 +1,1 @@
+supabase/migrations/20261030000100_team_invitations.sql:240:  delete from public.organization_members where organization_id = p_org_id and user_id = p_user_id;

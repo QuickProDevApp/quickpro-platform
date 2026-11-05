@@ -69,13 +69,28 @@ jobs:
           test -f pnpm-lock.yaml || { echo "::error::$APP_BRANCH has no pnpm-lock.yaml. Is it the application branch?"; exit 1; }
           ls supabase/migrations/*.sql >/dev/null 2>&1 || { echo "::error::$APP_BRANCH has no supabase/migrations."; exit 1; }
           test -f supabase/checks/verify-deployment.sql || { echo "::error::$APP_BRANCH has no supabase/checks/verify-deployment.sql."; exit 1; }
+          test -f supabase/checks/reviewed-destructive-statements.txt || { echo "::error::$APP_BRANCH has no supabase/checks/reviewed-destructive-statements.txt."; exit 1; }
           ls -1 supabase/migrations
       - name: Refuse destructive statements in migrations
+        # Every drop table/schema/column, truncate or delete line must be one
+        # that was read and approved, listed exactly (file:line:text) in
+        # supabase/checks/reviewed-destructive-statements.txt with the reason
+        # in supabase/checks/README-reviewed.md. Anything else, or an edit to
+        # a listed line, stops here.
         run: |
-          if grep -niE '\b(drop[[:space:]]+(table|schema|database|column)|truncate|delete[[:space:]]+from)\b' supabase/migrations/*.sql; then
-            echo "::error::A migration contains a destructive statement. Review it before deploying."; exit 1
+          found=$(grep -niE '\b(drop[[:space:]]+(table|schema|database|column)|truncate|delete[[:space:]]+from)\b' supabase/migrations/*.sql || true)
+          reviewed=supabase/checks/reviewed-destructive-statements.txt
+          unreviewed=$(printf '%s\n' "$found" | grep -v '^$' | grep -vxF -f "$reviewed" || true)
+          if [ -n "$unreviewed" ]; then
+            printf '%s\n' "$unreviewed"
+            echo "::error::A migration contains a destructive statement that has not been reviewed. Review it before deploying."; exit 1
           fi
-          echo "No drop table/schema/column, truncate or delete statements found."
+          if [ -n "$found" ]; then
+            echo "Reviewed statements only (see supabase/checks/README-reviewed.md):"
+            printf '%s\n' "$found"
+          else
+            echo "No drop table/schema/column, truncate or delete statements found."
+          fi
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

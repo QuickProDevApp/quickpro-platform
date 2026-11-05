@@ -15,8 +15,22 @@ name: Vercel preview deploy
 # - Optionally runs the job-flow end-to-end test against the live URL, then
 #   deletes the test accounts and their data (only @e2e.quickpro.test).
 #
+# - Demo environment (D-043, D-044): DEMO_MODE=on shows the "Demo
+#   environment" banner, and the labeled demo data set is added once
+#   (accounts at @demo.quickpro.test) if the database has none yet.
+# - Card payments in Stripe test mode, if STRIPE_TEST_SECRET_KEY is set: a
+#   live key is refused. The workflow registers its own webhook endpoints
+#   on the preview (replacing only the ones it registered before) and sets
+#   the keys for Preview only.
+# - Runs the customer -> contractor -> worker -> invoice journey tests
+#   against the live URL (phone and desktop), and a real Stripe test-mode
+#   payment when a test key is set.
+#
 # Secrets: VERCEL_TOKEN (new), SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD.
-# Optional: VERCEL_TEAM_ID when the token can see more than one team.
+# Optional: VERCEL_TEAM_ID when the token can see more than one team;
+# STRIPE_TEST_SECRET_KEY (sk_test_...) for card payments; DEMO_PASSWORD
+# (10+ characters) for the demo accounts, otherwise one is generated and
+# shown in the run summary of a private repository.
 on:
   workflow_dispatch:
     inputs:
@@ -26,7 +40,11 @@ on:
         default: main
         required: true
       run_e2e:
-        description: "Run the job-flow test against the deployed site"
+        description: "Run the journey tests against the deployed site"
+        type: boolean
+        default: true
+      demo:
+        description: "Demo environment: banner on, and add the labeled demo data if there is none"
         type: boolean
         default: true
 
@@ -40,7 +58,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     env:
       PROJECT_REF: lwqlhifdxefboanvoooh # QuickPro Preview. Do not change without review.
       PROJECT_NAME: QuickPro Preview
@@ -49,6 +67,8 @@ jobs:
       VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+      DEMO_MODE: ${{ inputs.demo && 'on' || 'off' }}
     steps:
       - name: Check secrets
         run: |
@@ -196,6 +216,49 @@ jobs:
           echo "PREVIEW_HOST=$alias" >> "$GITHUB_ENV"
           echo "Preview address: https://$alias"
 
+      - name: Stripe test mode (optional)
+        # Only a test-mode key is accepted. Webhooks reach the protected
+        # preview through Vercel's bypass parameter, which is how Vercel
+        # documents webhooks into protected deployments; the URL is stored
+        # in the Stripe test-mode dashboard only.
+        run: |
+          if [ -z "$STRIPE_TEST_SECRET_KEY" ]; then
+            echo "STRIPE_ON=0" >> "$GITHUB_ENV"
+            echo "::notice::No STRIPE_TEST_SECRET_KEY secret: invoices work, and card payments show as not available."
+            exit 0
+          fi
+          case "$STRIPE_TEST_SECRET_KEY" in
+            sk_test_*|rk_test_*) ;;
+            *) echo "::error::STRIPE_TEST_SECRET_KEY must be a test-mode key (sk_test_...). Live keys are not allowed (D-040)."; exit 1 ;;
+          esac
+          echo "::add-mask::$STRIPE_TEST_SECRET_KEY"
+          st() { curl -sS --fail-with-body -u "$STRIPE_TEST_SECRET_KEY:" "$@"; }
+          acct=$(st https://api.stripe.com/v1/account) || { echo "::error::Stripe refused the key: $acct"; exit 1; }
+          echo "Stripe test-mode account: $(echo "$acct" | jq -r '.settings.dashboard.display_name // .id')"
+          url="https://$PREVIEW_HOST/api/stripe/webhook?x-vercel-protection-bypass=$VERCEL_AUTOMATION_BYPASS_SECRET"
+          # Replace only endpoints this workflow registered for this preview.
+          for id in $(st "https://api.stripe.com/v1/webhook_endpoints?limit=100" | jq -r --arg ref "$PROJECT_REF" '.data[] | select(.metadata.quickpro_preview == $ref) | .id'); do
+            st -X DELETE "https://api.stripe.com/v1/webhook_endpoints/$id" >/dev/null
+            echo "Replaced the earlier preview webhook endpoint $id."
+          done
+          platform=$(st https://api.stripe.com/v1/webhook_endpoints \
+            --data-urlencode "url=$url" -d "description=QuickPro Preview (checkout)" -d "metadata[quickpro_preview]=$PROJECT_REF" \
+            -d "enabled_events[]=checkout.session.completed" -d "enabled_events[]=checkout.session.async_payment_succeeded" \
+            -d "enabled_events[]=checkout.session.expired" -d "enabled_events[]=checkout.session.async_payment_failed") \
+            || { echo "::error::Could not register the Stripe webhook endpoint: $platform"; exit 1; }
+          connect=$(st https://api.stripe.com/v1/webhook_endpoints \
+            --data-urlencode "url=$url" -d "description=QuickPro Preview (connected accounts)" -d "metadata[quickpro_preview]=$PROJECT_REF" \
+            -d "connect=true" -d "enabled_events[]=account.updated") \
+            || { echo "::error::Could not register the Stripe Connect webhook endpoint: $connect"; exit 1; }
+          whsec=$(echo "$platform" | jq -r .secret); connect_whsec=$(echo "$connect" | jq -r .secret)
+          echo "::add-mask::$whsec"; echo "::add-mask::$connect_whsec"
+          {
+            echo "STRIPE_ON=1"
+            echo "STRIPE_WEBHOOK_SECRET=$whsec"
+            echo "STRIPE_CONNECT_WEBHOOK_SECRET=$connect_whsec"
+          } >> "$GITHUB_ENV"
+          echo "Registered the preview webhook endpoints in Stripe test mode."
+
       - name: Set Preview environment variables
         run: |
           api() { curl -sS --fail-with-body -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" "$@"; }
@@ -217,6 +280,12 @@ jobs:
           set_var DATABASE_URL "$RUNTIME_DB_URL" sensitive
           set_var DATABASE_POOL_MAX 1 plain
           set_var FILE_STORAGE_DRIVER supabase plain
+          set_var DEMO_MODE "$DEMO_MODE" plain
+          if [ "$STRIPE_ON" = 1 ]; then
+            set_var STRIPE_SECRET_KEY "$STRIPE_TEST_SECRET_KEY" sensitive
+            set_var STRIPE_WEBHOOK_SECRET "$STRIPE_WEBHOOK_SECRET" sensitive
+            set_var STRIPE_CONNECT_WEBHOOK_SECRET "$STRIPE_CONNECT_WEBHOOK_SECRET" sensitive
+          fi
 
       - name: Deploy (preview, never production)
         run: |
@@ -256,14 +325,59 @@ jobs:
           [ "$public" = 200 ] && { echo "::error::The preview is publicly reachable. Stopping."; fail=1; }
           exit $fail
 
+      - name: Demo data (labeled, added once)
+        if: inputs.demo
+        env:
+          DEMO_PASSWORD_SECRET: ${{ secrets.DEMO_PASSWORD }}
+          REPO_PRIVATE: ${{ github.event.repository.private }}
+        run: |
+          existing=$(psql "$SESSION_DB_URL" -XAtqc "select count(*) from public.profiles where email like '%@demo.quickpro.test'")
+          if [ "$existing" != "0" ]; then
+            echo "The demo data set is already there ($existing demo accounts). Not adding another."
+            echo "- Demo data: already present ($existing accounts at @demo.quickpro.test)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [ -n "$DEMO_PASSWORD_SECRET" ]; then
+            password="$DEMO_PASSWORD_SECRET"; where="the DEMO_PASSWORD secret"
+          else
+            password=$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-16); where="generated for this run"
+          fi
+          echo "::add-mask::$password"
+          host=${SESSION_DB_URL#*@}; host=${host%%[:/]*}
+          DATABASE_URL="$SESSION_DB_URL" DEMO_PASSWORD="$password" FILE_STORAGE_DRIVER=supabase \
+            pnpm demo:seed --confirm="$host" | tee demo-seed.log
+          {
+            echo "### Demo accounts"
+            echo "Every account uses one password ($where)."
+            if [ -z "$DEMO_PASSWORD_SECRET" ] && [ "$REPO_PRIVATE" = "true" ]; then
+              echo "Password: \`$password\` (shown because this repository is private)"
+            elif [ -z "$DEMO_PASSWORD_SECRET" ]; then
+              echo "This repository is public, so the generated password is not shown. Add a DEMO_PASSWORD secret and reset the demo data to choose one."
+            fi
+            echo '```'
+            grep '@demo.quickpro.test' demo-seed.log || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Install Chromium
         if: inputs.run_e2e
         run: pnpm exec playwright install --with-deps chromium
-      - name: Job flow end to end against the live site
+      - name: Journey end to end against the live site (phone and desktop)
         if: inputs.run_e2e
         env:
           E2E_BASE_URL: https://${{ env.PREVIEW_HOST }}
-        run: DATABASE_URL="$SESSION_DB_URL" pnpm exec playwright test e2e/jobs.spec.ts --trace off
+        run: |
+          DATABASE_URL="$SESSION_DB_URL" pnpm exec playwright test --trace off \
+            e2e/home.spec.ts e2e/marketplace-flow.spec.ts e2e/quote-questions.spec.ts e2e/messages.spec.ts \
+            e2e/subcontract.spec.ts e2e/jobs.spec.ts e2e/timesheets.spec.ts e2e/invoices.spec.ts
+      - name: Card payment in Stripe test mode against the live site
+        if: inputs.run_e2e && env.STRIPE_ON == '1'
+        env:
+          E2E_BASE_URL: https://${{ env.PREVIEW_HOST }}
+          E2E_REAL_STRIPE: "1"
+        run: |
+          DATABASE_URL="$SESSION_DB_URL" STRIPE_SECRET_KEY="$STRIPE_TEST_SECRET_KEY" \
+            pnpm exec playwright test --trace off --project desktop e2e/preview-card-payment.spec.ts
       - name: Remove test accounts and data
         if: always() && inputs.run_e2e && env.SESSION_DB_URL != ''
         run: DATABASE_URL="$SESSION_DB_URL" pnpm e2e:cleanup
@@ -277,4 +391,6 @@ jobs:
             echo "- URL: https://$PREVIEW_HOST (Vercel login required)"
             echo "- Vercel project: $VERCEL_PROJECT_NAME, Preview environment only"
             echo "- Supabase: $PROJECT_NAME ($PROJECT_REF)"
+            echo "- Demo environment: $DEMO_MODE"
+            echo "- Card payments: $([ "$STRIPE_ON" = 1 ] && echo 'Stripe test mode' || echo 'not set up (no STRIPE_TEST_SECRET_KEY)')"
           } >> "$GITHUB_STEP_SUMMARY"
