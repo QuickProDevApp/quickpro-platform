@@ -94,7 +94,7 @@ export function ThreadBody({
                       m.hidden && !m.body
                         ? "border border-dashed border-line-strong text-muted"
                         : mine
-                          ? "bg-navy text-white"
+                          ? "bg-charcoal text-white"
                           : "bg-canvas text-ink"
                     }`}
                   >

@@ -2,170 +2,143 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { FeatureTabs, type Feature } from "@/components/marketing/feature-tabs";
 import { PhoneFrame, ScreenFrame } from "@/components/marketing/frames";
-import { HowItWorks } from "@/components/marketing/how-it-works";
 import { Reveal } from "@/components/marketing/reveal";
 import { SiteFooter, SiteHeader } from "@/components/marketing/site-chrome";
+import { display } from "@/fonts/display";
 
 export const metadata: Metadata = {
-  title: { absolute: "QuickPro · The right people. The right jobs. One platform." },
+  title: { absolute: "QuickPro · From the first bid to the final invoice" },
   description:
-    "QuickPro brings businesses, contractors and workers together to find opportunities, coordinate teams and manage work from start to finish. Now onboarding in Suffolk County, NY.",
+    "The marketplace for commercial construction and skilled trades on Long Island. Property owners get quotes from approved contractors, contractors staff the work with subcontractors and local tradespeople, and everyone works from one record of the project. Now onboarding in Suffolk County, NY.",
 };
 
-// Product screens are captured from the running app with example data (.review/marketing.mts).
+// Product screens captured from the running app with the labeled demo data set (scripts/demo-seed.mts, .review/marketing-shots.mts).
+const desk = { width: 2560, height: 1720 };
+const phone = { width: 1170, height: 1992, phone: true };
 const shots = {
-  jobPeople: { src: "/marketing/job-people.webp", width: 2560, height: 1720 },
-  jobsTable: { src: "/marketing/jobs-table.webp", width: 2560, height: 1280 },
-  operations: { src: "/marketing/operations.webp", width: 2560, height: 1520 },
-  quotes: { src: "/marketing/quotes.webp", width: 2560, height: 1720 },
-  thread: { src: "/marketing/thread.webp", width: 1456, height: 1100 },
-  notifications: { src: "/marketing/notifications.webp", width: 2560, height: 1240 },
-  workerJobs: { src: "/marketing/worker-jobs.webp", width: 1170, height: 1992, phone: true },
-  workerOffer: { src: "/marketing/worker-offer.webp", width: 1170, height: 1992, phone: true },
-  workerSchedule: { src: "/marketing/worker-schedule.webp", width: 1170, height: 1992, phone: true },
+  quotes: { src: "/marketing/hero-quotes.webp", ...desk },
+  questions: { src: "/marketing/customer-questions.webp", ...desk },
+  invoice: { src: "/marketing/customer-invoice.webp", ...desk },
+  paid: { src: "/marketing/customer-paid.webp", ...desk },
+  overview: { src: "/marketing/contractor-overview.webp", ...desk },
+  project: { src: "/marketing/contractor-project.webp", ...desk },
+  crew: { src: "/marketing/contractor-crew.webp", ...desk },
+  subcontract: { src: "/marketing/contractor-subcontract.webp", ...desk },
+  timesheets: { src: "/marketing/contractor-timesheets.webp", ...desk },
+  workerFind: { src: "/marketing/worker-find.webp", ...phone },
+  workerOffer: { src: "/marketing/worker-offer.webp", ...phone },
+  workerHours: { src: "/marketing/worker-hours.webp", ...phone },
 };
 
-const problems = [
-  {
-    problem: "A crew member calls out the night before a big job.",
-    answer: "Post the shift in minutes. Reviewed workers in that town see the pay and hours and apply from their phone.",
-  },
-  {
-    problem: "Finding someone reliable means calling around.",
-    answer: "Every worker profile is reviewed by QuickPro staff before they can apply, and applicants show their skills and home town.",
-  },
-  {
-    problem: "Schedules live in texts, spreadsheets and memory.",
-    answer: "Each job shows who is booked, who has an offer waiting and who applied. Workers see every upcoming shift in one list.",
-  },
-  {
-    problem: "Details get lost between the office, the crew and the site.",
-    answer: "Each job has one message thread for the business, booked workers and QuickPro staff, with notifications when something changes.",
-  },
+type Side = "Customer" | "Contractor" | "Crew";
+
+const journey: { title: string; body: string; who: Side[] }[] = [
+  { title: "Post the project", body: "Scope, town, dates and budget. The site address stays private.", who: ["Customer"] },
+  { title: "Questions and quotes", body: "Contractors who serve the town ask privately, then quote. Compare side by side.", who: ["Customer", "Contractor"] },
+  { title: "Award", body: "Accept one quote. The winner gets the site details; the others are told.", who: ["Customer"] },
+  { title: "Staff the work", body: "Schedule shifts, book local tradespeople, bring in subcontractors.", who: ["Contractor", "Crew"] },
+  { title: "Track the work", body: "Crew check in and out, tick off the checklist and share photos; the contractor approves hours.", who: ["Contractor", "Crew"] },
+  { title: "Confirm and bill", body: "The customer confirms completion, then pays the invoice by card or check.", who: ["Customer", "Contractor"] },
 ];
 
-const features: Feature[] = [
+const contractorFeatures: Feature[] = [
   {
-    key: "discovery",
-    label: "Worker discovery",
-    title: "Reviewed workers who live nearby",
-    body: "Applicants come with their skills, home town and note. See at a glance how each one matches the job before you offer it.",
-    points: ["Profiles reviewed by QuickPro staff", "Skill match against what the job asks for", "Towns each worker covers", "Staff can match workers to urgent jobs by hand"],
-    image: { ...shots.jobPeople, alt: "A job's people panel with two booked workers and applicants, beside the job details" },
+    key: "opportunities",
+    label: "Opportunities",
+    title: "Requests that match your trades and towns",
+    body: "Customer requests for the services and towns you list come to your overview. Ask the customer a question privately, then quote.",
+    points: ["Only requests you can do, where you work", "Private questions before you price it", "Revise or withdraw until the customer decides", "Projects, jobs and subcontracts in one overview"],
+    image: { ...shots.overview, alt: "A general contractor's overview with a project in progress, upcoming jobs and a reviewed insurance certificate" },
   },
   {
-    key: "posting",
-    label: "Job posting",
-    title: "Post a shift in a couple of minutes",
-    body: "Date, hours, headcount, hourly pay and how you engage the worker. QuickPro checks pay against the market minimum before it goes live.",
-    points: ["Pay shown to workers before they apply", "Address shared only once someone is booked", "Edit until workers are booked", "Your insurance must be reviewed and current to post"],
-    image: { ...shots.jobsTable, alt: "A contractor's upcoming jobs with pay, bookings, applicants and status" },
+    key: "project",
+    label: "Project board",
+    title: "Every project from award to confirmation",
+    body: "Progress, scheduled work, who checked in, the checklist, subcontractors and the history, on one page the customer sees its own side of.",
+    points: ["Progress from awarded to confirmed", "Jobs with booked crew and check-in times", "Project thread with the customer", "Report the work complete when it's done"],
+    image: { ...shots.project, alt: "A project board showing progress, three jobs with booked workers and a checklist" },
   },
   {
-    key: "applications",
-    label: "Applications",
-    title: "Applications you can act on",
-    body: "Offer the job, decline with a note, or leave it open. Workers hear back in the app as soon as you decide.",
-    points: ["One tap to offer, with the worker's confirmation", "Decline with a reason they can read", "Applicants who were not offered stay out of the thread", "Every change recorded in an audit log"],
-    image: { ...shots.jobPeople, alt: "Applicants and booked workers on a job" },
+    key: "crew",
+    label: "Crew and shifts",
+    title: "Book reviewed tradespeople by the shift",
+    body: "Post a shift with the pay, hours and skills. Approved workers nearby apply; offer it to the ones who fit and they accept from their phones.",
+    points: ["Skill match and home town on every applicant", "Pay shown before anyone applies", "Address shared once someone is booked", "Your own crew and QuickPro workers on one job"],
+    image: { ...shots.crew, alt: "A demolition shift with two booked workers, their skills and check-in times" },
   },
   {
-    key: "messaging",
-    label: "Messaging",
-    title: "One thread per job",
-    body: "Parking, gear, timing: the business, its booked workers and QuickPro staff talk in one place, and nobody else can read it.",
-    points: ["Booked and offered workers only", "In-app notifications for new messages", "Staff can hide a message without deleting the record", "Text message alerts are planned, not live yet"],
-    image: { ...shots.thread, alt: "A job's message thread between the business and two booked workers" },
+    key: "subcontractors",
+    label: "Subcontractors",
+    title: "Hand off part of the work",
+    body: "Offer a scope and price to an approved subcontractor. They schedule and staff their own jobs on your project; the customer never sees your price with them.",
+    points: ["Scope and agreed price on record", "Their own thread with you", "They report their part complete to you", "Only approved, insured businesses"],
+    image: { ...shots.subcontract, alt: "A drywall subcontract on a lobby project, with the agreed scope, price and the subcontractor's own job" },
   },
   {
-    key: "scheduling",
-    label: "Scheduling",
-    title: "Every upcoming shift in one list",
-    body: "Workers keep their availability on their profile and see their accepted jobs, with time, place and pay, in My jobs.",
-    points: ["Weekly availability on each worker profile", "Accepted, offered and past jobs in one view", "Times always in Eastern time", "Calendar sync is planned, not live yet"],
-    image: { ...shots.workerSchedule, alt: "A worker's My jobs list on a phone" },
+    key: "timesheets",
+    label: "Timesheets",
+    title: "Approve hours from check-in and check-out",
+    body: "Each finished shift shows when the worker checked in and out. Approve as recorded or adjust with a note the worker sees, then export for payroll.",
+    points: ["Hours from check-in and check-out", "Adjustments need a note", "Workers can question hours", "Export approved hours as CSV"],
+    image: { ...shots.timesheets, alt: "A week of timesheets with approved hours, one shift waiting for approval, and gross pay" },
   },
   {
-    key: "staffing",
-    label: "Staffing management",
-    title: "Know what needs attention today",
-    body: "The overview lists unfilled jobs starting within 48 hours, new applicants and offers waiting for an answer, above the week's schedule.",
-    points: ["Owners, admins, dispatchers and members", "Invite your team by link", "Customer requests that match your services", "Insurance status and expiry in view"],
-    image: { ...shots.operations, alt: "A contractor's operations overview listing jobs that need attention" },
-  },
-  {
-    key: "tracking",
-    label: "Job tracking",
-    title: "From posted to complete",
-    body: "Each job moves from open to filled to in progress to complete. Mark it done and every booked assignment is closed out with it.",
-    points: ["Status everyone can see", "Cancel with a reason workers are told", "Unanswered offers lapse when the job starts", "Notifications at each step"],
-    image: { ...shots.notifications, alt: "A list of in-app notifications about applications, offers and messages" },
-  },
-];
-
-const steps = [
-  {
-    title: "Post the work",
-    body: "A business posts a shift, or a property manager posts a service request.",
-    detail: "Pay, hours, town and skills for a shift. Scope, dates and budget for a request. Site addresses stay private.",
-    image: { ...shots.jobsTable, alt: "Upcoming jobs posted by a contractor" },
-  },
-  {
-    title: "Connect with the right people",
-    body: "Reviewed workers apply to shifts; approved contractors quote on requests.",
-    detail: "Compare applicants by skills and town, or compare quotes side by side. Offer the job or accept a quote when you're ready.",
-    image: { ...shots.quotes, alt: "A customer comparing three quotes for nightly office cleaning" },
-  },
-  {
-    title: "Manage it to done",
-    body: "Message the crew, track bookings and close the job out.",
-    detail: "The job thread, booking status and notifications keep everyone current until the work is marked complete.",
-    image: { ...shots.operations, alt: "The operations overview for a contractor" },
+    key: "invoices",
+    label: "Invoices and payment",
+    title: "Bill the customer, get paid to your account",
+    body: "Issue the invoice from the project. Customers pay by card through Stripe, straight to your connected account, or by check and you mark it paid.",
+    points: ["Line items, due date and payment instructions", "Card payments through Stripe Connect", "QuickPro never holds the money", "Card payments run in test mode until launch"],
+    image: { ...shots.paid, alt: "A stairwell repaint invoice marked paid by card through Stripe, in test mode" },
   },
 ];
 
 const today = [
-  "QuickPro staff review every business registration before it can post work or quote.",
-  "Contractors must have a general liability certificate reviewed by staff, with a current expiry date, to post jobs or quote.",
+  "QuickPro staff review every business before it can post work or quote. Contractors need a reviewed, current general liability certificate.",
   "Every worker profile is reviewed by staff before the worker can apply.",
   "Pay is shown before anyone applies and can't be set below the market's minimum hourly rate.",
-  "Street addresses and site contacts are shared only with booked workers or the awarded contractor.",
-  "Changes to jobs, bookings, quotes and staff review decisions are recorded in an audit log; staff can moderate messages.",
+  "Site addresses and contacts go only to the awarded contractor and the booked crew.",
+  "Questions before the award are private between the customer and each contractor.",
+  "Hours come from the worker's check-in and check-out. The business approves them; the worker can question them.",
+  "Card payments go through Stripe Connect straight to the contractor. QuickPro never holds the money.",
+  "Changes to jobs, bookings, quotes, hours and invoices are recorded in an audit log.",
 ];
 
-const planned = [
-  "Ratings and reviews after completed work",
-  "Identity verification and background checks, with consent, through a specialist provider",
-  "Invoicing and payments through Stripe",
-  "Email and text message alerts",
+const notYet = [
+  "Trade license checks. Electrical, plumbing and HVAC aren't offered until they exist.",
+  "Identity verification and background checks",
+  "Text message alerts",
+  "ACH payments and card refunds in QuickPro",
+  "Live card payments (test mode until launch)",
 ];
 
-function Eyebrow({ children }: { children: React.ReactNode }) {
+function Eyebrow({ children, onDark = false }: { children: React.ReactNode; onDark?: boolean }) {
   return (
-    <p className="flex items-center gap-2 text-[13px] font-medium tracking-[0.01em] text-signal-ink">
-      <span aria-hidden className="h-[7px] w-[7px] rounded-[2px] bg-signal" />
+    <p className={`flex items-center gap-2 text-[12.5px] font-semibold tracking-[0.08em] uppercase ${onDark ? "text-[#e8955a]" : "text-signal-ink"}`}>
+      <span aria-hidden className="h-[7px] w-[7px] bg-signal" />
       {children}
     </p>
   );
 }
 
-function SectionHeading({ eyebrow, title, body, className = "" }: { eyebrow: string; title: string; body?: string; className?: string }) {
+function SectionHeading({ eyebrow, title, body, onDark = false }: { eyebrow: string; title: string; body?: string; onDark?: boolean }) {
   return (
-    <Reveal className={`max-w-[42rem] ${className}`}>
-      <Eyebrow>{eyebrow}</Eyebrow>
-      <h2 className="mt-4 text-[32px] leading-[1.08] font-semibold tracking-[-0.03em] text-balance text-ink sm:text-[44px]">{title}</h2>
-      {body ? <p className="mt-5 text-[17px] leading-7 text-pretty text-ink-soft">{body}</p> : null}
+    <Reveal className="max-w-[44rem]">
+      <Eyebrow onDark={onDark}>{eyebrow}</Eyebrow>
+      <h2
+        className={`mt-5 font-display text-[34px] leading-[1.08] font-medium tracking-[-0.02em] text-balance sm:text-[46px] ${onDark ? "text-white" : "text-ink"}`}
+      >
+        {title}
+      </h2>
+      {body ? <p className={`mt-5 text-[17px] leading-7 text-pretty ${onDark ? "text-white/70" : "text-ink-soft"}`}>{body}</p> : null}
     </Reveal>
   );
 }
 
-function PrimaryLink({ href, children, inverted = false }: { href: string; children: React.ReactNode; inverted?: boolean }) {
+function PrimaryLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <Link
       href={href}
-      className={`group inline-flex h-12 items-center justify-center gap-2 rounded-md px-5 text-[15px] font-medium transition-colors ${
-        inverted ? "bg-white text-ink hover:bg-white/90" : "bg-ink text-white hover:bg-navy"
-      }`}
+      className="group inline-flex h-12 items-center justify-center gap-2 rounded-[4px] bg-signal px-5 text-[15px] font-semibold text-charcoal transition-colors hover:bg-[#e48745]"
     >
       {children}
       <span aria-hidden className="transition-transform duration-200 group-hover:translate-x-0.5">
@@ -175,12 +148,12 @@ function PrimaryLink({ href, children, inverted = false }: { href: string; child
   );
 }
 
-function SecondaryLink({ href, children, inverted = false }: { href: string; children: React.ReactNode; inverted?: boolean }) {
+function SecondaryLink({ href, children, onDark = false }: { href: string; children: React.ReactNode; onDark?: boolean }) {
   return (
     <Link
       href={href}
-      className={`inline-flex h-12 items-center justify-center rounded-md px-5 text-[15px] font-medium ring-1 transition-colors ring-inset ${
-        inverted ? "text-white ring-white/25 hover:bg-white/10" : "bg-surface text-ink ring-ink/15 hover:bg-ink/[0.03] hover:ring-ink/25"
+      className={`inline-flex h-12 items-center justify-center rounded-[4px] px-5 text-[15px] font-medium ring-1 transition-colors ring-inset ${
+        onDark ? "text-white ring-white/30 hover:bg-white/[0.08]" : "bg-surface text-ink ring-ink/20 hover:bg-ink/[0.03] hover:ring-ink/35"
       }`}
     >
       {children}
@@ -188,195 +161,183 @@ function SecondaryLink({ href, children, inverted = false }: { href: string; chi
   );
 }
 
+function SideTag({ side }: { side: Side }) {
+  const tone = side === "Customer" ? "bg-[#e9eef2] text-[#2f4d63]" : side === "Contractor" ? "bg-signal-soft text-signal-ink" : "bg-[#ecebe6] text-ink-soft";
+  return <span className={`inline-flex h-5 items-center rounded-[3px] px-1.5 text-[11.5px] font-semibold ${tone}`}>{side}</span>;
+}
+
 export default function HomePage() {
   return (
-    <div className="flex min-h-full flex-col bg-paper text-ink">
+    <div className={`${display.variable} flex min-h-full flex-col bg-paper text-ink`}>
       <SiteHeader />
       <main className="flex-1">
         {/* Hero */}
         <section className="relative overflow-hidden">
-          <div className="mx-auto max-w-[1200px] px-5 pt-16 sm:px-8 sm:pt-24 lg:pt-28">
-            <Eyebrow>Now onboarding in Suffolk County, New York</Eyebrow>
-            <div className="mt-6 grid gap-8 lg:grid-cols-12 lg:items-end lg:gap-12">
-              <h1 className="text-[44px] leading-[1.02] font-semibold tracking-[-0.045em] text-balance text-ink sm:text-[68px] lg:col-span-7 lg:text-[80px]">
-                The right people. The right jobs. One platform.
+          <div className="mx-auto max-w-[1200px] px-5 pt-14 sm:px-8 sm:pt-20 lg:pt-24">
+            <Eyebrow>Commercial construction and trades · Suffolk County, NY</Eyebrow>
+            <div className="mt-7 grid gap-8 lg:grid-cols-12 lg:items-end lg:gap-12">
+              <h1 className="font-display text-[46px] leading-[1.0] font-medium tracking-[-0.03em] text-balance text-ink sm:text-[68px] lg:col-span-7 lg:text-[84px]">
+                From the first bid to the final invoice.
               </h1>
-              <div className="lg:col-span-5 lg:pb-2">
-                <p className="max-w-[34rem] text-[18px] leading-8 text-pretty text-ink-soft sm:text-[19px]">
-                  QuickPro brings businesses, contractors, and workers together to find opportunities, coordinate teams,
-                  and manage work from start to finish.
+              <div className="lg:col-span-5 lg:pb-3">
+                <p className="max-w-[34rem] text-[18px] leading-8 text-pretty text-ink-soft">
+                  QuickPro is the marketplace for commercial construction and skilled trades on Long Island. Property owners get
+                  quotes from approved contractors. Contractors staff the work with subcontractors and local tradespeople. Everyone
+                  works from one record of the project, the hours and the bill.
                 </p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  <PrimaryLink href="/sign-up?as=contractor">Find Workers</PrimaryLink>
-                  <SecondaryLink href="/sign-up?as=worker">Find Work</SecondaryLink>
+                  <PrimaryLink href="/sign-up?as=customer">Post a project</PrimaryLink>
+                  <SecondaryLink href="/sign-up?as=contractor">Join as a contractor</SecondaryLink>
                 </div>
                 <p className="mt-5 text-[14px] text-muted">
-                  Need a service done?{" "}
-                  <Link href="/sign-up?as=customer" className="font-medium text-ink underline decoration-ink/25 underline-offset-4 hover:decoration-ink">
-                    Request quotes from approved contractors
+                  Skilled trade or crew member?{" "}
+                  <Link href="/sign-up?as=worker" className="font-medium text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink">
+                    Find shift work near you
                   </Link>
                 </p>
               </div>
             </div>
 
-            <div className="relative mt-16 sm:mt-20">
+            <div className="relative mt-14 sm:mt-20">
               <Reveal>
                 <ScreenFrame
-                  {...shots.jobPeople}
-                  alt="QuickPro for a contractor: a floor scrub job with two booked workers, applicants and job details"
+                  {...shots.quotes}
+                  alt="QuickPro for a property manager: three contractor quotes on a tenant fit-out, marked lowest price, earliest start and within budget"
                   priority
                   sizes="(min-width: 1200px) 1100px, 100vw"
                   className="lg:mr-28"
                 />
               </Reveal>
-              <Reveal delay={150} className="absolute -right-2 -bottom-10 hidden w-[230px] md:block lg:right-0 lg:w-[260px]">
-                <PhoneFrame src={shots.workerOffer.src} alt="QuickPro for a worker: a job offer with pay and time, ready to accept" priority />
+              <Reveal delay={150} className="absolute -right-2 -bottom-10 hidden w-[230px] md:block lg:right-0 lg:w-[262px]">
+                <PhoneFrame src={shots.workerOffer.src} alt="QuickPro for a drywall taper: a shift offer with the pay and time, ready to accept" priority />
               </Reveal>
             </div>
             <p className="mt-5 pb-14 text-[12px] text-muted sm:pb-20 md:mt-20">
-              Screens from the QuickPro app, shown with example data.
+              Screens from the QuickPro app, shown with a labeled demo data set. The businesses and people in them are examples.
             </p>
           </div>
         </section>
 
-        {/* Problem and solution */}
-        <section className="border-t border-ink/[0.07] bg-surface">
+        {/* The journey */}
+        <section id="how-it-works" className="scroll-mt-16 border-t border-ink/[0.08] bg-surface">
           <div className="mx-auto max-w-[1200px] px-5 py-20 sm:px-8 sm:py-28">
             <SectionHeading
-              eyebrow="Why QuickPro"
-              title="Commercial service work runs on people. Finding and coordinating them shouldn't run on phone calls."
+              eyebrow="How it works"
+              title="One job, three sides, one record."
+              body="The customer, the contractor and the crew each see their part of the same project, from the request to the payment. Each step is a real status change, recorded as it happens."
             />
-            <div className="mt-14 border-t border-ink/10">
-              <div className="hidden grid-cols-2 gap-12 py-3 text-[13px] font-medium text-muted md:grid">
-                <span>Where work gets stuck</span>
-                <span>How QuickPro handles it</span>
-              </div>
-              <ol>
-                {problems.map((p, i) => (
-                  <Reveal as="li" key={p.problem} delay={i * 60} className="grid gap-3 border-t border-ink/10 py-7 md:grid-cols-2 md:gap-12">
-                    <p className="flex gap-4 text-[19px] leading-7 font-medium tracking-[-0.01em] text-ink">
-                      <span className="tabular w-6 shrink-0 text-[14px] leading-7 font-medium text-faint">0{i + 1}</span>
-                      {p.problem}
-                    </p>
-                    <p className="pl-10 text-[16px] leading-7 text-ink-soft md:pl-0">{p.answer}</p>
-                  </Reveal>
-                ))}
-              </ol>
-            </div>
+            <ol className="mt-14 grid gap-px overflow-hidden rounded-[6px] border border-ink/10 bg-ink/10 sm:grid-cols-2 lg:grid-cols-3">
+              {journey.map((step, i) => (
+                <Reveal as="li" key={step.title} delay={i * 60} className="relative bg-surface px-6 pt-8 pb-7">
+                  <span aria-hidden className="absolute top-0 left-6 h-[3px] w-10 bg-signal" />
+                  <p className="tabular text-[13px] font-semibold text-muted">0{i + 1}</p>
+                  <h3 className="mt-2 text-[18px] leading-6 font-semibold tracking-[-0.01em] text-ink">{step.title}</h3>
+                  <p className="mt-2 text-[14.5px] leading-6 text-ink-soft">{step.body}</p>
+                  <p className="mt-5 flex flex-wrap gap-1.5">
+                    {step.who.map((w) => (
+                      <SideTag key={w} side={w} />
+                    ))}
+                  </p>
+                </Reveal>
+              ))}
+            </ol>
           </div>
         </section>
 
-        {/* Features */}
-        <section id="features" className="scroll-mt-16 border-t border-ink/[0.07]">
+        {/* Customers */}
+        <section id="customers" className="scroll-mt-16 border-t border-ink/[0.08]">
           <div className="mx-auto max-w-[1200px] px-5 py-20 sm:px-8 sm:py-28">
             <SectionHeading
-              eyebrow="Features"
-              title="Everything between “we need people” and “job complete.”"
-              body="Built around how service businesses actually staff work: reviewed people, clear pay, private sites and one record of what happened."
+              eyebrow="For property owners and managers"
+              title="Get the work quoted, built and billed without the phone tag."
+              body="For property managers, building owners and facilities teams commissioning fit-outs, refreshes, repairs and recurring work."
             />
-            <div className="mt-14">
-              <FeatureTabs features={features} />
-            </div>
-          </div>
-        </section>
-
-        {/* How it works */}
-        <section id="how-it-works" className="scroll-mt-16 border-t border-ink/[0.07] bg-surface">
-          <div className="mx-auto max-w-[1200px] px-5 py-20 sm:px-8 sm:py-28">
-            <SectionHeading eyebrow="How it works" title="Three steps, from posting to done." />
-            <div className="mt-14">
-              <HowItWorks steps={steps} />
-            </div>
-          </div>
-        </section>
-
-        {/* Businesses */}
-        <section id="businesses" className="scroll-mt-16 border-t border-ink/[0.07]">
-          <div className="mx-auto max-w-[1200px] px-5 py-20 sm:px-8 sm:py-28">
-            <SectionHeading
-              eyebrow="For businesses and contractors"
-              title="Say yes to the bigger job."
-              body="For cleaning, pressure washing, landscaping and facility service companies, and for the property managers who hire them."
-            />
-            <div className="mt-16 space-y-24 sm:mt-20 sm:space-y-32">
-              <BusinessRow
-                title="Add hands when your crew is stretched"
-                body="A warehouse wants a floor scrub Tuesday at 7 AM and you're two people short. Post the shift at $26 an hour; reviewed floor care techs in Islip see it and apply. Offer it to the two with the right skills, and they accept from their phones."
-                points={["Your crew and QuickPro workers on one job", "Phone numbers shared once a worker accepts", "You engage the worker; the job says how"]}
-                image={{ ...shots.jobPeople, alt: "A job with booked workers and applicants" }}
+            <div className="mt-16 space-y-24 sm:mt-20 sm:space-y-28">
+              <StoryRow
+                title="Ask before you award"
+                body="Every contractor who can see your request gets a private thread with you. Answer their questions about access and scope, ask about their price, and compare quotes with the lowest price, earliest start and your budget marked."
+                points={["Each contractor sees only its own thread and quote", "Invite contractors who don't list your town", "Accept one quote; the others are told"]}
+                image={{ ...shots.questions, alt: "Private question threads with two contractors on a tenant fit-out request" }}
               />
-              <BusinessRow
+              <StoryRow
                 flip
-                title="Win customer work with clear quotes"
-                body="A property manager in Central Islip posts nightly cleaning for a three-floor office. Approved contractors who serve Islip see the scope and budget and send a price. The manager compares quotes side by side and awards one; only the winner gets the address."
-                points={["Each contractor sees only its own quote", "Revise or withdraw until the customer decides", "Requests that match your services, in your overview"]}
-                image={{ ...shots.quotes, alt: "A property manager comparing three quotes" }}
+                title="Pay the invoice the way you choose"
+                body="When the contractor reports the work complete, you confirm it or send it back with a note. The invoice comes to your invoices; pay by card through Stripe or by check, and both sides see when it's paid."
+                points={["Invoices to pay on your overview", "Card payments go straight to the contractor", "Report a problem from the project if something's wrong"]}
+                image={{ ...shots.invoice, alt: "A stairwell repaint invoice from a contractor with a pay by card button" }}
               />
-              <BusinessRow
-                title="Run the week from one screen"
-                body="Unfilled jobs starting soon, new applicants and offers waiting for an answer sit at the top of your overview, above the week's schedule. Dispatchers on your team can act on them without the owner on the phone."
-                points={["Roles for owners, admins, dispatchers and members", "Insurance status and expiry always visible", "Every change in the audit log"]}
-                image={{ ...shots.operations, alt: "A contractor's operations overview" }}
-              />
+            </div>
+            <div className="mt-16 flex flex-col gap-3 sm:flex-row">
+              <PrimaryLink href="/sign-up?as=customer">Post a project</PrimaryLink>
+              <SecondaryLink href="/contractors">Browse approved contractors</SecondaryLink>
+            </div>
+          </div>
+        </section>
+
+        {/* Contractors */}
+        <section id="contractors" className="scroll-mt-16 border-t border-ink/[0.08] bg-surface">
+          <div className="mx-auto max-w-[1200px] px-5 py-20 sm:px-8 sm:py-28">
+            <SectionHeading
+              eyebrow="For contractors and subcontractors"
+              title="Win the work, staff it, and bill it from one place."
+              body="For general contractors and trade businesses in carpentry, drywall and paint, flooring, masonry and concrete, general construction, and commercial services."
+            />
+            <div className="mt-14">
+              <FeatureTabs features={contractorFeatures} />
+            </div>
+            <div className="mt-14">
+              <PrimaryLink href="/sign-up?as=contractor">Join as a contractor</PrimaryLink>
             </div>
           </div>
         </section>
 
         {/* Workers */}
-        <section id="workers" className="scroll-mt-16 bg-ink text-white">
+        <section id="workers" className="on-dark scroll-mt-16 bg-charcoal text-white">
           <div className="mx-auto max-w-[1200px] px-5 py-20 sm:px-8 sm:py-28">
-            <Reveal className="max-w-[42rem]">
-              <p className="flex items-center gap-2 text-[13px] font-medium text-[#f59a72]">
-                <span aria-hidden className="h-[7px] w-[7px] rounded-[2px] bg-signal" />
-                For workers
-              </p>
-              <h2 className="mt-4 text-[32px] leading-[1.08] font-semibold tracking-[-0.03em] text-balance sm:text-[44px]">
-                Good shifts close to home, with the pay up front.
-              </h2>
-              <p className="mt-5 text-[17px] leading-7 text-white/70">
-                Build your profile once. QuickPro staff review it, then you can apply to jobs in the towns you choose.
-              </p>
-            </Reveal>
+            <SectionHeading
+              onDark
+              eyebrow="For tradespeople and crew"
+              title="Steady shifts close to home, with the pay up front."
+              body="Carpenters, tapers, painters, laborers and crew leads build one profile. QuickPro staff review it, then you pick up shifts from local contractors in the towns you choose."
+            />
             <div className="mt-16 grid gap-14 md:grid-cols-3 md:gap-8 lg:gap-12">
               {[
                 {
                   n: "01",
-                  title: "Find nearby work",
-                  body: "Open jobs in your towns, with the hourly rate, the estimate for the shift and how your skills match.",
-                  image: shots.workerJobs,
-                  alt: "Open jobs near a worker, with pay",
+                  title: "Find work that fits",
+                  body: "Open shifts in your towns with the hourly rate, the estimate for the day, how your skills match, and whether it fits your availability.",
+                  image: shots.workerFind,
+                  alt: "Open shifts near a worker, with pay, skill match and availability",
                 },
                 {
                   n: "02",
-                  title: "Apply and accept",
-                  body: "Apply with a note. When a business offers you the job, accept or decline; the address arrives when you accept.",
+                  title: "Accept the offer",
+                  body: "Apply with a note. When a contractor offers you the shift, accept or decline from your phone. The address arrives when you accept.",
                   image: shots.workerOffer,
-                  alt: "A job offer waiting for the worker's answer",
+                  alt: "A shift offer waiting for the worker's answer",
                 },
                 {
                   n: "03",
-                  title: "Keep your schedule",
-                  body: "Every accepted job in My jobs, a message thread with the crew, and notifications when anything changes.",
-                  image: shots.workerSchedule,
-                  alt: "A worker's accepted jobs",
+                  title: "See your approved hours",
+                  body: "Check in and out from your phone. See approved hours and estimated gross pay for each week, and question hours that look wrong.",
+                  image: shots.workerHours,
+                  alt: "A worker's approved hours and estimated gross pay for the week",
                 },
               ].map((w, i) => (
                 <Reveal key={w.n} delay={i * 100}>
                   <PhoneFrame src={w.image.src} alt={w.alt} className="mx-auto w-[min(16rem,78%)] ring-white/10" />
-                  <p className="tabular mt-8 text-[13px] text-white/45">{w.n}</p>
+                  <p className="tabular mt-8 text-[13px] font-semibold text-[#e8955a]">{w.n}</p>
                   <h3 className="mt-1 text-[19px] font-semibold tracking-[-0.01em]">{w.title}</h3>
                   <p className="mt-2 text-[15px] leading-7 text-white/70">{w.body}</p>
                 </Reveal>
               ))}
             </div>
             <div className="mt-16 flex flex-col gap-3 sm:flex-row">
-              <PrimaryLink href="/sign-up?as=worker" inverted>
-                Find Work
-              </PrimaryLink>
+              <PrimaryLink href="/sign-up?as=worker">Find shift work</PrimaryLink>
             </div>
-            <p className="mt-6 max-w-[42rem] text-[13px] leading-6 text-white/50">
-              Businesses on QuickPro engage workers directly and say how on every job, for example as their employee.
-              QuickPro is not the employer.
+            <p className="mt-6 max-w-[44rem] text-[13px] leading-6 text-white/55">
+              Each shift says how the contractor engages you, for example as its employee, and the contractor pays you through its
+              own payroll. QuickPro is not the employer and doesn&apos;t decide how anyone is classified.
             </p>
           </div>
         </section>
@@ -385,13 +346,13 @@ export default function HomePage() {
         <section id="trust" className="scroll-mt-16 bg-surface">
           <div className="mx-auto max-w-[1200px] px-5 py-20 sm:px-8 sm:py-28">
             <SectionHeading
-              eyebrow="Trust and reliability"
-              title="Reviewed by people, enforced by the platform."
-              body="What QuickPro does today, and what is still on the way. We only list a check here once it is live."
+              eyebrow="Trust and safety"
+              title="Reviewed by people. Enforced by the platform."
+              body="What QuickPro does today, and what isn't built yet. A check appears here only once it is live."
             />
             <div className="mt-14 grid gap-12 lg:grid-cols-[1.5fr_1fr] lg:gap-16">
               <div>
-                <p className="text-[13px] font-medium text-ink">In place today</p>
+                <p className="text-[13px] font-semibold text-ink">In place today</p>
                 <ul className="mt-4 border-t border-ink/10">
                   {today.map((t, i) => (
                     <Reveal as="li" key={t} delay={i * 40} className="flex gap-3.5 border-b border-ink/10 py-4 text-[15px] leading-7 text-ink-soft">
@@ -404,18 +365,18 @@ export default function HomePage() {
                 </ul>
               </div>
               <div>
-                <p className="text-[13px] font-medium text-ink">Planned, not available yet</p>
+                <p className="text-[13px] font-semibold text-ink">Not available yet</p>
                 <ul className="mt-4 border-t border-ink/10">
-                  {planned.map((t) => (
+                  {notYet.map((t) => (
                     <li key={t} className="flex gap-3.5 border-b border-ink/10 py-4 text-[15px] leading-7 text-muted">
-                      <span aria-hidden className="mt-[11px] h-px w-3 shrink-0 bg-faint" />
+                      <span aria-hidden className="mt-[13px] h-px w-3 shrink-0 bg-faint" />
                       {t}
                     </li>
                   ))}
                 </ul>
                 <p className="mt-5 text-[13px] leading-6 text-muted">
-                  A staff review means a person at QuickPro checked what was submitted. It isn&apos;t a guarantee of
-                  insurance coverage or of a worker&apos;s background.
+                  A staff review means a person at QuickPro checked what was submitted. It isn&apos;t a guarantee of insurance
+                  coverage, licensing or a worker&apos;s background.
                 </p>
               </div>
             </div>
@@ -423,33 +384,33 @@ export default function HomePage() {
         </section>
 
         {/* Final call to action */}
-        <section className="border-t border-ink/[0.07]">
-          <div className="mx-auto max-w-[1200px] px-5 py-20 sm:px-8 sm:py-28">
+        <section className="on-dark border-t border-white/10 bg-charcoal text-white">
+          <div className="mx-auto max-w-[1200px] px-5 py-20 sm:px-8 sm:py-24">
             <Reveal className="max-w-[48rem]">
-              <h2 className="text-[36px] leading-[1.04] font-semibold tracking-[-0.035em] text-balance text-ink sm:text-[56px]">
+              <h2 className="font-display text-[38px] leading-[1.04] font-medium tracking-[-0.025em] text-balance sm:text-[58px]">
                 Ready when the next job is.
               </h2>
             </Reveal>
-            <div className="mt-12 grid border-y border-ink/10 md:grid-cols-2">
-              <div className="py-10 md:border-r md:border-ink/10 md:pr-12">
-                <p className="text-[13px] font-medium text-muted">Businesses and contractors</p>
-                <p className="mt-3 text-[22px] leading-8 font-semibold tracking-[-0.015em] text-ink">
-                  Register your business, list your services and towns, and post your first job once you&apos;re approved.
-                </p>
-                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                  <PrimaryLink href="/sign-up?as=contractor">Find Workers</PrimaryLink>
-                  <SecondaryLink href="/sign-up?as=customer">Request service</SecondaryLink>
+            <div className="mt-12 grid border-y border-white/15 md:grid-cols-3">
+              {[
+                { who: "Property owners and managers", body: "Register your organization and post your first project once you're approved.", href: "/sign-up?as=customer", cta: "Post a project" },
+                { who: "Contractors and subcontractors", body: "Register your business, list your trades and towns, and upload your insurance certificate.", href: "/sign-up?as=contractor", cta: "Join as a contractor" },
+                { who: "Tradespeople and crew", body: "Create your profile, choose your towns and skills, and apply to local shifts.", href: "/sign-up?as=worker", cta: "Find shift work" },
+              ].map((c, i) => (
+                <div key={c.who} className={`py-9 ${i > 0 ? "border-t border-white/15 md:border-t-0 md:border-l md:pl-8" : ""} md:pr-8`}>
+                  <p className="text-[13px] font-semibold text-[#e8955a]">{c.who}</p>
+                  <p className="mt-3 text-[17px] leading-7 text-white/80">{c.body}</p>
+                  <Link
+                    href={c.href}
+                    className="group mt-6 inline-flex items-center gap-2 text-[15px] font-semibold text-white underline decoration-white/30 underline-offset-[6px] hover:decoration-white"
+                  >
+                    {c.cta}
+                    <span aria-hidden className="transition-transform duration-200 group-hover:translate-x-0.5">
+                      →
+                    </span>
+                  </Link>
                 </div>
-              </div>
-              <div className="border-t border-ink/10 py-10 md:border-t-0 md:pl-12">
-                <p className="text-[13px] font-medium text-muted">Workers</p>
-                <p className="mt-3 text-[22px] leading-8 font-semibold tracking-[-0.015em] text-ink">
-                  Create your profile, choose your towns, and apply to local jobs with the pay shown up front.
-                </p>
-                <div className="mt-7">
-                  <PrimaryLink href="/sign-up?as=worker">Find Work</PrimaryLink>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </section>
@@ -459,7 +420,7 @@ export default function HomePage() {
   );
 }
 
-function BusinessRow({
+function StoryRow({
   title,
   body,
   points,
@@ -480,14 +441,14 @@ function BusinessRow({
         <ul className="mt-6 space-y-2.5 border-t border-ink/10 pt-5">
           {points.map((p) => (
             <li key={p} className="flex gap-2.5 text-[14px] leading-6 text-ink-soft">
-              <span aria-hidden className="mt-[9px] h-[5px] w-[5px] shrink-0 rounded-full bg-signal" />
+              <span aria-hidden className="mt-[9px] h-[5px] w-[5px] shrink-0 bg-signal" />
               {p}
             </li>
           ))}
         </ul>
       </Reveal>
       <Reveal delay={100} className={`lg:col-span-7 ${flip ? "lg:order-1" : ""}`}>
-        <div className="rounded-[14px] bg-[#eef0f3] p-3 sm:p-6">
+        <div className="rounded-[6px] bg-[#ebe8e1] p-3 sm:p-6">
           <ScreenFrame {...image} sizes="(min-width: 1024px) 680px, 100vw" />
         </div>
       </Reveal>

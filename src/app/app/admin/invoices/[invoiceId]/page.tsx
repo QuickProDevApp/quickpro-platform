@@ -34,7 +34,7 @@ export default async function AdminInvoicePage({ params }: { params: Promise<{ i
           {invoice.title}
         </Link>
       </div>
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <InvoiceDocument invoice={invoice} />
         <div className="space-y-6">
           <PrintButton />

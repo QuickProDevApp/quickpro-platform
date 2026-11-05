@@ -34,7 +34,7 @@ export function ProjectProgress({ stages }: { stages: Stage[] }) {
         <li key={s.key} className="min-w-0" aria-current={s.current ? "step" : undefined}>
           <span
             aria-hidden
-            className={`block h-1 rounded-full ${s.done ? "bg-navy" : s.current ? "bg-signal" : "bg-line"}`}
+            className={`block h-1 rounded-full ${s.done ? "bg-charcoal" : s.current ? "bg-signal" : "bg-line"}`}
           />
           <span
             className={`mt-1.5 block text-[11px] leading-tight break-words hyphens-auto sm:text-xs ${

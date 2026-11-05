@@ -45,7 +45,7 @@ export default async function AdminOverviewPage() {
   return (
     <>
     <PageHeader title="Staff overview" description="Suffolk County, NY" />
-    <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <Card>
         <CardHeader
           title="Needs attention"
@@ -58,7 +58,7 @@ export default async function AdminOverviewPage() {
                 <span className={`min-w-0 flex-1 text-sm ${q.value > 0 ? "text-ink" : "text-muted"}`}>{q.label}</span>
                 <span
                   className={`tabular inline-flex h-6 min-w-8 items-center justify-center rounded-md px-2 text-[13px] font-semibold ${
-                    q.value > 0 ? "bg-navy text-white" : "bg-subtle text-faint"
+                    q.value > 0 ? "bg-charcoal text-white" : "bg-subtle text-faint"
                   }`}
                 >
                   {q.value}

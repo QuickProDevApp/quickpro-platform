@@ -223,7 +223,7 @@ async function CustomerView({
   ].filter((c) => !inThread.has(c.id));
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <div className="space-y-6">
         {work && awarded ? (
           <>
@@ -316,6 +316,7 @@ async function CustomerView({
               quotes={visibleQuotes}
               acceptAction={dispatcher && open ? acceptQuoteAction.bind(null, org.id, request.id) : undefined}
               declineAction={dispatcher && open ? declineQuoteAction.bind(null, org.id, request.id) : undefined}
+              budgetMaxCents={request.budget_max_cents}
             />
           )}
           {withdrawn > 0 ? (
@@ -481,7 +482,7 @@ async function ContractorView({
   const live = quote && quote.status === "submitted";
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <div className="space-y-6">
         {invited && open && !quote ? (
           <FormMessage tone="info">{request.customer_name} invited your business to quote on this request.</FormMessage>
@@ -820,7 +821,7 @@ async function SubcontractorView({
   const respond = respondToSubcontractAction.bind(null, org.id, request.id, sc.id);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <div className="space-y-6">
         {sc.status === "offered" ? (
           <ProjectNotice tone="warn" title={`${sc.prime_name} offered you part of this project`}>

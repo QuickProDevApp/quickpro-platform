@@ -117,7 +117,7 @@ export function Field({
 }
 
 const control =
-  "block w-full rounded-md border border-line-strong bg-surface px-3 text-base text-ink shadow-[0_1px_1px_rgba(13,22,38,0.03)] transition-[border-color,box-shadow] duration-150 placeholder:text-faint hover:border-faint focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15 aria-[invalid=true]:border-bad aria-[invalid=true]:focus:ring-bad/15 disabled:bg-subtle disabled:text-muted sm:text-sm";
+  "block w-full rounded-md border border-line-strong bg-surface px-3 text-base text-ink shadow-[0_1px_1px_rgba(36,43,49,0.03)] transition-[border-color,box-shadow] duration-150 placeholder:text-faint hover:border-faint focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15 aria-[invalid=true]:border-bad aria-[invalid=true]:focus:ring-bad/15 disabled:bg-subtle disabled:text-muted sm:text-sm";
 
 /** Marks a control invalid and links it to its error when the form returned one for it. */
 function useInvalid(name: string | undefined) {
@@ -143,8 +143,8 @@ export function Select(props: ComponentProps<"select">) {
 
 export function Checkbox({ label, ...props }: ComponentProps<"input"> & { label: ReactNode }) {
   return (
-    <label className="flex cursor-pointer items-start gap-2.5 rounded-md border border-line px-3 py-2.5 text-sm transition-colors hover:border-line-strong has-[:checked]:border-navy/40 has-[:checked]:bg-subtle">
-      <input type="checkbox" {...props} className="mt-0.5 h-4 w-4 accent-[var(--color-navy)]" />
+    <label className="flex cursor-pointer items-start gap-2.5 rounded-md border border-line px-3 py-2.5 text-sm transition-colors hover:border-line-strong has-[:checked]:border-charcoal/40 has-[:checked]:bg-subtle">
+      <input type="checkbox" {...props} className="mt-0.5 h-4 w-4 accent-[var(--color-charcoal)]" />
       <span className="text-ink">{label}</span>
     </label>
   );

@@ -72,7 +72,7 @@ test("a contractor publishes a public profile that visitors can find, then takes
   // 2. A signed-out visitor finds it by service and town.
   const visitor = await session();
   await visitor.goto("/contractors");
-  await expect(visitor.getByRole("heading", { name: "Commercial service businesses on QuickPro" })).toBeVisible();
+  await expect(visitor.getByRole("heading", { name: "Contractors and trade businesses on QuickPro" })).toBeVisible();
   const search = visitor.getByRole("search");
   await search.getByLabel("Service").selectOption("commercial-cleaning");
   await search.getByLabel("Town").selectOption("islip");

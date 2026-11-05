@@ -35,6 +35,7 @@ import {
   type ServiceRequest,
 } from "@/server/data/requests";
 import { listOrgSubcontracts } from "@/server/data/subcontracts";
+import { listOrgInvoices, type InvoiceRow } from "@/server/data/invoices";
 import { submitOrganizationAction } from "./actions";
 
 export default async function OrganizationOverview({ params }: { params: Promise<{ orgId: string }> }) {
@@ -54,12 +55,14 @@ export default async function OrganizationOverview({ params }: { params: Promise
     operating ? listOrganizationJobs(user.id, org.id, "upcoming") : [],
   ]);
   const customerOperating = !isContractor && org.status === "approved";
-  const [requests, openToQuote, won, subcontracts] = await Promise.all([
+  const [requests, openToQuote, won, subcontracts, invoices] = await Promise.all([
     customerOperating ? listCustomerRequests(user.id, org.id, "active") : Promise.resolve([]),
     operating ? countOpenRequestsForContractor(user.id, org.id) : Promise.resolve(0),
     operating ? listContractorRequests(user.id, org.id, "awarded") : Promise.resolve([]),
     operating ? listOrgSubcontracts(user.id, org.id, "sub") : Promise.resolve([]),
+    customerOperating ? listOrgInvoices(user.id, org.id) : Promise.resolve([] as InvoiceRow[]),
   ]);
+  const toPay = invoices.filter((i) => i.status === "issued" && i.recipient_org_id === org.id);
   const activeProjects = won.filter((r) => r.status === "awarded");
   const liveSubcontracts = subcontracts.filter((s) => s.status === "offered" || s.status === "accepted");
   const canSubmit = manager && (org.status === "draft" || org.status === "rejected");
@@ -76,7 +79,7 @@ export default async function OrganizationOverview({ params }: { params: Promise
         rereviewReason={org.rereview_reason}
       />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-6">
           {canSubmit ? (
             <Card>
@@ -121,7 +124,10 @@ export default async function OrganizationOverview({ params }: { params: Promise
           {operating ? (
             <Operations orgId={org.id} jobs={upcoming} canPost={canDispatch(org.my_role)} now={new Date().getTime()} />
           ) : customerOperating ? (
-            <CustomerRequestsPanel orgId={org.id} requests={requests} canPost={canDispatch(org.my_role)} />
+            <>
+              {toPay.length ? <InvoicesToPay orgId={org.id} invoices={toPay} /> : null}
+              <CustomerRequestsPanel orgId={org.id} requests={requests} canPost={canDispatch(org.my_role)} />
+            </>
           ) : isContractor ? (
             <Card>
               <CardHeader title="What's next" />
@@ -289,7 +295,7 @@ function Operations({ orgId, jobs, canPost, now }: { orgId: string; jobs: Job[];
           <ul className="mt-2 space-y-1.5">
             {attention.map((a) => (
               <li key={a.label} className="flex items-start gap-2 text-sm">
-                <span className="tabular inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded bg-navy px-1 text-xs font-semibold text-white">
+                <span className="tabular inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded bg-charcoal px-1 text-xs font-semibold text-white">
                   {a.jobs.length}
                 </span>
                 <span className="text-ink">
@@ -352,6 +358,50 @@ function Operations({ orgId, jobs, canPost, now }: { orgId: string; jobs: Job[];
           </Link>
         </div>
       ) : null}
+    </Card>
+  );
+}
+
+/** Issued invoices addressed to this customer, oldest due first. */
+function InvoicesToPay({ orgId, invoices }: { orgId: string; invoices: InvoiceRow[] }) {
+  const sorted = [...invoices].sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? ""));
+  const total = sorted.reduce((n, i) => n + Number(i.total_cents), 0);
+  return (
+    <Card>
+      <CardHeader
+        title="Invoices to pay"
+        description={`${sorted.length} ${sorted.length === 1 ? "invoice" : "invoices"} · ${formatCents(total)} due`}
+        action={
+          <Link href={`/app/org/${orgId}/invoices`} className="text-sm font-medium text-brand hover:underline">
+            All invoices
+          </Link>
+        }
+      />
+      <ul className="divide-y divide-line" data-testid="invoices-to-pay">
+        {sorted.slice(0, 4).map((i) => (
+          <li key={i.id}>
+            <Link href={`/app/org/${orgId}/invoices/${i.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-subtle/60 sm:px-5">
+              <span className="min-w-0">
+                <span className="block truncate font-medium text-ink">
+                  {i.number} · {i.title}
+                </span>
+                <span className="block text-[13px] text-muted">
+                  From {i.issuer_name}
+                  {i.due_date ? ` · due ${formatDate(i.due_date)}` : ""}
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-2">
+                {i.overdue ? (
+                  <Badge dot tone="bad">
+                    Overdue
+                  </Badge>
+                ) : null}
+                <span className="tabular text-sm font-semibold text-ink">{formatCents(Number(i.total_cents))}</span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
     </Card>
   );
 }

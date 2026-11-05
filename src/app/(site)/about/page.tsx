@@ -6,10 +6,11 @@ export const metadata: Metadata = { title: "About" };
 
 export default function AboutPage() {
   return (
-    <PageIntro eyebrow="About QuickPro" title="A local marketplace for commercial service work.">
+    <PageIntro eyebrow="About QuickPro" title="A local marketplace for construction and the trades.">
       <p>
-        QuickPro connects the businesses that keep buildings running (cleaning, pressure washing, landscaping and
-        facility services) with the property managers who hire them and the local workers who staff the jobs.
+        QuickPro connects the property owners and managers who commission commercial work with the contractors who build
+        and maintain it (general construction, carpentry, drywall and paint, flooring, masonry and concrete, and
+        commercial services such as cleaning and landscaping) and with the local tradespeople and crew who staff each job.
       </p>
       <p>
         We are starting in Suffolk County, New York, and onboarding businesses and workers there now. Every business

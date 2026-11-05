@@ -40,7 +40,15 @@ export function StatusBanner({
         </FormMessage>
       );
     case "approved":
-      return <FormMessage tone="ok">Your {subject} is approved by QuickPro staff.</FormMessage>;
+      // Quiet once approved: the badge in the header already says so.
+      return (
+        <p className="flex items-center gap-2 text-[13px] text-muted">
+          <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4 shrink-0 text-ok" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="m3.5 8.5 3 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Your {subject} is approved by QuickPro staff.
+        </p>
+      );
     case "suspended":
       return (
         <FormMessage tone="bad">

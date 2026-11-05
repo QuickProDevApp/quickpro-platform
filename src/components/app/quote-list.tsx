@@ -1,4 +1,4 @@
-import { QuoteStatusBadge } from "@/components/ui/badge";
+import { Badge, QuoteStatusBadge } from "@/components/ui/badge";
 import { ActionForm, Input, SubmitButton } from "@/components/ui/form";
 import { formatCents, formatDate, formatDateTime } from "@/lib/labels";
 import type { FormState } from "@/lib/schemas";
@@ -14,12 +14,21 @@ export function QuoteList({
   quotes,
   acceptAction,
   declineAction,
+  budgetMaxCents = null,
 }: {
   quotes: Quote[];
   acceptAction?: Action;
   declineAction?: Action;
+  /** The customer's stated budget ceiling, to say which quotes fit it. */
+  budgetMaxCents?: number | null;
 }) {
   const live = quotes.filter((q) => q.status === "submitted").length;
+  // With two or more quotes to decide on, point out the lowest price and the
+  // earliest start. Facts from the quotes themselves, not a recommendation.
+  const open = quotes.filter((q) => q.status === "submitted" && !q.expired);
+  const lowest = open.length > 1 ? Math.min(...open.map((q) => q.amount_cents)) : null;
+  const starts = open.map((q) => q.estimated_start).filter((d): d is string => Boolean(d));
+  const earliest = open.length > 1 && starts.length ? starts.sort()[0] : null;
   return (
     <ul className="divide-y divide-line">
       {quotes.map((q) => {
@@ -40,6 +49,21 @@ export function QuoteList({
               </div>
               <p className="tabular text-lg font-semibold tracking-[-0.01em] text-ink">{formatCents(q.amount_cents)}</p>
             </div>
+            {decidable && (lowest !== null || earliest || budgetMaxCents !== null) ? (
+              <div className="mt-2 flex flex-wrap gap-1.5" data-testid="quote-facts">
+                {q.amount_cents === lowest && open.filter((o) => o.amount_cents === lowest).length === 1 ? (
+                  <Badge tone="ok">Lowest price</Badge>
+                ) : null}
+                {earliest && q.estimated_start === earliest ? <Badge tone="info">Earliest start</Badge> : null}
+                {budgetMaxCents !== null ? (
+                  q.amount_cents <= budgetMaxCents ? (
+                    <Badge>Within your budget</Badge>
+                  ) : (
+                    <Badge tone="warn">{formatCents(q.amount_cents - budgetMaxCents)} over your budget</Badge>
+                  )
+                ) : null}
+              </div>
+            ) : null}
             <p className="mt-2 text-sm whitespace-pre-line text-ink-soft">{q.scope}</p>
             {q.decision_note && q.status === "declined" ? (
               <p className="mt-2 text-[13px] text-muted">Note: {q.decision_note}</p>
@@ -47,7 +71,7 @@ export function QuoteList({
             {decidable && acceptAction && declineAction ? (
               <div className="mt-3 flex flex-wrap gap-2">
                 <details className="group w-full sm:w-auto">
-                  <summary className="inline-flex h-10 cursor-pointer list-none items-center rounded-md bg-navy px-3.5 text-sm font-medium text-white hover:bg-navy-strong sm:h-9 [&::-webkit-details-marker]:hidden">
+                  <summary className="inline-flex h-10 cursor-pointer list-none items-center rounded-md bg-charcoal px-3.5 text-sm font-medium text-white hover:bg-charcoal-strong sm:h-9 [&::-webkit-details-marker]:hidden">
                     Accept quote
                   </summary>
                   <div className="mt-2 rounded-md border border-line bg-subtle/60 p-3 sm:w-96">

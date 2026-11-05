@@ -34,9 +34,21 @@ const schema = z.object({
   STRIPE_CONNECT_WEBHOOK_SECRET: optional(z.string().regex(/^whsec_[A-Za-z0-9_]{10,}$/)),
   // Tests only: send Stripe API calls to the local stand-in (e2e/stripe-stand-in.mjs).
   STRIPE_API_BASE: optional(z.string().regex(/^http:\/\/(127\.0\.0\.1|localhost):[0-9]{2,5}$/, "Only a local test address.")),
+  // A demonstration environment (D-043): every page carries a "Demo
+  // environment" banner, and `pnpm demo:seed` may add labeled example records.
+  DEMO_MODE: z.enum(["on", "off"]).default("off"),
 });
 
 export type Env = z.infer<typeof schema>;
+
+/**
+ * Whether this is a demonstration environment. Read on its own (not through
+ * env()) because the root layout renders static pages at build time, where
+ * the rest of the server environment isn't needed.
+ */
+export function demoMode(): boolean {
+  return process.env.DEMO_MODE === "on";
+}
 
 let cached: Env | undefined;
 

@@ -807,3 +807,58 @@ the request.
 Migration `20261116000100_quote_questions` adds a table and functions; it
 deletes and drops nothing.
 
+
+## D-042 Construction and skilled-trade services
+
+QuickPro is positioned as a marketplace for commercial construction, skilled
+trades and the crews behind them, not only building services. The service
+list had only commercial cleaning, pressure washing, landscaping and
+facility services, so a customer couldn't post (and a contractor couldn't
+list) the construction work the site now describes.
+
+- **Added:** general construction and labor, carpentry, painting and
+  drywall, flooring installation, and masonry and concrete, each with the
+  skills workers list for it (framing, finish carpentry, doors and hardware,
+  taping and finishing, tile setting, concrete finishing and so on). The
+  existing services stay.
+- **Not added:** electrical, plumbing and HVAC. They need an individual
+  license in Suffolk County and QuickPro doesn't check licenses, so listing
+  them would suggest it does. They wait for license verification.
+- **Skills are what a worker says they do**, reviewed with the profile by
+  staff; none of them is a credential (no "OSHA 10" or "licensed" skills).
+
+Migration `20261117000100_construction_trades` inserts reference rows only
+(skipping slugs that exist); it changes, deletes and drops nothing.
+
+## D-043 Presentation design and the demo environment
+
+For demonstrations to investors, contractors and workers the product needed
+a distinctive identity and a way to show the whole journey with records that
+are clearly not real activity.
+
+- **Identity:** charcoal (#242B31), warm off-white (#F7F6F2), slate
+  (#66737D, darkened a step to #5E6A74 for body text so it passes 4.5:1 on
+  every surface) and construction orange (#D97835) as the accent; the
+  text-safe orange (#A9531B) carries links and focus rings. The app bar and
+  the footer are charcoal; pages stay light. Headings on the public site and
+  sign-in pages use Source Serif 4 (SIL Open Font License, bundled in
+  `src/fonts`); the app keeps Geist. No stock photography yet: the site shows
+  real product screens only (see "Still open").
+- **Demo environment:** `DEMO_MODE=on` puts a "Demo environment" banner on
+  every page ("example records, Stripe test mode, no real money").
+  `pnpm demo:seed --confirm=<database host>` adds a labeled data set (a
+  property manager, a general contractor, two rivals, a drywall
+  subcontractor, five tradespeople and a staff account, all at
+  `@demo.quickpro.test`) with three projects at different stages: open with
+  quotes and questions, in progress with a subcontract and booked crew, and
+  confirmed with an unpaid invoice. It refuses to run unless `DEMO_MODE=on`
+  and the host is confirmed, only adds records, writes approvals and shift
+  times directly (as a review or the day of the work would) and does
+  everything else through the workflow functions as the person who would do
+  it. Insurance documents it stores are PDFs that say they are not
+  certificates. Card payment is left to the demo, in Stripe test mode.
+- **Marketing screens** come from that data set (`.review/marketing-shots.mts`,
+  local tooling) and are captioned as demo data.
+- **Still open:** licensed construction photography. The cloud environment
+  can't reach image libraries, so photos need to be supplied or the
+  environment's network allowance widened.

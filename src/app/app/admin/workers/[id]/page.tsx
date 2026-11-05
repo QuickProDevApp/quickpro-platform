@@ -46,7 +46,7 @@ export default async function AdminWorkerPage({ params }: { params: Promise<{ id
           </Link>
         }
       />
-      <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-6">
           <Card>
             <CardHeader title="Profile" />
