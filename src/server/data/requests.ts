@@ -427,3 +427,30 @@ export function getRequestCountsForAdmin(userId: string) {
     return row;
   });
 }
+
+// Questions before the award (D-041) ------------------------------------------
+
+/** One contractor's private thread with the customer, shaped like a job thread. */
+export function getQuoteThread(userId: string, requestId: string, contractorId: string) {
+  return withUser(userId, (tx) => tx<(ProjectMessage & { hidden: false; hidden_reason: null })[]>`
+    select *, false as hidden, null::text as hidden_reason from public.quote_thread(${requestId}, ${contractorId})
+  `);
+}
+
+export type QuoteThreadSummary = {
+  contractor_id: string;
+  contractor_name: string;
+  message_count: number;
+  last_message_at: Date;
+  awaiting_customer: boolean;
+  quote_status: QuoteStatus | null;
+};
+
+/** The customer's threads on a request, latest first. */
+export function listQuoteThreads(userId: string, requestId: string) {
+  return withUser(userId, (tx) => tx<QuoteThreadSummary[]>`select * from public.request_quote_threads(${requestId})`);
+}
+
+export function postQuoteMessage(userId: string, requestId: string, contractorId: string, body: string) {
+  return withUser(userId, (tx) => tx`select public.post_quote_message(${requestId}, ${contractorId}, ${body})`);
+}

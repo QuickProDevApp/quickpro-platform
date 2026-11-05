@@ -14,6 +14,7 @@ import {
   inviteContractor,
   listRequestQuotes,
   postProjectMessage,
+  postQuoteMessage,
   reopenWork,
   reportWorkComplete,
   submitQuote,
@@ -29,6 +30,7 @@ import {
 } from "@/server/data/subcontracts";
 import { toUserMessage, UserFacingError } from "@/server/errors";
 import {
+  askContractorSchema,
   completionNoteSchema,
   fieldErrorsOf,
   formObject,
@@ -158,6 +160,46 @@ export async function postProjectMessageAction(orgId: string, requestId: string,
     if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
     await postProjectMessage(user.id, id.data, parsed.data.body);
     return done(orgId, "Sent.");
+  } catch (error) {
+    return { ok: false, message: toUserMessage(error) };
+  }
+}
+
+/**
+ * A message in a contractor's thread with the customer before the award
+ * (D-041). Either side's dispatchers; the database checks which side the user
+ * is on and that the request is still open.
+ */
+export async function postQuoteQuestionAction(
+  orgId: string,
+  requestId: string,
+  contractorId: string,
+  _: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  try {
+    const { user } = await requireMembership(orgId);
+    const ids = [uuid.safeParse(requestId), uuid.safeParse(contractorId)];
+    if (!ids.every((i) => i.success)) throw new UserFacingError("Request not found.");
+    const parsed = messageSchema.safeParse(formObject(formData));
+    if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
+    await postQuoteMessage(user.id, requestId, contractorId, parsed.data.body);
+    return done(orgId, "Sent.");
+  } catch (error) {
+    return { ok: false, message: toUserMessage(error) };
+  }
+}
+
+/** The customer asks a contractor that quoted or was invited, starting a thread. */
+export async function askContractorAction(orgId: string, requestId: string, _: FormState, formData: FormData): Promise<FormState> {
+  try {
+    const { user } = await requireOrgDispatcher(orgId, "customer");
+    const id = uuid.safeParse(requestId);
+    if (!id.success) throw new UserFacingError("Request not found.");
+    const parsed = askContractorSchema.safeParse(formObject(formData));
+    if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
+    await postQuoteMessage(user.id, id.data, parsed.data.contractorId, parsed.data.body);
+    return done(orgId, "Sent. They'll get a notification.");
   } catch (error) {
     return { ok: false, message: toUserMessage(error) };
   }

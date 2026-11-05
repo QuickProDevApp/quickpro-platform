@@ -777,3 +777,33 @@ disputes from inside the app.
 Migration `20261115000100_card_payments` adds a type, tables, a role and
 functions; it deletes and drops nothing.
 
+## D-041 Questions before the award, private to each contractor
+
+Customers and contractors couldn't talk until a quote was accepted, so a
+contractor had to quote blind and a customer couldn't ask about a quote.
+While a request is open, the customer and each contractor that can see it
+(serves that service and town, or was invited) now have a private thread on
+the request.
+
+- **Who:** owners, admins and dispatchers of the customer and of that
+  contractor write; other members of either business read. Each contractor
+  sees only its own thread; other contractors never see the questions or
+  the answers, so nobody learns a rival's price or approach. Staff can read
+  for support but don't write in it.
+- **Starting one:** a contractor asks from the request page. The customer
+  replies in that thread, or starts one with a contractor that quoted or was
+  invited.
+- **Closing:** accepting a quote or cancelling the request closes every
+  thread. Each side keeps reading its own; the winning contractor carries on
+  in the project thread (D-026).
+- **Notifications:** the other side's dispatchers get one unread
+  notification per thread, kept up to date, and an email when email is set
+  up (D-039).
+- **Enforced in the database:** `request_quote_messages` has RLS, column
+  grants (the text is read only through `quote_thread`) and an audit
+  trigger; `post_quote_message` checks the side, the role, the request's
+  status and the contractor's visibility, the text, and a rate limit.
+
+Migration `20261116000100_quote_questions` adds a table and functions; it
+deletes and drops nothing.
+

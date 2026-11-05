@@ -289,6 +289,11 @@ export const messageSchema = z.object({
   body: z.string().trim().min(1, "Write a message first.").max(2000, "Keep messages under 2,000 characters."),
 });
 
+/** The customer starting a thread with a contractor before the award (D-041). */
+export const askContractorSchema = messageSchema.extend({
+  contractorId: z.uuid("Choose a contractor."),
+});
+
 export const hideMessageSchema = z.object({
   messageId: uuid,
   reason: z.string().trim().min(1, "Add a short reason.").max(500),

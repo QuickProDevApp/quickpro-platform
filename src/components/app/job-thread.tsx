@@ -48,8 +48,41 @@ export function JobThread({
     <Card>
       <CardHeader title={title} description={description} />
       <CardBody className="space-y-4">
+        <ThreadBody
+          messages={messages}
+          currentUserId={currentUserId}
+          postAction={postAction}
+          hideAction={hideAction}
+          placeholder={placeholder}
+        />
+      </CardBody>
+    </Card>
+  );
+}
+
+/** A thread's messages and the box to write one, without the card around them. */
+export function ThreadBody({
+  messages,
+  currentUserId,
+  postAction,
+  hideAction,
+  placeholder,
+  fieldId = "body",
+  emptyText = "No messages yet",
+}: {
+  messages: ThreadMessage[];
+  currentUserId: string;
+  postAction?: Action;
+  hideAction?: Action;
+  placeholder: string;
+  /** Distinct per thread when several are on one page. */
+  fieldId?: string;
+  emptyText?: string;
+}) {
+  return (
+    <>
         {messages.length === 0 ? (
-          <EmptyState title="No messages yet" />
+          <EmptyState title={emptyText} />
         ) : (
           <ol className="space-y-3" aria-label="Messages">
             {messages.map((m) => {
@@ -94,13 +127,12 @@ export function JobThread({
         )}
         {postAction ? (
           <ActionForm action={postAction} resetOnSuccess successMessage={false}>
-            <Field name="body" label="New message">
-              <Textarea name="body" rows={3} maxLength={2000} placeholder={placeholder} />
+            <Field name="body" id={fieldId} label="New message">
+              <Textarea name="body" id={fieldId} rows={3} maxLength={2000} placeholder={placeholder} />
             </Field>
             <SubmitButton pendingLabel="Sending…">Send</SubmitButton>
           </ActionForm>
         ) : null}
-      </CardBody>
-    </Card>
+    </>
   );
 }
