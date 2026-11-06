@@ -966,29 +966,3 @@ permissions) and without Stripe or other keys.
   then says nothing was saved. No other control pretends to work.
 - **Not a production path:** the variable must never be set where real users
   sign in. Real deployments keep using the workflow in D-044.
-
-## D-048 A blue landing page built around the Q mark
-
-Date: 2026-11-06. The public landing page was redesigned for the
-presentation, in QuickPro's blue identity, with motion. Only the homepage
-changed; the app, the directory and every other page keep their design.
-
-- **Brand:** the supplied Q logo is used as-is (`public/brand/`, white
-  background made transparent, original kept). The landing blues are taken
-  from the artwork: royal #2141BE, blue #2F6FE4 (white text 4.65:1), sky
-  #4593F6, cyan #6ACEFA, on white and cool-white surfaces with navy text.
-  They are new `qp-*` tokens, used only by `src/components/landing`.
-- **Motion:** the `motion` library. Staged headline and hero entrance, an
-  illustration of a request finding quotes and a crew (cycles only while on
-  screen), scroll reveals, a drawn progress line, animated tabs and menu.
-  `MotionConfig reducedMotion="user"` honours reduced-motion settings.
-- **Unchanged behavior:** the search form (same fields, names and target),
-  every link destination, and the sections the navigation points to
-  (#services, #how-it-works, #for-pros, #workers, #trust).
-- **Honesty:** illustrations use sample businesses and say so; no ratings,
-  counts or endorsements; the trust section keeps "not built yet". The
-  landing shows its own discreet disclosure in demo and preview modes, in
-  place of the app-wide banner there.
-- **Photography:** none is used yet. This environment can't reach image
-  libraries, and only licensed photos may be added. The service and hero
-  art is drawn in the brand blues until licensed photos are supplied.
