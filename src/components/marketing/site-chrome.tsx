@@ -3,16 +3,16 @@ import { Logo } from "@/components/brand/logo";
 import { MobileMenu } from "./mobile-menu";
 
 const nav = [
+  { href: "/contractors", label: "Find a pro" },
+  { href: "/#services", label: "Services" },
   { href: "/#how-it-works", label: "How it works" },
-  { href: "/#customers", label: "Customers" },
-  { href: "/#contractors", label: "Contractors" },
-  { href: "/#workers", label: "Tradespeople" },
-  { href: "/contractors", label: "Find contractors" },
+  { href: "/#for-pros", label: "For contractors" },
+  { href: "/#workers", label: "Find work" },
 ];
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-ink/[0.07] bg-paper/85 backdrop-blur-md supports-[backdrop-filter]:bg-paper/75">
+    <header className="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur-md supports-[backdrop-filter]:bg-surface/85">
       <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-6 px-5 sm:px-8">
         <Logo />
         <nav aria-label="Main" className="hidden items-center gap-7 lg:flex">
@@ -28,7 +28,7 @@ export function SiteHeader() {
           </Link>
           <Link
             href="/sign-up"
-            className="inline-flex h-9 items-center rounded-[4px] bg-charcoal px-4 text-[14px] font-medium text-white transition-colors hover:bg-charcoal-strong"
+            className="inline-flex h-9 items-center rounded-md bg-brand px-4 text-[14px] font-semibold text-white transition-colors hover:bg-brand-strong"
           >
             Get started
           </Link>
@@ -44,8 +44,9 @@ const footer = [
     title: "Product",
     links: [
       { href: "/#how-it-works", label: "How it works" },
-      { href: "/#contractors", label: "For contractors" },
+      { href: "/#for-pros", label: "For contractors" },
       { href: "/#workers", label: "For tradespeople" },
+      { href: "/#services", label: "Services" },
       { href: "/#trust", label: "Trust and safety" },
     ],
   },
@@ -78,7 +79,7 @@ const footer = [
 
 export function SiteFooter() {
   return (
-    <footer className="on-dark bg-[#1d2328] text-white">
+    <footer className="on-dark bg-charcoal text-white">
       <div className="mx-auto max-w-[1200px] px-5 pt-14 pb-10 sm:px-8">
         <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-[1.3fr_repeat(4,1fr)]">
           <div className="col-span-2 max-w-xs md:col-span-1">

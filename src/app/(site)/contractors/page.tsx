@@ -33,7 +33,7 @@ export default async function PublicContractorsPage({
           <span aria-hidden className="h-[7px] w-[7px] bg-signal" />
           Find contractors
         </p>
-        <h1 className="mt-5 font-display text-[36px] leading-[1.08] font-medium tracking-[-0.025em] text-balance sm:text-[50px]">
+        <h1 className="mt-5 font-display text-[36px] leading-[1.08] font-semibold tracking-[-0.025em] text-balance sm:text-[50px]">
           Contractors and trade businesses on QuickPro
         </h1>
         <p className="mt-5 text-[17px] leading-8 text-ink-soft">
@@ -85,7 +85,7 @@ export default async function PublicContractorsPage({
         </div>
         <button
           type="submit"
-          className="h-11 rounded-md bg-ink px-5 text-[15px] font-medium text-white hover:bg-charcoal sm:h-10 sm:text-sm"
+          className="h-11 rounded-md bg-brand px-5 text-[15px] font-semibold text-white hover:bg-brand-strong sm:h-10 sm:text-sm"
         >
           Show contractors
         </button>
@@ -128,7 +128,7 @@ function CustomerCallToAction() {
   return (
     <section className="rounded-2xl bg-charcoal px-6 py-8 text-white sm:px-10 sm:py-10">
       <h2 className="text-[22px] font-semibold tracking-[-0.02em] sm:text-[26px]">
-        Need commercial service work done?
+        Have a project in mind?
       </h2>
       <p className="mt-2 max-w-2xl text-[15px] leading-7 text-white/75">
         Create a customer account, describe the work and the site, and invite the businesses you like to quote. You
@@ -137,9 +137,9 @@ function CustomerCallToAction() {
       <div className="mt-5 flex flex-wrap gap-3">
         <Link
           href="/sign-up?as=customer"
-          className="inline-flex h-10 items-center rounded-md bg-white px-4 text-sm font-medium text-ink hover:bg-white/90"
+          className="inline-flex h-10 items-center rounded-md bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-strong"
         >
-          Request a quote
+          Post a project
         </Link>
         <Link
           href="/sign-up?as=contractor"

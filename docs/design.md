@@ -22,35 +22,33 @@ This standard is mandatory for every screen and every phase.
 
 ## Tokens (`src/app/globals.css`)
 
-Charcoal, warm off-white and slate carry the interface; construction orange
-is the accent and is used sparingly (marks, rules, the active tab, the
-primary call to action on the public site). See D-043.
+A bright marketplace: white and cool light-gray surfaces, near-black ink,
+and QuickPro orange for calls to action and the brand. See D-045 (which
+replaces the warm off-white, serif look of D-043).
 
 | Token | Use |
 | --- | --- |
-| `ink` (#242B31), `ink-soft`, `muted` (#5E6A74), `faint` | Text, from primary to placeholder. `muted` is slate darkened a step to pass 4.5:1 |
-| `canvas` (#F7F6F2), `surface`, `subtle` | Page background, panels, quiet fills (hover, table headers) |
+| `ink` (#15191E), `ink-soft`, `muted` (#5A6470), `faint` | Text, from primary to placeholder. `muted` is 6.0:1 on white |
+| `canvas` (#F5F6F8), `surface` (white), `subtle` | Page background, panels and cards, quiet fills (hover, table headers) |
 | `line`, `line-strong` | Borders and dividers, control borders |
-| `charcoal`, `charcoal-strong` | App bar, footer, dark bands, primary buttons, selected state |
-| `brand` (#A9531B) | Links, focus rings, "new" counts. Not for buttons |
-| `signal` (#D97835), `signal-ink`, `signal-soft` | The orange accent. Text on `signal` is charcoal (4.6:1), never white |
-| `slate` (#66737D) | Decorative only |
+| `brand` (#C2410C), `brand-strong`, `brand-soft` | Primary buttons (white text, 5.2:1), links, focus rings, the active tab |
+| `signal` (#F26A1F), `signal-ink`, `signal-soft` | Bright orange for marks, dots and badges only; text on it is `ink` |
+| `charcoal`, `charcoal-strong` | Dark bands: footer, sign-in side panel, tradespeople section |
 | `ok`, `warn`, `bad`, `info` (+ `-soft`) | Status only |
 
-Radii are small and squared-off: 5px controls (`rounded-md`), 7px panels
-(`rounded-lg`), 4px on public-site buttons. Panels have a 1px border and no
-shadow; only floating menus have a shadow. Type: Geist in the app (page
-titles 22–24px semibold, section titles 15px semibold, body 14px, secondary
-13px, figures `tabular`); Source Serif 4 (`font-display`, medium weight)
-for headings on the public site and sign-in pages. On charcoal, wrap the
-area in `.on-dark` so focus rings switch to the light orange.
+Radii: 6px controls (`rounded-md`), 8px panels (`rounded-lg`), 12–16px
+marketing cards and the search bar. Panels have a 1px border; cards on the
+public site lift slightly on hover. Type is Geist throughout: app page
+titles 22–24px semibold, body 14px; public headings `font-display` (Geist,
+bold, tight tracking). On dark bands wrap the area in `.on-dark` so focus
+rings switch to the bright orange.
 
 Two-column page layouts use `grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_<side>]`
 so long content can't push the page sideways on phones.
 
 ## Components
 
-- `ui/button`: `primary` (charcoal, one per area), `secondary` (outlined),
+- `ui/button`: `primary` (orange, one per area), `secondary` (outlined),
   `ghost` (toolbar), `danger` (outlined red; destructive actions sit behind
   a "…" disclosure that asks for a reason or confirmation).
 - `ui/form`: `ActionForm`, `Field`, `Input`, `Select`, `Textarea`,
@@ -73,11 +71,15 @@ overflow and hierarchy issues before opening the pull request.
 
 - Pages under `src/app/page.tsx` and `src/app/(site)/` use
   `components/marketing/*`: `SiteHeader`, `SiteFooter`, `ScreenFrame`,
-  `PhoneFrame`, `Reveal`, `FeatureTabs`, `HowItWorks`.
-- Background `paper` alternating with `surface`; charcoal for the
-  tradespeople band, the closing call to action and the footer. Section
-  rhythm: eyebrow (orange square + uppercase label), serif heading 34/46px,
-  body 17px.
+  `PhoneFrame`, `Reveal`, `FeatureTabs`, `ServiceIcon`.
+- The homepage leads with finding a pro: a search (service and town, a GET
+  to `/contractors`), popular services, a grid of every service, and how it
+  works for customers, contractors and tradespeople. The service and town
+  lists come from `src/lib/catalog.ts`, which `tests/db/catalog.test.ts`
+  keeps equal to the reference data.
+- White and `canvas` sections alternate; charcoal for the tradespeople
+  band, the closing call to action and the footer. Section rhythm: orange
+  uppercase eyebrow, bold heading 32/44px, body 17px.
 - Product screens only, captured from the labeled demo data set
   (`scripts/demo-seed.mts`, then `.review/marketing-shots.mts`), with the
   caption saying so. No stock photography until licensed photos are supplied. On phones `ScreenFrame` crops to the top-left

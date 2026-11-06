@@ -17,7 +17,7 @@ export function MobileMenu({ items }: { items: { href: string; label: string }[]
           <path d="m5 5 10 10M15 5 5 15" strokeLinecap="round" />
         </svg>
       </summary>
-      <div className="absolute inset-x-0 top-full border-b border-line bg-paper px-5 pt-2 pb-6 shadow-[0_24px_40px_-24px_rgba(36,43,49,0.25)] sm:px-8">
+      <div className="absolute inset-x-0 top-full border-b border-line bg-paper px-5 pt-2 pb-6 shadow-[0_24px_40px_-24px_rgba(21,25,30,0.25)] sm:px-8">
         <nav aria-label="Main" className="flex flex-col">
           {items.map((n) => (
             <a key={n.href} href={n.href} onClick={close} className="border-b border-line py-3.5 text-[16px] text-ink">
@@ -29,7 +29,7 @@ export function MobileMenu({ items }: { items: { href: string; label: string }[]
           <Link href="/sign-in" className="inline-flex h-11 items-center justify-center rounded-[4px] text-[15px] font-medium text-ink ring-1 ring-inset ring-line-strong">
             Log in
           </Link>
-          <Link href="/sign-up" className="inline-flex h-11 items-center justify-center rounded-[4px] bg-signal text-[15px] font-semibold text-charcoal">
+          <Link href="/sign-up" className="inline-flex h-11 items-center justify-center rounded-md bg-brand text-[15px] font-semibold text-white">
             Get started
           </Link>
         </div>

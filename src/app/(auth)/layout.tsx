@@ -1,5 +1,4 @@
 import { Logo } from "@/components/brand/logo";
-import { display } from "@/fonts/display";
 
 const sides = [
   { who: "Property owners and managers", what: "Post projects, ask contractors questions, compare quotes and pay invoices." },
@@ -9,25 +8,25 @@ const sides = [
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`${display.variable} grid min-h-dvh flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,34rem)]`}>
+    <div className={`grid min-h-dvh flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,34rem)]`}>
       <div className="flex flex-col bg-surface sm:bg-canvas">
         <div className="mx-auto flex w-full max-w-6xl items-center px-4 py-4 sm:px-6">
           <Logo />
         </div>
         <div className="flex flex-1 items-start justify-center px-4 pt-4 pb-16 sm:pt-12">
-          <main className="w-full max-w-[420px] [&_form_button[type=submit]]:w-full sm:rounded-[8px] sm:border sm:border-line sm:bg-surface sm:p-8 sm:shadow-[0_1px_3px_rgba(36,43,49,0.05)]">
+          <main className="w-full max-w-[420px] [&_form_button[type=submit]]:w-full sm:rounded-[8px] sm:border sm:border-line sm:bg-surface sm:p-8 sm:shadow-[0_1px_3px_rgba(21,25,30,0.05)]">
             {children}
           </main>
         </div>
       </div>
       <aside className="on-dark hidden flex-col justify-between bg-charcoal px-12 py-14 text-white lg:flex">
         <div>
-          <p className="flex items-center gap-2 text-[12.5px] font-semibold tracking-[0.08em] text-[#e8955a] uppercase">
+          <p className="flex items-center gap-2 text-[12.5px] font-semibold tracking-[0.08em] text-[#f6884a] uppercase">
             <span aria-hidden className="h-[7px] w-[7px] bg-signal" />
             One account, every side of the job
           </p>
-          <p className="mt-6 font-display text-[36px] leading-[1.1] font-medium tracking-[-0.02em] text-balance">
-            From the first bid to the final invoice.
+          <p className="mt-6 font-display text-[36px] leading-[1.1] font-semibold tracking-[-0.02em] text-balance">
+            Find the pro, staff the job, get paid.
           </p>
         </div>
         <ul className="border-t border-white/15">

@@ -4,12 +4,13 @@ import { FeatureTabs, type Feature } from "@/components/marketing/feature-tabs";
 import { PhoneFrame, ScreenFrame } from "@/components/marketing/frames";
 import { Reveal } from "@/components/marketing/reveal";
 import { SiteFooter, SiteHeader } from "@/components/marketing/site-chrome";
-import { display } from "@/fonts/display";
+import { ServiceIcon } from "@/components/marketing/service-icon";
+import { SERVICES, TOWNS } from "@/lib/catalog";
 
 export const metadata: Metadata = {
-  title: { absolute: "QuickPro · From the first bid to the final invoice" },
+  title: { absolute: "QuickPro · Hire contractors and skilled crews" },
   description:
-    "The marketplace for commercial construction and skilled trades on Long Island. Property owners get quotes from approved contractors, contractors staff the work with subcontractors and local tradespeople, and everyone works from one record of the project. Now onboarding in Suffolk County, NY.",
+    "Find approved contractors and skilled trades in Suffolk County, NY. Post a project, compare quotes, hire, track the work and pay in one place. Contractors staff jobs with subcontractors and local tradespeople on the same platform.",
 };
 
 // Product screens captured from the running app with the labeled demo data set (scripts/demo-seed.mts, .review/marketing-shots.mts).
@@ -30,16 +31,31 @@ const shots = {
   workerHours: { src: "/marketing/worker-hours.webp", ...phone },
 };
 
-type Side = "Customer" | "Contractor" | "Crew";
-
-const journey: { title: string; body: string; who: Side[] }[] = [
-  { title: "Post the project", body: "Scope, town, dates and budget. The site address stays private.", who: ["Customer"] },
-  { title: "Questions and quotes", body: "Contractors who serve the town ask privately, then quote. Compare side by side.", who: ["Customer", "Contractor"] },
-  { title: "Award", body: "Accept one quote. The winner gets the site details; the others are told.", who: ["Customer"] },
-  { title: "Staff the work", body: "Schedule shifts, book local tradespeople, bring in subcontractors.", who: ["Contractor", "Crew"] },
-  { title: "Track the work", body: "Crew check in and out, tick off the checklist and share photos; the contractor approves hours.", who: ["Contractor", "Crew"] },
-  { title: "Confirm and bill", body: "The customer confirms completion, then pays the invoice by card or check.", who: ["Customer", "Contractor"] },
+const roles = [
+  {
+    key: "customers",
+    who: "Property owners and managers",
+    steps: ["Post your project with the scope, town, dates and budget", "Answer private questions and compare quotes side by side", "Hire one contractor and follow the work on one page", "Confirm it's done and pay the invoice by card or check"],
+    href: "/sign-up?as=customer",
+    cta: "Post a project",
+  },
+  {
+    key: "contractors",
+    who: "Contractors and subcontractors",
+    steps: ["Get requests for the trades and towns you list", "Ask questions, then send your quote", "Staff the work with your crew, subcontractors and local tradespeople", "Approve hours, then invoice and get paid to your account"],
+    href: "/sign-up?as=contractor",
+    cta: "Join as a contractor",
+  },
+  {
+    key: "workers",
+    who: "Tradespeople and crew",
+    steps: ["Build a skills profile and choose your towns", "Set the days you're available", "Apply to local shifts with the pay shown up front", "Accept offers, check in on site and see your approved hours"],
+    href: "/sign-up?as=worker",
+    cta: "Find shift work",
+  },
 ];
+
+const popular = ["carpentry", "painting-drywall", "flooring", "general-construction", "commercial-cleaning"] as const;
 
 const contractorFeatures: Feature[] = [
   {
@@ -113,10 +129,7 @@ const notYet = [
 
 function Eyebrow({ children, onDark = false }: { children: React.ReactNode; onDark?: boolean }) {
   return (
-    <p className={`flex items-center gap-2 text-[12.5px] font-semibold tracking-[0.08em] uppercase ${onDark ? "text-[#e8955a]" : "text-signal-ink"}`}>
-      <span aria-hidden className="h-[7px] w-[7px] bg-signal" />
-      {children}
-    </p>
+    <p className={`text-[13px] font-semibold tracking-[0.06em] uppercase ${onDark ? "text-[#f6884a]" : "text-brand"}`}>{children}</p>
   );
 }
 
@@ -125,11 +138,11 @@ function SectionHeading({ eyebrow, title, body, onDark = false }: { eyebrow: str
     <Reveal className="max-w-[44rem]">
       <Eyebrow onDark={onDark}>{eyebrow}</Eyebrow>
       <h2
-        className={`mt-5 font-display text-[34px] leading-[1.08] font-medium tracking-[-0.02em] text-balance sm:text-[46px] ${onDark ? "text-white" : "text-ink"}`}
+        className={`mt-3 font-display text-[32px] leading-[1.1] font-bold tracking-[-0.03em] text-balance sm:text-[44px] ${onDark ? "text-white" : "text-ink"}`}
       >
         {title}
       </h2>
-      {body ? <p className={`mt-5 text-[17px] leading-7 text-pretty ${onDark ? "text-white/70" : "text-ink-soft"}`}>{body}</p> : null}
+      {body ? <p className={`mt-4 text-[17px] leading-7 text-pretty ${onDark ? "text-white/70" : "text-ink-soft"}`}>{body}</p> : null}
     </Reveal>
   );
 }
@@ -138,7 +151,7 @@ function PrimaryLink({ href, children }: { href: string; children: React.ReactNo
   return (
     <Link
       href={href}
-      className="group inline-flex h-12 items-center justify-center gap-2 rounded-[4px] bg-signal px-5 text-[15px] font-semibold text-charcoal transition-colors hover:bg-[#e48745]"
+      className="group inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-brand px-5 text-[15px] font-semibold text-white shadow-[0_1px_2px_rgba(194,65,12,0.2)] transition-colors hover:bg-brand-strong"
     >
       {children}
       <span aria-hidden className="transition-transform duration-200 group-hover:translate-x-0.5">
@@ -152,8 +165,8 @@ function SecondaryLink({ href, children, onDark = false }: { href: string; child
   return (
     <Link
       href={href}
-      className={`inline-flex h-12 items-center justify-center rounded-[4px] px-5 text-[15px] font-medium ring-1 transition-colors ring-inset ${
-        onDark ? "text-white ring-white/30 hover:bg-white/[0.08]" : "bg-surface text-ink ring-ink/20 hover:bg-ink/[0.03] hover:ring-ink/35"
+      className={`inline-flex h-12 items-center justify-center rounded-lg px-5 text-[15px] font-semibold ring-1 transition-colors ring-inset ${
+        onDark ? "text-white ring-white/30 hover:bg-white/[0.08]" : "bg-surface text-ink ring-line-strong hover:bg-subtle"
       }`}
     >
       {children}
@@ -161,91 +174,202 @@ function SecondaryLink({ href, children, onDark = false }: { href: string; child
   );
 }
 
-function SideTag({ side }: { side: Side }) {
-  const tone = side === "Customer" ? "bg-[#e9eef2] text-[#2f4d63]" : side === "Contractor" ? "bg-signal-soft text-signal-ink" : "bg-[#ecebe6] text-ink-soft";
-  return <span className={`inline-flex h-5 items-center rounded-[3px] px-1.5 text-[11.5px] font-semibold ${tone}`}>{side}</span>;
-}
-
 export default function HomePage() {
   return (
-    <div className={`${display.variable} flex min-h-full flex-col bg-paper text-ink`}>
+    <div className="flex min-h-full flex-col bg-surface text-ink">
       <SiteHeader />
       <main className="flex-1">
-        {/* Hero */}
-        <section className="relative overflow-hidden">
-          <div className="mx-auto max-w-[1200px] px-5 pt-14 sm:px-8 sm:pt-20 lg:pt-24">
-            <Eyebrow>Commercial construction and trades · Suffolk County, NY</Eyebrow>
-            <div className="mt-7 grid gap-8 lg:grid-cols-12 lg:items-end lg:gap-12">
-              <h1 className="font-display text-[46px] leading-[1.0] font-medium tracking-[-0.03em] text-balance text-ink sm:text-[68px] lg:col-span-7 lg:text-[84px]">
-                From the first bid to the final invoice.
+        {/* Hero: find a pro */}
+        <section className="relative overflow-hidden border-b border-line bg-canvas">
+          <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-12 px-5 pt-12 pb-14 sm:px-8 sm:pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center lg:gap-14 lg:pt-20 lg:pb-20">
+            <div className="min-w-0">
+              <p className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1 text-[13px] font-medium text-ink-soft ring-1 ring-line">
+                <span aria-hidden className="h-2 w-2 rounded-full bg-signal" />
+                Now onboarding in Suffolk County, NY
+              </p>
+              <h1 className="mt-5 font-display text-[42px] leading-[1.02] font-bold tracking-[-0.035em] text-balance text-ink sm:text-[58px] lg:text-[64px]">
+                Hire contractors and skilled crews for any job.
               </h1>
-              <div className="lg:col-span-5 lg:pb-3">
-                <p className="max-w-[34rem] text-[18px] leading-8 text-pretty text-ink-soft">
-                  QuickPro is the marketplace for commercial construction and skilled trades on Long Island. Property owners get
-                  quotes from approved contractors. Contractors staff the work with subcontractors and local tradespeople. Everyone
-                  works from one record of the project, the hours and the bill.
-                </p>
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  <PrimaryLink href="/sign-up?as=customer">Post a project</PrimaryLink>
-                  <SecondaryLink href="/sign-up?as=contractor">Join as a contractor</SecondaryLink>
+              <p className="mt-5 max-w-[34rem] text-[18px] leading-8 text-pretty text-ink-soft">
+                Compare quotes from approved local businesses, hire with confidence, and manage the work through to payment.
+                Contractors staff it with subcontractors and tradespeople on the same platform.
+              </p>
+
+              <form
+                action="/contractors"
+                method="get"
+                role="search"
+                aria-label="Find a pro"
+                className="mt-8 rounded-2xl bg-surface p-3 shadow-[0_1px_2px_rgba(21,25,30,0.06),0_16px_40px_-20px_rgba(21,25,30,0.25)] ring-1 ring-line"
+              >
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto]">
+                  <label className="block rounded-xl px-3 py-2 transition-colors focus-within:bg-subtle hover:bg-subtle">
+                    <span className="block text-[12px] font-semibold text-ink">What do you need?</span>
+                    <select name="category" defaultValue="" className="mt-0.5 block w-full cursor-pointer bg-transparent text-[15px] text-ink-soft outline-none">
+                      <option value="">Any service</option>
+                      {SERVICES.map((s) => (
+                        <option key={s.slug} value={s.slug}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block rounded-xl px-3 py-2 transition-colors focus-within:bg-subtle hover:bg-subtle sm:border-l sm:border-line">
+                    <span className="block text-[12px] font-semibold text-ink">Where?</span>
+                    <select name="town" defaultValue="" className="mt-0.5 block w-full cursor-pointer bg-transparent text-[15px] text-ink-soft outline-none">
+                      <option value="">Any town</option>
+                      {TOWNS.map((t) => (
+                        <option key={t.slug} value={t.slug}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="submit"
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-brand px-6 text-[15px] font-semibold text-white transition-colors hover:bg-brand-strong sm:h-auto"
+                  >
+                    <svg aria-hidden viewBox="0 0 20 20" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="9" cy="9" r="5.5" />
+                      <path d="m13.2 13.2 3.3 3.3" strokeLinecap="round" />
+                    </svg>
+                    Find pros
+                  </button>
                 </div>
-                <p className="mt-5 text-[14px] text-muted">
-                  Skilled trade or crew member?{" "}
-                  <Link href="/sign-up?as=worker" className="font-medium text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink">
-                    Find shift work near you
+              </form>
+
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                <span className="mr-1 text-[13px] text-muted">Popular:</span>
+                {popular.map((slug) => (
+                  <Link
+                    key={slug}
+                    href={`/contractors?category=${slug}`}
+                    className="rounded-full bg-surface px-3 py-1.5 text-[13px] font-medium text-ink-soft ring-1 ring-line transition-colors hover:text-ink hover:ring-line-strong"
+                  >
+                    {SERVICES.find((s) => s.slug === slug)!.name}
                   </Link>
-                </p>
+                ))}
+              </div>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+                <PrimaryLink href="/sign-up?as=customer">Post a project</PrimaryLink>
+                <Link href="/sign-up?as=contractor" className="text-[15px] font-semibold text-ink underline decoration-line-strong underline-offset-[6px] hover:decoration-ink">
+                  Join as a contractor
+                </Link>
+                <Link href="/sign-up?as=worker" className="text-[15px] font-semibold text-ink underline decoration-line-strong underline-offset-[6px] hover:decoration-ink">
+                  Find shift work near you
+                </Link>
               </div>
             </div>
 
-            <div className="relative mt-14 sm:mt-20">
+            <div className="relative min-w-0">
               <Reveal>
                 <ScreenFrame
                   {...shots.quotes}
                   alt="QuickPro for a property manager: three contractor quotes on a tenant fit-out, marked lowest price, earliest start and within budget"
                   priority
-                  sizes="(min-width: 1200px) 1100px, 100vw"
-                  className="lg:mr-28"
+                  sizes="(min-width: 1024px) 600px, 100vw"
+                  className="lg:mr-16"
                 />
               </Reveal>
-              <Reveal delay={150} className="absolute -right-2 -bottom-10 hidden w-[230px] md:block lg:right-0 lg:w-[262px]">
+              <Reveal delay={150} className="absolute -right-1 -bottom-10 hidden w-[200px] sm:block lg:w-[210px]">
                 <PhoneFrame src={shots.workerOffer.src} alt="QuickPro for a drywall taper: a shift offer with the pay and time, ready to accept" priority />
               </Reveal>
+              <p className="mt-4 text-[12px] text-muted sm:mt-14 sm:pr-56">
+                Screens from the QuickPro app with a labeled demo data set. The businesses and people shown are examples.
+              </p>
             </div>
-            <p className="mt-5 pb-14 text-[12px] text-muted sm:pb-20 md:mt-20">
-              Screens from the QuickPro app, shown with a labeled demo data set. The businesses and people in them are examples.
-            </p>
+          </div>
+          <div className="border-t border-line bg-surface">
+            <ul className="mx-auto grid max-w-[1200px] grid-cols-1 gap-x-8 gap-y-3 px-5 py-5 text-[14px] text-ink-soft sm:grid-cols-3 sm:px-8">
+              {[
+                "Every business is reviewed by QuickPro staff before it can quote",
+                "Contractors keep a current liability certificate on file",
+                "Pay by card through Stripe, straight to the contractor",
+              ].map((t) => (
+                <li key={t} className="flex items-start gap-2.5">
+                  <svg aria-hidden viewBox="0 0 16 16" className="mt-[3px] h-4 w-4 shrink-0 text-ok" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m3.5 8.5 3 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  {t}
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
-        {/* The journey */}
-        <section id="how-it-works" className="scroll-mt-16 border-t border-ink/[0.08] bg-surface">
-          <div className="mx-auto max-w-[1200px] px-5 py-20 sm:px-8 sm:py-28">
-            <SectionHeading
-              eyebrow="How it works"
-              title="One job, three sides, one record."
-              body="The customer, the contractor and the crew each see their part of the same project, from the request to the payment. Each step is a real status change, recorded as it happens."
-            />
-            <ol className="mt-14 grid gap-px overflow-hidden rounded-[6px] border border-ink/10 bg-ink/10 sm:grid-cols-2 lg:grid-cols-3">
-              {journey.map((step, i) => (
-                <Reveal as="li" key={step.title} delay={i * 60} className="relative bg-surface px-6 pt-8 pb-7">
-                  <span aria-hidden className="absolute top-0 left-6 h-[3px] w-10 bg-signal" />
-                  <p className="tabular text-[13px] font-semibold text-muted">0{i + 1}</p>
-                  <h3 className="mt-2 text-[18px] leading-6 font-semibold tracking-[-0.01em] text-ink">{step.title}</h3>
-                  <p className="mt-2 text-[14.5px] leading-6 text-ink-soft">{step.body}</p>
-                  <p className="mt-5 flex flex-wrap gap-1.5">
-                    {step.who.map((w) => (
-                      <SideTag key={w} side={w} />
-                    ))}
-                  </p>
+        {/* Services */}
+        <section id="services" className="scroll-mt-16 bg-surface">
+          <div className="mx-auto max-w-[1200px] px-5 py-16 sm:px-8 sm:py-24">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+              <SectionHeading eyebrow="Services" title="Find a pro for the job." body="Commercial construction, skilled trades and property services across Suffolk County." />
+              <Link href="/contractors" className="shrink-0 text-[15px] font-semibold text-brand hover:text-brand-strong">
+                Browse all contractors →
+              </Link>
+            </div>
+            <ul className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {SERVICES.map((s, i) => (
+                <Reveal as="li" key={s.slug} delay={(i % 3) * 60}>
+                  <Link
+                    href={`/contractors?category=${s.slug}`}
+                    className="group flex h-full items-start gap-4 rounded-xl bg-surface p-5 ring-1 ring-line transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-16px_rgba(21,25,30,0.28)] hover:ring-line-strong"
+                  >
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
+                      <ServiceIcon slug={s.slug} className="h-6 w-6" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[16px] font-semibold tracking-[-0.01em] text-ink">{s.name}</span>
+                      <span className="mt-1 block text-[14px] leading-6 text-muted">{s.blurb}</span>
+                    </span>
+                    <span aria-hidden className="ml-auto self-center text-faint transition-[color,transform] duration-200 group-hover:translate-x-0.5 group-hover:text-brand">
+                      →
+                    </span>
+                  </Link>
                 </Reveal>
               ))}
-            </ol>
+            </ul>
+          </div>
+        </section>
+
+        {/* How it works, for each side */}
+        <section id="how-it-works" className="scroll-mt-16 border-t border-line bg-canvas">
+          <div className="mx-auto max-w-[1200px] px-5 py-16 sm:px-8 sm:py-24">
+            <SectionHeading
+              eyebrow="How it works"
+              title="One marketplace, three ways in."
+              body="Customers, contractors and crews each see their part of the same project, from the first request to the final payment."
+            />
+            <div className="mt-10 grid grid-cols-1 gap-4 lg:grid-cols-3">
+              {roles.map((r, i) => (
+                <Reveal key={r.key} delay={i * 80} className="flex flex-col rounded-2xl bg-surface p-6 ring-1 ring-line sm:p-7">
+                  <h3 className="text-[19px] font-bold tracking-[-0.02em] text-ink">{r.who}</h3>
+                  <ol className="mt-5 flex-1 space-y-4">
+                    {r.steps.map((step, n) => (
+                      <li key={step} className="flex gap-3.5 text-[15px] leading-6 text-ink-soft">
+                        <span className="tabular flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[12px] font-bold text-brand">
+                          {n + 1}
+                        </span>
+                        {step}
+                      </li>
+                    ))}
+                  </ol>
+                  <Link
+                    href={r.href}
+                    className="group mt-7 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-ink px-4 text-[15px] font-semibold text-white transition-colors hover:bg-charcoal-strong"
+                  >
+                    {r.cta}
+                    <span aria-hidden className="transition-transform duration-200 group-hover:translate-x-0.5">
+                      →
+                    </span>
+                  </Link>
+                </Reveal>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* Customers */}
-        <section id="customers" className="scroll-mt-16 border-t border-ink/[0.08]">
+        <section id="customers" className="scroll-mt-16 border-t border-line bg-surface">
           <div className="mx-auto max-w-[1200px] px-5 py-20 sm:px-8 sm:py-28">
             <SectionHeading
               eyebrow="For property owners and managers"
@@ -275,7 +399,7 @@ export default function HomePage() {
         </section>
 
         {/* Contractors */}
-        <section id="contractors" className="scroll-mt-16 border-t border-ink/[0.08] bg-surface">
+        <section id="for-pros" className="scroll-mt-16 border-t border-line bg-canvas">
           <div className="mx-auto max-w-[1200px] px-5 py-20 sm:px-8 sm:py-28">
             <SectionHeading
               eyebrow="For contractors and subcontractors"
@@ -326,7 +450,7 @@ export default function HomePage() {
               ].map((w, i) => (
                 <Reveal key={w.n} delay={i * 100}>
                   <PhoneFrame src={w.image.src} alt={w.alt} className="mx-auto w-[min(16rem,78%)] ring-white/10" />
-                  <p className="tabular mt-8 text-[13px] font-semibold text-[#e8955a]">{w.n}</p>
+                  <p className="tabular mt-8 text-[13px] font-semibold text-[#f6884a]">{w.n}</p>
                   <h3 className="mt-1 text-[19px] font-semibold tracking-[-0.01em]">{w.title}</h3>
                   <p className="mt-2 text-[15px] leading-7 text-white/70">{w.body}</p>
                 </Reveal>
@@ -343,7 +467,7 @@ export default function HomePage() {
         </section>
 
         {/* Trust */}
-        <section id="trust" className="scroll-mt-16 bg-surface">
+        <section id="trust" className="scroll-mt-16 border-t border-line bg-surface">
           <div className="mx-auto max-w-[1200px] px-5 py-20 sm:px-8 sm:py-28">
             <SectionHeading
               eyebrow="Trust and safety"
@@ -387,7 +511,7 @@ export default function HomePage() {
         <section className="on-dark border-t border-white/10 bg-charcoal text-white">
           <div className="mx-auto max-w-[1200px] px-5 py-20 sm:px-8 sm:py-24">
             <Reveal className="max-w-[48rem]">
-              <h2 className="font-display text-[38px] leading-[1.04] font-medium tracking-[-0.025em] text-balance sm:text-[58px]">
+              <h2 className="font-display text-[38px] leading-[1.04] font-bold tracking-[-0.035em] text-balance sm:text-[58px]">
                 Ready when the next job is.
               </h2>
             </Reveal>
@@ -398,7 +522,7 @@ export default function HomePage() {
                 { who: "Tradespeople and crew", body: "Create your profile, choose your towns and skills, and apply to local shifts.", href: "/sign-up?as=worker", cta: "Find shift work" },
               ].map((c, i) => (
                 <div key={c.who} className={`py-9 ${i > 0 ? "border-t border-white/15 md:border-t-0 md:border-l md:pl-8" : ""} md:pr-8`}>
-                  <p className="text-[13px] font-semibold text-[#e8955a]">{c.who}</p>
+                  <p className="text-[13px] font-semibold text-[#f6884a]">{c.who}</p>
                   <p className="mt-3 text-[17px] leading-7 text-white/80">{c.body}</p>
                   <Link
                     href={c.href}
@@ -441,14 +565,14 @@ function StoryRow({
         <ul className="mt-6 space-y-2.5 border-t border-ink/10 pt-5">
           {points.map((p) => (
             <li key={p} className="flex gap-2.5 text-[14px] leading-6 text-ink-soft">
-              <span aria-hidden className="mt-[9px] h-[5px] w-[5px] shrink-0 bg-signal" />
+              <span aria-hidden className="mt-[9px] h-[6px] w-[6px] shrink-0 rounded-full bg-signal" />
               {p}
             </li>
           ))}
         </ul>
       </Reveal>
       <Reveal delay={100} className={`lg:col-span-7 ${flip ? "lg:order-1" : ""}`}>
-        <div className="rounded-[6px] bg-[#ebe8e1] p-3 sm:p-6">
+        <div className="rounded-2xl bg-subtle p-3 sm:p-6">
           <ScreenFrame {...image} sizes="(min-width: 1024px) 680px, 100vw" />
         </div>
       </Reveal>

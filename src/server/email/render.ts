@@ -46,14 +46,14 @@ export function renderNotificationEmail(n: NotificationEmail, siteUrl: string): 
     .filter((line, i, all) => !(line === "" && all[i - 1] === ""))
     .join("\n");
   const html = `<!doctype html>
-<html lang="en"><body style="margin:0;background:#f7f6f2;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#242b31">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f6f2;padding:24px 12px"><tr><td align="center">
+<html lang="en"><body style="margin:0;background:#f5f6f8;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#15191e">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f6f8;padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border:1px solid #e5e2da;border-radius:10px">
-<tr><td style="padding:20px 24px 0;font-size:15px;font-weight:700;color:#242b31">QuickPro</td></tr>
+<tr><td style="padding:20px 24px 0;font-size:15px;font-weight:700;color:#15191e">QuickPro</td></tr>
 <tr><td style="padding:16px 24px 0;font-size:14px;color:#3d464e">${escapeHtml(greeting)}</td></tr>
 <tr><td style="padding:8px 24px 0;font-size:17px;font-weight:600;line-height:1.4">${escapeHtml(n.title)}</td></tr>
 ${n.body ? `<tr><td style="padding:8px 24px 0;font-size:14px;line-height:1.55;color:#3d464e;white-space:pre-line">${escapeHtml(n.body)}</td></tr>` : ""}
-<tr><td style="padding:20px 24px 24px"><a href="${escapeHtml(link)}" style="display:inline-block;background:#242b31;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:10px 16px;border-radius:6px">Open in QuickPro</a></td></tr>
+<tr><td style="padding:20px 24px 24px"><a href="${escapeHtml(link)}" style="display:inline-block;background:#c2410c;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:10px 16px;border-radius:6px">Open in QuickPro</a></td></tr>
 </table>
 <p style="max-width:520px;margin:12px auto 0;font-size:12px;line-height:1.5;color:#5e6a74">You get this email because you have notifications on QuickPro. <a href="${escapeHtml(settings)}" style="color:#5e6a74">Turn emails off</a> in your account settings.</p>
 </td></tr></table>

@@ -107,10 +107,18 @@ function demoPdf(lines: string[]) {
   return Buffer.from(out);
 }
 
-async function approvedContractor(ownerId: string, name: string, services: string[], towns: string[]) {
+async function approvedContractor(
+  ownerId: string,
+  name: string,
+  services: string[],
+  towns: string[],
+  profile: { city: string; years: number; crew: number; about: string },
+) {
   const [org] = await sql<{ id: string }[]>`
-    insert into public.organizations (kind, name, legal_name, phone, email, market_id, status, created_by, submitted_at, reviewed_at)
-    select 'contractor', ${name}, ${name + " (demo record)"}, '631-555-0100', ${`office+${tag}@demo.quickpro.test`}, m.id,
+    insert into public.organizations (kind, name, legal_name, description, city, years_in_business, crew_size, phone, email, market_id,
+                                      status, created_by, submitted_at, reviewed_at)
+    select 'contractor', ${name}, ${name + " (demo record)"}, ${`${profile.about} Example business in QuickPro's demo data.`}, ${profile.city},
+           ${profile.years}, ${profile.crew}, '631-555-0100', ${`office+${tag}@demo.quickpro.test`}, m.id,
            'approved', ${ownerId}, now(), now()
     from public.markets m where m.slug = 'suffolk-county-ny'
     returning id
@@ -267,13 +275,27 @@ const dana = await person("Dana Whitfield", "Customer: Harbor Point Properties (
 const customer = await approvedCustomer(dana, "Harbor Point Properties");
 
 const marcus = await person("Marcus Bell", "General contractor: Bayview Build Co. (owner)");
-const bayview = await approvedContractor(marcus, "Bayview Build Co.", ["general-construction", "carpentry", "painting-drywall"], ["islip", "babylon", "brookhaven"]);
+const bayview = await approvedContractor(marcus, "Bayview Build Co.", ["general-construction", "carpentry", "painting-drywall"], ["islip", "babylon", "brookhaven"], { city: "Bay Shore", years: 14, crew: 22, about: "General contractor for commercial interiors, tenant fit-outs and building refreshes." });
 const priya = await person("Priya Shah", "Contractor: North Shore Interiors (owner)");
-const northShore = await approvedContractor(priya, "North Shore Interiors", ["carpentry", "painting-drywall"], ["islip", "huntington"]);
+const northShore = await approvedContractor(priya, "North Shore Interiors", ["carpentry", "painting-drywall"], ["islip", "huntington"], { city: "Huntington", years: 9, crew: 11, about: "Interior carpentry, millwork and finishes for offices and retail." });
 const tom = await person("Tom Reyes", "Contractor: Coastline Contracting (owner)");
-const coastline = await approvedContractor(tom, "Coastline Contracting", ["carpentry", "general-construction"], ["islip", "babylon"]);
+const coastline = await approvedContractor(tom, "Coastline Contracting", ["carpentry", "general-construction"], ["islip", "babylon"], { city: "Babylon", years: 6, crew: 8, about: "Framing, demolition and general construction for small commercial jobs." });
 const luis = await person("Luis Ortega", "Subcontractor: Ridgeline Drywall & Paint (owner)");
-const ridgeline = await approvedContractor(luis, "Ridgeline Drywall & Paint", ["painting-drywall"], ["islip", "brookhaven"]);
+const ridgeline = await approvedContractor(luis, "Ridgeline Drywall & Paint", ["painting-drywall"], ["islip", "brookhaven"], { city: "Patchogue", years: 11, crew: 15, about: "Drywall hanging, taping and finishing, and commercial painting." });
+
+// Each contractor publishes its profile, so the public directory and the
+// homepage's search show the demo businesses. The page address gets the batch
+// tag only when an earlier batch already took the plain one.
+for (const [owner, org, name] of [
+  [marcus, bayview, "Bayview Build Co."],
+  [priya, northShore, "North Shore Interiors"],
+  [tom, coastline, "Coastline Contracting"],
+  [luis, ridgeline, "Ridgeline Drywall & Paint"],
+] as const) {
+  const plain = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const [{ taken }] = await sql<{ taken: boolean }[]>`select exists (select 1 from public.contractor_public_profiles where slug = ${plain}) as taken`;
+  await as(owner, (tx) => tx`select public.set_public_profile(${org}, true, ${taken ? `${plain}-${tag}` : plain})`);
+}
 
 const ana = await person("Ana Morales", "Worker: finish carpenter");
 await approvedWorker(ana, "Finish carpenter, 9 years in commercial interiors", "islip", ["finish-carpentry", "doors-hardware"]);

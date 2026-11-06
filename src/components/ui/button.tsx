@@ -7,7 +7,7 @@ type Size = "sm" | "md";
 const base =
   "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-[background-color,border-color,color,box-shadow] duration-150 select-none disabled:cursor-not-allowed disabled:opacity-55 whitespace-nowrap";
 const variants: Record<Variant, string> = {
-  primary: "bg-charcoal text-white hover:bg-charcoal-strong shadow-[0_1px_0_rgba(36,43,49,0.08)]",
+  primary: "bg-brand text-white hover:bg-brand-strong shadow-[0_1px_2px_rgba(194,65,12,0.18)]",
   secondary: "bg-surface text-ink ring-1 ring-inset ring-line-strong hover:bg-subtle",
   ghost: "text-ink-soft hover:bg-subtle hover:text-ink",
   danger: "bg-surface text-bad ring-1 ring-inset ring-bad/30 hover:bg-bad-soft",
