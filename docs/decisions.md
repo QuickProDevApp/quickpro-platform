@@ -992,3 +992,24 @@ changed; the app, the directory and every other page keep their design.
 - **Photography:** none is used yet. This environment can't reach image
   libraries, and only licensed photos may be added. The service and hero
   art is drawn in the brand blues until licensed photos are supplied.
+
+## D-049 A Thumbtack-style hero with QuickPro's video
+
+- **Date:** 2026-11-06
+- **Context:** QuickPro asked for a calmer, consumer-marketplace hero, with
+  Thumbtack's homepage as the visual reference (not its content or branding)
+  and the YouTube video `PHezq3zCgGs` in place of the drawn illustration.
+- **Decision:** the hero is white with a solid two-tone headline, the same
+  search fields in a pill, the popular chips and the three calls to action.
+  The video sits beside it on desktop and after the search on phones.
+  - It plays from `youtube-nocookie.com`, muted, looping and without
+    YouTube's controls. Our own Play/Pause and sound buttons drive it
+    through the player's postMessage commands.
+  - It is shown whole at 16:9, never cropped, so nothing of YouTube's player
+    is hidden.
+  - A YouTube thumbnail (allowed in `images.remotePatterns`) fills the frame
+    first, so the layout does not shift.
+  - With reduced motion, only the thumbnail shows until the visitor presses
+    play.
+  - The rest of the landing page is unchanged and already shares the hero's
+    tokens and type.

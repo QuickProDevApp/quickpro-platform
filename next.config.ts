@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
   // and per-request. See docs/decisions.md (D-006).
   cacheComponents: false,
   poweredByHeader: false,
+  images: {
+    // The landing hero's video thumbnail (src/components/landing/hero-video.tsx).
+    remotePatterns: [{ protocol: "https", hostname: "i.ytimg.com", pathname: "/vi/**" }],
+  },
   experimental: {
     serverActions: {
       // Qualification documents are capped at 10 MB; leave room for form fields.
