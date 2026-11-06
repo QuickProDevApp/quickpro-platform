@@ -1,4 +1,4 @@
-import { demoMode } from "@/server/env";
+import { demoMode, showcaseMode } from "@/server/env";
 
 /**
  * Shown on every page of a demonstration environment (DEMO_MODE=on), so
@@ -6,6 +6,7 @@ import { demoMode } from "@/server/env";
  * activity.
  */
 export function DemoBanner() {
+  if (showcaseMode()) return <ShowcaseBanner />;
   if (!demoMode()) return null;
   return (
     <div role="note" aria-label="Demo environment" className="border-b border-signal/25 bg-signal-soft text-[12.5px] leading-5 text-ink-soft" data-testid="demo-banner">
@@ -18,6 +19,27 @@ export function DemoBanner() {
         <span className="hidden sm:inline">
           Businesses, people and projects here are example records. Card payments run in Stripe test mode; no real money moves.
         </span>
+      </p>
+    </div>
+  );
+}
+
+/** The presentation preview (D-047): sample data, nothing saved. */
+function ShowcaseBanner() {
+  return (
+    <div role="note" aria-label="Presentation preview" className="border-b border-signal/25 bg-signal-soft text-[12.5px] leading-5 text-ink-soft" data-testid="demo-banner">
+      <p className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-1.5 sm:px-6">
+        <span className="inline-flex items-center gap-1.5 font-semibold text-ink">
+          <span aria-hidden className="h-1.5 w-1.5 rounded-[1px] bg-signal" />
+          Presentation preview
+        </span>
+        <span className="sm:hidden">Sample data · nothing is saved</span>
+        <span className="hidden sm:inline">
+          Every business, person and project here is a sample. Nothing you enter is saved and no payments are taken.
+        </span>
+        <a href="/showcase" className="font-medium text-brand underline-offset-4 hover:underline">
+          Tour the screens
+        </a>
       </p>
     </div>
   );
