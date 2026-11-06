@@ -14,27 +14,29 @@ export default async function OrganizationLayout({
   const { orgId } = await params;
   const { org } = await requireMembership(orgId);
   const base = `/app/org/${org.id}`;
+  // The day-to-day work first, in the order it happens; business settings after.
   const items = [
     { href: base, label: "Overview", exact: true },
-    { href: `${base}/profile`, label: "Business profile" },
     ...(org.kind === "contractor"
       ? [
+          { href: `${base}/requests`, label: "Requests" },
           { href: `${base}/jobs`, label: "Jobs" },
           { href: `${base}/schedule`, label: "Schedule" },
           { href: `${base}/timesheets`, label: "Timesheets" },
-          { href: `${base}/requests`, label: "Requests" },
-          { href: `${base}/services`, label: "Services & areas" },
+          { href: `${base}/invoices`, label: "Invoices" },
+          { href: `${base}/payments`, label: "Card payments" },
         ]
       : [
           { href: `${base}/requests`, label: "Requests" },
           { href: `${base}/contractors`, label: "Contractors" },
+          { href: `${base}/invoices`, label: "Invoices" },
         ]),
-    { href: `${base}/invoices`, label: "Invoices" },
-    ...(org.kind === "contractor" ? [{ href: `${base}/payments`, label: "Card payments" }] : []),
     { href: `${base}/reviews`, label: "Reviews" },
     { href: `${base}/disputes`, label: "Disputes" },
-    { href: `${base}/documents`, label: "Documents" },
     { href: `${base}/team`, label: "Team" },
+    { href: `${base}/profile`, label: "Business profile" },
+    ...(org.kind === "contractor" ? [{ href: `${base}/services`, label: "Services & areas" }] : []),
+    { href: `${base}/documents`, label: "Documents" },
   ];
   return (
     <>

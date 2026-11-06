@@ -2,38 +2,41 @@
 
 /*
  * QuickPro design tokens. See docs/design.md for how to use them.
- * Charcoal, warm off-white and slate carry the interface; construction
- * orange is the accent, used sparingly. Status colors carry meaning only.
+ * A bright marketplace: white and cool light-gray surfaces, near-black ink,
+ * and QuickPro orange for calls to action and the brand. Status colors carry
+ * meaning only.
  */
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  --color-canvas: #f7f6f2;
+  --color-canvas: #f5f6f8;
   --color-surface: #ffffff;
-  --color-subtle: #f3f2ed;
-  --color-ink: #242b31;
-  --color-ink-soft: #3d464e;
-  /* Slate (#66737d) darkened a step so secondary text passes 4.5:1 on every surface. */
-  --color-muted: #5e6a74;
-  --color-slate: #66737d;
-  --color-faint: #97a0a7;
-  --color-line: #e5e2da;
-  --color-line-strong: #cfcac0;
+  --color-subtle: #f0f2f5;
+  --color-ink: #15191e;
+  --color-ink-soft: #343b44;
+  /* Secondary text: 6.0:1 on white, 5.6:1 on the canvas. */
+  --color-muted: #5a6470;
+  --color-slate: #66717d;
+  --color-faint: #9aa3ad;
+  --color-line: #e3e6ea;
+  --color-line-strong: #cbd1d8;
 
-  --color-charcoal: #242b31;
-  --color-charcoal-strong: #161b1f;
-  /* Links, focus rings and "new" counts: the text-safe shade of the orange. */
-  --color-brand: #a9531b;
-  --color-brand-strong: #8c4314;
-  --color-brand-soft: #fbf0e7;
+  /* Dark bands (footer, sign-in panel, worker section). */
+  --color-charcoal: #15191e;
+  --color-charcoal-strong: #0b0d10;
+  /* QuickPro orange. brand is the button and link shade: white text on it is
+     5.2:1, and it is 5.2:1 as text on white. */
+  --color-brand: #c2410c;
+  --color-brand-strong: #9a3412;
+  --color-brand-soft: #fff1e8;
 
-  /* Construction orange, for marks, rules and accents. signal-ink is the
-     text-safe shade (5.3:1 on white); charcoal text on signal is 4.6:1. */
-  --color-signal: #d97835;
-  --color-signal-ink: #a9531b;
-  --color-signal-soft: #fbf0e7;
-  --color-paper: #f7f6f2;
+  /* The bright orange, for marks, dots and rules only (never text on white).
+     signal-ink is its text-safe shade; ink text on signal is 5.8:1. */
+  --color-signal: #f26a1f;
+  --color-signal-ink: #c2410c;
+  --color-signal-soft: #fff1e8;
+  --color-paper: #ffffff;
 
   --color-ok: #1d6b45;
   --color-ok-soft: #ebf5ee;
@@ -44,11 +47,11 @@
   --color-info: #2f6690;
   --color-info-soft: #ecf2f7;
 
-  --radius-sm: 3px;
-  --radius-md: 5px;
-  --radius-lg: 7px;
-  --radius-xl: 9px;
-  --radius-2xl: 11px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 14px;
 
   --text-xs: 0.75rem;
   --text-xs--line-height: 1.125rem;
@@ -56,10 +59,9 @@
   --text-sm--line-height: 1.375rem;
 }
 
-/* Editorial display face for the public site and sign-in pages. Inline, because
-   its variable is set on those pages' wrappers rather than on <html>. */
+/* Headlines use the same sans as the interface, set tighter and heavier. */
 @theme inline {
-  --font-display: var(--font-source-serif), ui-serif, Georgia, serif;
+  --font-display: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 html {
@@ -78,9 +80,9 @@ body {
   outline-offset: 2px;
 }
 
-/* On charcoal (the app bar, dark marketing bands) focus rings use the light orange. */
+/* On dark bands focus rings use the bright orange. */
 .on-dark :focus-visible {
-  outline-color: #e8955a;
+  outline-color: #f6884a;
 }
 
 /* Figures line up in tables and summaries. */

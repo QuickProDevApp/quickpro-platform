@@ -23,7 +23,7 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
   const next = as && intro[as] ? `/app/onboarding?as=${as}` : safeNextPath(requested);
   return (
     <>
-      <h1 className="font-display text-[30px] leading-9 font-medium tracking-[-0.02em]">Create your QuickPro account</h1>
+      <h1 className="font-display text-[30px] leading-9 font-semibold tracking-[-0.02em]">Create your QuickPro account</h1>
       <p className="mt-1 text-sm text-muted">{(as && intro[as]) || "One account works for businesses, workers and customers."}</p>
       <nav aria-label="I'm signing up as" className="mt-5 grid grid-cols-3 gap-1 rounded-[6px] bg-subtle p-1">
         {roles.map((r) => (
@@ -32,7 +32,7 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
             href={`/sign-up?as=${r.as}`}
             aria-current={as === r.as ? "page" : undefined}
             className={`flex h-9 items-center justify-center rounded-[4px] px-1 text-center text-[13px] leading-4 font-medium transition-colors ${
-              as === r.as ? "bg-surface text-ink shadow-[0_1px_2px_rgba(36,43,49,0.1)] ring-1 ring-line" : "text-muted hover:text-ink"
+              as === r.as ? "bg-surface text-ink shadow-[0_1px_2px_rgba(21,25,30,0.1)] ring-1 ring-line" : "text-muted hover:text-ink"
             }`}
           >
             {r.label}

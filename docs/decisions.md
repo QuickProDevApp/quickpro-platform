@@ -893,3 +893,30 @@ touching production or real money.
   onboarding but does not fill that form in; the paying business gets its
   test-mode account through the Stripe API with Stripe's test identity
   values.
+
+## D-045 A bright marketplace identity, replacing the editorial look
+
+The owner asked for QuickPro to read as a modern two-sided marketplace (in
+the spirit of service-discovery and booking apps) rather than an editorial
+or clinical site, and for any influence of the DocFi reference used earlier
+to go. D-043's warm off-white, serif headings and charcoal app bar are
+replaced; features and copy rules are unchanged.
+
+- **Palette:** white and cool light-gray surfaces, near-black ink, QuickPro
+  orange (#C2410C) for primary buttons with white text (5.2:1) and links,
+  bright orange (#F26A1F) for marks only. Dark charcoal stays for the
+  footer and a few contrasting bands.
+- **Type:** Geist everywhere; the bundled serif is removed.
+- **Mark:** a white "Q" ring on an orange tile. The Next.js starter
+  favicon, left over from the first commit, is replaced by `app/icon.svg`.
+- **Homepage:** search by service and town into the existing public
+  directory, popular services, a service grid, and how it works for each
+  side. Every control leads to an existing page; nothing new is claimed.
+- **App:** a white header with an orange active underline; the business
+  tabs are in workflow order (requests, jobs, schedule, timesheets,
+  invoices, payments) with settings last.
+- **Demo data:** the demo contractors now publish their public profiles,
+  with a town, years in business, crew size and a description that says it
+  is example data, so the directory and the homepage search return them.
+- **Still open:** licensed photography (this environment can't reach
+  image libraries).

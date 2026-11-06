@@ -52,9 +52,9 @@ export function FeatureTabs({ features }: { features: Feature[] }) {
               tabIndex={selected ? 0 : -1}
               onClick={() => setActive(i)}
               onKeyDown={onKey}
-              className={`group shrink-0 rounded-[4px] px-3.5 py-2 text-left text-[14px] font-medium whitespace-nowrap transition-colors lg:relative lg:rounded-none lg:border-l lg:px-5 lg:py-4 lg:whitespace-normal ${
+              className={`group shrink-0 rounded-full px-3.5 py-2 text-left text-[14px] font-medium whitespace-nowrap transition-colors lg:relative lg:rounded-none lg:border-l lg:px-5 lg:py-4 lg:whitespace-normal ${
                 selected
-                  ? "bg-ink text-white lg:border-signal lg:bg-transparent lg:text-ink"
+                  ? "bg-ink text-white lg:border-brand lg:bg-transparent lg:text-ink"
                   : "bg-ink/[0.04] text-ink-soft hover:text-ink lg:border-ink/10 lg:bg-transparent"
               }`}
             >
@@ -72,7 +72,7 @@ export function FeatureTabs({ features }: { features: Feature[] }) {
       </div>
 
       <div id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-tab-${active}`} className="min-w-0">
-        <div className="rounded-[6px] bg-[#ebe8e1] p-4 sm:p-8">
+        <div className="rounded-[12px] bg-subtle p-4 sm:p-8">
           <div key={f.key} className="animate-[qp-fade_420ms_ease-out]">
             {f.image.phone ? (
               <PhoneFrame src={f.image.src} alt={f.image.alt} className="mx-auto w-[min(17rem,72%)]" />

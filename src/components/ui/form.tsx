@@ -117,7 +117,7 @@ export function Field({
 }
 
 const control =
-  "block w-full rounded-md border border-line-strong bg-surface px-3 text-base text-ink shadow-[0_1px_1px_rgba(36,43,49,0.03)] transition-[border-color,box-shadow] duration-150 placeholder:text-faint hover:border-faint focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15 aria-[invalid=true]:border-bad aria-[invalid=true]:focus:ring-bad/15 disabled:bg-subtle disabled:text-muted sm:text-sm";
+  "block w-full rounded-md border border-line-strong bg-surface px-3 text-base text-ink shadow-[0_1px_1px_rgba(21,25,30,0.03)] transition-[border-color,box-shadow] duration-150 placeholder:text-faint hover:border-faint focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15 aria-[invalid=true]:border-bad aria-[invalid=true]:focus:ring-bad/15 disabled:bg-subtle disabled:text-muted sm:text-sm";
 
 /** Marks a control invalid and links it to its error when the form returned one for it. */
 function useInvalid(name: string | undefined) {

@@ -15,7 +15,7 @@ export default async function SignInPage({
   const next = safeNextPath(params.next);
   return (
     <>
-      <h1 className="font-display text-[30px] leading-9 font-medium tracking-[-0.02em]">Sign in to QuickPro</h1>
+      <h1 className="font-display text-[30px] leading-9 font-semibold tracking-[-0.02em]">Sign in to QuickPro</h1>
       {params.confirmed ? (
         <div className="mt-4">
           <FormMessage tone="ok">Your email is confirmed. Sign in to continue.</FormMessage>
