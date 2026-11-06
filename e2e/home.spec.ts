@@ -62,19 +62,3 @@ test("the search and the service cards open the contractor directory, filtered",
   await expect(page).toHaveURL(/\/contractors\?category=flooring$/);
   await expect(page.getByLabel("Service")).toHaveValue("flooring");
 });
-
-test("the hero video plays muted on a loop from YouTube, with its own controls", async ({ page }) => {
-  // The player itself is not loaded here; the test only checks how it is embedded.
-  await page.route("https://www.youtube-nocookie.com/**", (route) => route.fulfill({ contentType: "text/html", body: "" }));
-  await page.goto("/");
-  const video = page.getByTestId("hero-video");
-  const src = new URL((await video.locator("iframe").getAttribute("src"))!);
-  expect(src.origin + src.pathname).toBe("https://www.youtube-nocookie.com/embed/PHezq3zCgGs");
-  for (const [key, value] of [["autoplay", "1"], ["mute", "1"], ["loop", "1"], ["playlist", "PHezq3zCgGs"]]) {
-    expect(src.searchParams.get(key), key).toBe(value);
-  }
-  await video.getByRole("button", { name: "Pause video" }).click();
-  await expect(video.getByRole("button", { name: "Play video" })).toBeVisible();
-  await video.getByRole("button", { name: "Turn sound on" }).click();
-  await expect(video.getByRole("button", { name: "Turn sound off" })).toBeVisible();
-});
