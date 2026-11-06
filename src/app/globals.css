@@ -59,6 +59,25 @@
   --text-sm--line-height: 1.375rem;
 }
 
+/*
+ * The landing page's blue family (D-048), taken from the QuickPro Q mark.
+ * Used only by src/components/landing and the homepage; the app keeps the
+ * tokens above.
+ */
+@theme {
+  --color-qp-royal: #2141be;
+  --color-qp-blue: #2f6fe4; /* white text 4.65:1 */
+  --color-qp-blue-strong: #2556d0; /* white text 6.1:1 */
+  --color-qp-sky: #4593f6;
+  --color-qp-cyan: #6acefa;
+  --color-qp-ice: #eaf2fe;
+  --color-qp-mist: #f5f8fd;
+  --color-qp-navy: #0b1633;
+  --color-qp-navy-soft: #36435f; /* 9.9:1 on white */
+  --color-qp-slate: #5a6680; /* 5.8:1 on white */
+  --color-qp-line: #e2e8f2;
+}
+
 /* Headlines use the same sans as the interface, set tighter and heavier. */
 @theme inline {
   --font-display: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
@@ -83,6 +102,18 @@ body {
 /* On dark bands focus rings use the bright orange. */
 .on-dark :focus-visible {
   outline-color: #f6884a;
+}
+
+/* The landing page: blue focus rings, and its own disclosure replaces the
+   app-wide demo banner there. */
+.landing :focus-visible {
+  outline-color: var(--color-qp-blue);
+}
+.landing .on-blue :focus-visible {
+  outline-color: #ffffff;
+}
+body:has(.landing) [data-testid="demo-banner"] {
+  display: none;
 }
 
 /* Figures line up in tables and summaries. */
