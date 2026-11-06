@@ -1,4 +1,5 @@
 import { ReadinessList } from "@/components/app/readiness";
+import { StatTiles, type StatTile } from "@/components/app/stat-tiles";
 import { StatusBanner } from "@/components/app/status-banner";
 import { OrgSubcontractList } from "@/components/app/subcontracts";
 import { DocumentStatusBadge, RequestStatusBadge } from "@/components/ui/badge";
@@ -68,6 +69,57 @@ export default async function OrganizationOverview({ params }: { params: Promise
   const canSubmit = manager && (org.status === "draft" || org.status === "rejected");
   const ready = readiness.every((i) => i.done);
   const subject = isContractor ? "business registration" : "organization registration";
+  const base = `/app/org/${org.id}`;
+  const subOffers = liveSubcontracts.filter((s) => s.status === "offered").length;
+  const quotesWaiting = requests.reduce((n, r) => n + (r.status === "open" ? r.quote_count : 0), 0);
+  const amountDue = toPay.reduce((n, i) => n + Number(i.total_cents), 0);
+  const tiles: StatTile[] | null = operating
+    ? [
+        {
+          label: "Requests to quote",
+          value: openToQuote,
+          href: `${base}/requests`,
+          icon: "inbox",
+          highlight: openToQuote > 0,
+          hint: openToQuote > 0 ? "Review and quote" : "Matching your services",
+        },
+        {
+          label: "Projects in progress",
+          value: activeProjects.length,
+          href: `${base}/requests?show=awarded`,
+          icon: "hammer",
+        },
+        { label: "Upcoming jobs", value: upcoming.length, href: `${base}/jobs`, icon: "calendar" },
+        {
+          label: "Subcontract offers",
+          value: subOffers,
+          href: `${base}/requests?show=subcontracts`,
+          icon: "handshake",
+          highlight: subOffers > 0,
+          hint: subOffers > 0 ? "Waiting for your answer" : undefined,
+        },
+      ]
+    : customerOperating
+      ? [
+          { label: "Active requests", value: requests.length, href: `${base}/requests`, icon: "inbox" },
+          {
+            label: "Quotes to compare",
+            value: quotesWaiting,
+            href: `${base}/requests`,
+            icon: "quote",
+            highlight: quotesWaiting > 0,
+            hint: quotesWaiting > 0 ? "Waiting for your decision" : undefined,
+          },
+          {
+            label: "Invoices to pay",
+            value: toPay.length ? formatCents(amountDue) : 0,
+            href: `${base}/invoices`,
+            icon: "invoice",
+            highlight: toPay.length > 0,
+            hint: toPay.length ? `${toPay.length} ${toPay.length === 1 ? "invoice" : "invoices"} due` : undefined,
+          },
+        ]
+      : null;
 
   return (
     <div className="space-y-6">
@@ -78,6 +130,8 @@ export default async function OrganizationOverview({ params }: { params: Promise
         subject={subject}
         rereviewReason={org.rereview_reason}
       />
+
+      {tiles ? <StatTiles tiles={tiles} testId="org-summary" /> : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-6">
@@ -380,7 +434,10 @@ function InvoicesToPay({ orgId, invoices }: { orgId: string; invoices: InvoiceRo
       <ul className="divide-y divide-line" data-testid="invoices-to-pay">
         {sorted.slice(0, 4).map((i) => (
           <li key={i.id}>
-            <Link href={`/app/org/${orgId}/invoices/${i.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-subtle/60 sm:px-5">
+            <Link
+              href={`/app/org/${orgId}/invoices/${i.id}`}
+              className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-subtle/60 sm:px-5"
+            >
               <span className="min-w-0">
                 <span className="block truncate font-medium text-ink">
                   {i.number} · {i.title}

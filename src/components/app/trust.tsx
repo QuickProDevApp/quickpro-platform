@@ -57,7 +57,7 @@ function StarIcon({ filled, className = "h-4 w-4" }: { filled: boolean; classNam
 export function Stars({ rating, className = "h-4 w-4" }: { rating: number; className?: string }) {
   const rounded = Math.round(rating);
   return (
-    <span className="inline-flex items-center gap-0.5 text-charcoal" role="img" aria-label={`${rating} out of 5 stars`}>
+    <span className="inline-flex items-center gap-0.5 text-amber-500" role="img" aria-label={`${rating} out of 5 stars`}>
       {[1, 2, 3, 4, 5].map((n) => (
         <StarIcon key={n} filled={n <= rounded} className={`${className} ${n <= rounded ? "" : "text-line-strong"}`} />
       ))}
@@ -73,7 +73,7 @@ export function RatingSummary({ rating, compact = false }: { rating: Rating | un
   const avg = Number(rating.rating_avg);
   return (
     <span className="inline-flex items-center gap-1.5 text-[13px] text-ink" data-testid="rating">
-      {compact ? <StarIcon filled className="h-3.5 w-3.5 text-charcoal" /> : <Stars rating={avg} className="h-3.5 w-3.5" />}
+      {compact ? <StarIcon filled className="h-3.5 w-3.5 text-amber-500" /> : <Stars rating={avg} className="h-3.5 w-3.5" />}
       <span className="tabular font-medium">{avg.toFixed(1)}</span>
       <span className="text-muted">
         · {rating.rating_count} {rating.rating_count === 1 ? "review" : "reviews"}
@@ -89,7 +89,7 @@ function StarInput({ name, id }: { name: string; id: string }) {
   return (
     <fieldset>
       <legend className="mb-1.5 text-sm font-medium text-ink">Rating</legend>
-      <div className="flex w-fit flex-row-reverse justify-end gap-1 [&_input:checked~label]:text-charcoal [&_input:focus-visible+label]:ring-2 [&_input:focus-visible+label]:ring-charcoal/40 [&_label:hover]:text-charcoal [&_label:hover~label]:text-charcoal">
+      <div className="flex w-fit flex-row-reverse justify-end gap-1 [&_input:checked~label]:text-amber-500 [&_input:focus-visible+label]:ring-2 [&_input:focus-visible+label]:ring-charcoal/40 [&_label:hover]:text-amber-500 [&_label:hover~label]:text-amber-500">
         {[5, 4, 3, 2, 1].map((n) => (
           <span key={n} className="contents">
             <input type="radio" name={name} id={`${id}-${n}`} value={n} className="peer sr-only" required />
