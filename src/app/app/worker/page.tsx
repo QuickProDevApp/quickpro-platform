@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ReadinessList } from "@/components/app/readiness";
+import { StatTiles } from "@/components/app/stat-tiles";
 import { StatusBanner } from "@/components/app/status-banner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -21,7 +22,11 @@ export default async function WorkerOverview() {
     { label: "Headline", done: profile.headline.trim() !== "", href: "/app/worker/profile" },
     { label: "Home area", done: Boolean(profile.home_service_area_id), href: "/app/worker/profile" },
     { label: "At least one skill", done: selections.skillIds.length > 0, href: "/app/worker/profile" },
-    { label: "At least one availability window", done: selections.availability.length > 0, href: "/app/worker/availability" },
+    {
+      label: "At least one availability window",
+      done: selections.availability.length > 0,
+      href: "/app/worker/availability",
+    },
   ];
   const canSubmit = profile.status === "draft" || profile.status === "rejected";
 
@@ -59,11 +64,21 @@ export default async function WorkerOverview() {
           ) : null}
           {profile.status === "approved" ? (
             <>
-              <div className="grid grid-cols-3 divide-x divide-line rounded-lg border border-line bg-surface" data-testid="worker-summary">
-                <Stat label="Booked shifts" value={upcoming.length} href="/app/worker/my-jobs" />
-                <Stat label="Offers to answer" value={offers.length} href="/app/worker/my-jobs" highlight={offers.length > 0} />
-                <Stat label="Applications" value={applied.length} href="/app/worker/my-jobs" />
-              </div>
+              <StatTiles
+                testId="worker-summary"
+                tiles={[
+                  { label: "Booked shifts", value: upcoming.length, href: "/app/worker/my-jobs", icon: "calendar" },
+                  {
+                    label: "Offers to answer",
+                    value: offers.length,
+                    href: "/app/worker/my-jobs",
+                    icon: "handshake",
+                    highlight: offers.length > 0,
+                    hint: offers.length > 0 ? "Accept or decline" : undefined,
+                  },
+                  { label: "Applications", value: applied.length, href: "/app/worker/my-jobs", icon: "check" },
+                ]}
+              />
               <Card>
                 <CardHeader
                   title="Your next shifts"
@@ -84,7 +99,9 @@ export default async function WorkerOverview() {
                             href={`/app/worker/jobs/${j.id}`}
                             className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-subtle/70 sm:px-5"
                           >
-                            <span className="w-16 shrink-0 border-r border-line pr-3 text-[13px] leading-5 font-medium text-ink">{day}</span>
+                            <span className="w-16 shrink-0 border-r border-line pr-3 text-[13px] leading-5 font-medium text-ink">
+                              {day}
+                            </span>
                             <span className="min-w-0 flex-1">
                               <span className="flex flex-wrap items-center gap-2">
                                 <span className="truncate font-medium text-ink">{j.title}</span>
@@ -99,7 +116,9 @@ export default async function WorkerOverview() {
                               </span>
                             </span>
                             <span className="shrink-0 text-right">
-                              <span className="tabular block text-sm font-semibold text-ink">{formatCents(j.pay_rate_cents)}/hr</span>
+                              <span className="tabular block text-sm font-semibold text-ink">
+                                {formatCents(j.pay_rate_cents)}/hr
+                              </span>
                               <span className="tabular block text-xs text-muted">
                                 ≈ {formatCents(Math.round(j.pay_rate_cents * shiftHours(j.starts_at, j.ends_at)))}
                               </span>
@@ -126,8 +145,8 @@ export default async function WorkerOverview() {
                 )}
               </Card>
               <p className="text-[13px] leading-5 text-muted">
-                Each job says how the business engages you (for example as its employee). The business handles the paperwork
-                that requires, and pays you for approved hours.
+                Each job says how the business engages you (for example as its employee). The business handles the
+                paperwork that requires, and pays you for approved hours.
               </p>
             </>
           ) : (
@@ -135,12 +154,12 @@ export default async function WorkerOverview() {
               <CardHeader title="What's next" />
               <CardBody className="space-y-2 text-sm text-ink-soft">
                 <p>
-                  Once QuickPro staff approve your profile, you can find jobs from local businesses and apply. Staff may also
-                  offer you jobs that fit your skills.
+                  Once QuickPro staff approve your profile, you can find jobs from local businesses and apply. Staff may
+                  also offer you jobs that fit your skills.
                 </p>
                 <p>
-                  Each job says how the business engages you (for example as its employee). The business handles the paperwork
-                  that requires.
+                  Each job says how the business engages you (for example as its employee). The business handles the
+                  paperwork that requires.
                 </p>
               </CardBody>
             </Card>
@@ -151,14 +170,25 @@ export default async function WorkerOverview() {
           <CardBody>
             <dl className="space-y-3 text-sm">
               <Row label="Home area" value={profile.home_area_name ?? "Not set"} />
-              <Row label="Travel" value={`Up to ${profile.max_travel_miles} miles${profile.has_vehicle ? ", has a vehicle" : ""}`} />
-              <Row label="Desired rate" value={profile.desired_hourly_rate_cents ? `${formatCents(profile.desired_hourly_rate_cents)}/hr` : "Not set"} />
+              <Row
+                label="Travel"
+                value={`Up to ${profile.max_travel_miles} miles${profile.has_vehicle ? ", has a vehicle" : ""}`}
+              />
+              <Row
+                label="Desired rate"
+                value={
+                  profile.desired_hourly_rate_cents ? `${formatCents(profile.desired_hourly_rate_cents)}/hr` : "Not set"
+                }
+              />
               <Row
                 label="Availability"
                 value={
                   selections.availability.length
                     ? selections.availability
-                        .map((w) => `${WEEKDAYS[w.weekday].slice(0, 3)} ${formatTime(w.start_time)}–${formatTime(w.end_time)}`)
+                        .map(
+                          (w) =>
+                            `${WEEKDAYS[w.weekday].slice(0, 3)} ${formatTime(w.start_time)}–${formatTime(w.end_time)}`,
+                        )
                         .join(", ")
                     : "None yet"
                 }
@@ -168,17 +198,6 @@ export default async function WorkerOverview() {
         </Card>
       </div>
     </div>
-  );
-}
-
-function Stat({ label, value, href, highlight = false }: { label: string; value: number; href: string; highlight?: boolean }) {
-  return (
-    <Link href={href} className="group px-3 py-3 transition-colors first:rounded-l-lg last:rounded-r-lg hover:bg-subtle/70 sm:px-5 sm:py-4">
-      <span className={`tabular block text-[22px] leading-7 font-semibold tracking-[-0.02em] ${highlight ? "text-signal-ink" : "text-ink"}`}>
-        {value}
-      </span>
-      <span className="block text-[12.5px] leading-5 text-muted group-hover:text-ink-soft">{label}</span>
-    </Link>
   );
 }
 

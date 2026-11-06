@@ -439,6 +439,68 @@ await as(marcus, async (tx) => {
   await tx`select public.issue_invoice(${id})`;
 });
 
+// 4. Reviews, so profiles show what earlier customers said. Each one goes
+// through the review flow: a finished, confirmed project, then both sides
+// review. The stairwell project above is one; two smaller past projects
+// give the other contractors a record too.
+async function pastProject(
+  contractorOwner: string,
+  contractorOrg: string,
+  p: { title: string; description: string; category: string; cents: number; note: string; rating: number; review: string },
+  crew: { worker: string; skill: string; inDays: number; jobTitle: string },
+) {
+  const id = await postRequest(dana, customer, {
+    title: p.title,
+    description: p.description,
+    category: p.category,
+    town: "islip",
+    startInDays: 1,
+    budget: [Math.round(p.cents * 0.8), Math.round(p.cents * 1.2)],
+    address: "120 Harbor Point Blvd",
+  });
+  const q = await quote(contractorOwner, id, contractorOrg, p.cents, p.note, 1, 3);
+  await as(dana, (tx) => tx`select public.accept_quote(${q})`);
+  // The crew shift that did the work, worked and approved like the stairwell job.
+  const job = await postJob(contractorOwner, contractorOrg, id, {
+    title: crew.jobTitle,
+    description: p.description,
+    category: p.category,
+    skills: [crew.skill],
+    inDays: crew.inDays,
+    hours: 8,
+    headcount: 1,
+    payCents: 3600,
+  });
+  const shift = await book(contractorOwner, crew.worker, job, "Available that day.");
+  await workedYesterday(job, [{ id: shift, inLate: 0, outLate: 0 }]);
+  await approveHours(contractorOwner, shift);
+  await as(contractorOwner, (tx) => tx`select public.complete_job(${job})`);
+  await as(contractorOwner, (tx) => tx`select public.report_request_work_complete(${id}, ${"Work complete. Photos and punch list in the thread."})`);
+  await as(dana, (tx) => tx`select public.confirm_request_completion(${id})`);
+  await as(dana, (tx) => tx`select public.submit_review('project'::public.work_context, ${id}, ${p.rating}, ${p.review})`);
+  await as(contractorOwner, (tx) => tx`select public.submit_review('project'::public.work_context, ${id}, 5, ${"Clear scope, quick answers and paid on time."})`);
+}
+await as(dana, (tx) => tx`select public.submit_review('project'::public.work_context, ${stairs}, 5, ${"Both stairwells done over one weekend with no disruption to tenants. Clean site every morning and the rails look great."})`);
+await as(marcus, (tx) => tx`select public.submit_review('project'::public.work_context, ${stairs}, 5, ${"Clear scope, quick answers and easy weekend access."})`);
+await pastProject(priya, northShore, {
+  title: "Reception desk and wall paneling, Suite 140",
+  description: "Build a reception desk and install oak wall paneling in the Suite 140 lobby.",
+  category: "carpentry",
+  cents: 1_240_000,
+  note: "Shop-built desk, field-installed paneling, two weeks.",
+  rating: 5,
+  review: "Beautiful millwork, finished two days early, and the punch list was handled the same afternoon.",
+}, { worker: ana, skill: "finish-carpentry", inDays: 8, jobTitle: "Reception desk install" });
+await pastProject(tom, coastline, {
+  title: "Storage room demolition, Building C",
+  description: "Remove two storage room partitions and haul debris; protect the corridor floors.",
+  category: "general-construction",
+  cents: 420_000,
+  note: "Two-day demolition with floor protection and haul-away.",
+  rating: 4,
+  review: "Fast and careful demolition. One extra day for haul-away, but they told us early.",
+}, { worker: devon, skill: "selective-demolition", inDays: 9, jobTitle: "Partition demolition" });
+
 await sql.end();
 
 console.log(`\nDemo batch ${tag} is ready. Every account uses the password ${process.env.DEMO_PASSWORD ? "from DEMO_PASSWORD" : password}.\n`);

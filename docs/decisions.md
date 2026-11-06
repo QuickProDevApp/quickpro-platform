@@ -920,3 +920,27 @@ replaced; features and copy rules are unchanged.
   is example data, so the directory and the homepage search return them.
 - **Still open:** licensed photography (this environment can't reach
   image libraries).
+
+## D-046 Presentation pass on the five core screens
+
+Date: 2026-11-06. For the presentation, the five screens a visitor or user
+sees first were brought up to the D-045 look. No backend, schema or payment
+changes.
+
+- **Contractor search:** a search card (service, town), trade chips with
+  icons, a results count, and cards with an initials tile, rating, facts,
+  services and towns.
+- **Contractor profile:** a header card with the business's stats from its
+  real record (projects through QuickPro, years, crew, approval month), the
+  staff-reviewed certificate note, services with descriptions, towns, a
+  rating breakdown counted from the reviews shown, and a quote card that
+  stays in reach (sticky on desktop, a bottom bar on phones).
+- **Posting a project:** the same fields and validation in three numbered
+  steps, with a "what happens next" panel.
+- **Dashboards:** contractor, customer and worker overviews open with linked
+  count tiles (requests to quote, projects in progress, upcoming jobs,
+  subcontract offers; active requests, quotes to compare, invoices to pay;
+  booked shifts, offers, applications). Every count is live data.
+- **Demo data:** two more finished projects go through the real flow (a
+  crew shift worked and approved, completion confirmed, both sides review),
+  so three demo contractors show genuine ratings, each labeled as demo data.
