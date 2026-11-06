@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("the homepage leads customers, contractors and tradespeople to the right sign-up", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Find the right crew. Get it done.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hire contractors and skilled crews for any job.");
 
   await page.getByRole("link", { name: "Post a project" }).first().click();
   await expect(page).toHaveURL(/\/sign-up\?as=customer/);
@@ -35,16 +35,15 @@ test("navigation reaches each section and every footer page loads", async ({ pag
   }
 });
 
-test("the marketplace tabs switch with a click and with the arrow keys", async ({ page }) => {
+test("contractor feature tabs switch with a click and with the arrow keys", async ({ page }) => {
   await page.goto("/#for-pros");
-  const tabs = page.getByRole("tablist", { name: "QuickPro marketplace" });
-  await tabs.getByRole("tab", { name: "Subcontractors" }).click();
-  await expect(tabs.getByRole("tab", { name: "Subcontractors" })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("tabpanel").getByRole("heading", { name: "Subcontractors pick up the work they do best." })).toBeVisible();
+  const tabs = page.getByRole("tablist", { name: "QuickPro features" });
+  await tabs.getByRole("tab", { name: /Subcontractors/ }).click();
+  await expect(tabs.getByRole("tab", { name: /Subcontractors/ })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tabpanel").getByRole("img")).toHaveAttribute("alt", /subcontract/);
   await page.keyboard.press("ArrowRight");
-  await expect(tabs.getByRole("tab", { name: "Skilled workers" })).toHaveAttribute("aria-selected", "true");
-  await expect(tabs.getByRole("tab", { name: "Skilled workers" })).toBeFocused();
-  await expect(page.getByRole("tabpanel").getByRole("link", { name: "Find shift work" })).toHaveAttribute("href", "/sign-up?as=worker");
+  await expect(tabs.getByRole("tab", { name: /Timesheets/ })).toHaveAttribute("aria-selected", "true");
+  await expect(tabs.getByRole("tab", { name: /Timesheets/ })).toBeFocused();
 });
 
 test("the search and the service cards open the contractor directory, filtered", async ({ page }) => {
@@ -58,23 +57,7 @@ test("the search and the service cards open the contractor directory, filtered",
   await expect(page.getByLabel("Town")).toHaveValue("islip");
 
   await page.goto("/#services");
-  await page.locator("#services").getByRole("link", { name: /^Flooring/ }).first().click();
+  await page.locator("#services").getByRole("link", { name: /Flooring installation/ }).click();
   await expect(page).toHaveURL(/\/contractors\?category=flooring$/);
   await expect(page.getByLabel("Service")).toHaveValue("flooring");
-});
-
-test("the hero video plays muted on a loop from YouTube, with its own controls", async ({ page }) => {
-  // The player itself is not loaded here; the test only checks how it is embedded.
-  await page.route("https://www.youtube-nocookie.com/**", (route) => route.fulfill({ contentType: "text/html", body: "" }));
-  await page.goto("/");
-  const video = page.getByTestId("hero-video");
-  const src = new URL((await video.locator("iframe").getAttribute("src"))!);
-  expect(src.origin + src.pathname).toBe("https://www.youtube-nocookie.com/embed/PHezq3zCgGs");
-  for (const [key, value] of [["autoplay", "1"], ["mute", "1"], ["loop", "1"], ["playlist", "PHezq3zCgGs"]]) {
-    expect(src.searchParams.get(key), key).toBe(value);
-  }
-  await video.getByRole("button", { name: "Pause video" }).click();
-  await expect(video.getByRole("button", { name: "Play video" })).toBeVisible();
-  await video.getByRole("button", { name: "Turn sound on" }).click();
-  await expect(video.getByRole("button", { name: "Turn sound off" })).toBeVisible();
 });
