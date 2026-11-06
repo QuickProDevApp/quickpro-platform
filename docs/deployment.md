@@ -1,5 +1,25 @@
 # Deploying a preview
 
+## Presentation preview (no database)
+
+For showing the product, not running it (D-047). A Vercel project built from
+this repository with **one** environment variable, `QUICKPRO_SHOWCASE=on`,
+serves the homepage, the public pages, and the five core screens filled with
+labeled sample data: contractor search, a contractor profile, posting a
+project, and the contractor, customer and worker dashboards (tour at
+`/showcase`). No Supabase, database, Stripe or email settings are needed,
+because nothing signs in, reads or writes data, or takes payments; every
+account, app and API route is closed. Do not set the variable on a
+deployment that real users sign in to.
+
+1. Vercel → **Add New… → Project** → import `QuickProDevApp/quickpro-platform`
+   (install the Vercel GitHub app on the QuickProDevApp organization if it
+   isn't listed).
+2. Framework preset: Next.js (detected). Leave the build settings as they
+   are.
+3. Under **Environment Variables**, add `QUICKPRO_SHOWCASE` = `on`.
+4. **Deploy.** Open `/showcase` on the deployment for the tour.
+
 ## Automated (GitHub Actions)
 
 Two manual workflows (Actions tab) put the demo online. Run them from `main`,

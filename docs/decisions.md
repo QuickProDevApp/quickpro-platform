@@ -944,3 +944,25 @@ changes.
 - **Demo data:** two more finished projects go through the real flow (a
   crew shift worked and approved, completion confirmed, both sides review),
   so three demo contractors show genuine ratings, each labeled as demo data.
+
+## D-047 A presentation preview that needs no backend
+
+Date: 2026-11-06. The presentation needed the product online before the
+hosted Supabase project could be migrated (its access token lacked
+permissions) and without Stripe or other keys.
+
+- **Switch:** `QUICKPRO_SHOWCASE=on`, off by default. With it on, `proxy.ts`
+  never creates a Supabase client; `/contractors` and its profiles are
+  served from sample data; sign-up links go to the matching sample screen;
+  every account, app and API route redirects to the tour or returns 404.
+  With it off, `/showcase` returns 404 and nothing else changes.
+- **Same screens, sample data:** the directory, profile, posting form and
+  overview panels were moved into components that take their data as
+  props. The real pages pass database records; `/showcase` passes the
+  records in `src/showcase/data.ts`. Every sample business says it is a
+  sample, every page carries a "Presentation preview" banner, and the
+  dashboards are labeled "Sample business/customer/worker".
+- **Posting:** the preview's "Post request" runs the app's validation and
+  then says nothing was saved. No other control pretends to work.
+- **Not a production path:** the variable must never be set where real users
+  sign in. Real deployments keep using the workflow in D-044.

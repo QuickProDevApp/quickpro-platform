@@ -37,6 +37,8 @@ const schema = z.object({
   // A demonstration environment (D-043): every page carries a "Demo
   // environment" banner, and `pnpm demo:seed` may add labeled example records.
   DEMO_MODE: z.enum(["on", "off"]).default("off"),
+  // The presentation preview (D-047); read through showcaseMode().
+  QUICKPRO_SHOWCASE: z.enum(["on", "off"]).default("off"),
 });
 
 export type Env = z.infer<typeof schema>;
@@ -48,6 +50,16 @@ export type Env = z.infer<typeof schema>;
  */
 export function demoMode(): boolean {
   return process.env.DEMO_MODE === "on";
+}
+
+/**
+ * The presentation preview (D-047): the public pages plus the five core
+ * screens under /showcase, filled with labeled sample data. Nothing reads or
+ * writes a database, signs anyone in, or calls Stripe; every other route is
+ * closed (see proxy.ts). Off unless QUICKPRO_SHOWCASE=on.
+ */
+export function showcaseMode(): boolean {
+  return process.env.QUICKPRO_SHOWCASE === "on";
 }
 
 let cached: Env | undefined;
